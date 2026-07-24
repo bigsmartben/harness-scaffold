@@ -254,7 +254,7 @@ flowchart LR
 **当前进度（2026-07-24）**：
 
 - 本地平台契约、GitHub Evidence 归一化、正反夹具和零 Backend 调用测试已通过。
-- 真实目标 [`bigsmartben/harness-scaffold`](https://github.com/bigsmartben/harness-scaffold) 已按用户选择从 Private 改为 Public；`main` 已推送 Commit `78e66e5`，Workflow 只允许 `workflow_dispatch`。
+- 真实目标 [`bigsmartben/harness-scaffold`](https://github.com/bigsmartben/harness-scaffold) 已按用户选择从 Private 改为 Public；`main` 已推送 Commit `78e66e5`。expensive / critical Workflow 只允许 `workflow_dispatch`；routine Contract Check 使用独立 Workflow，可由 Pull Request 自动触发。
 - routine Contract Check Run [`30076965922`](https://github.com/bigsmartben/harness-scaffold/actions/runs/30076965922) 已绑定该 Commit 并通过 24 项测试；同次 Run 的 `full-ci` Job 为 `skipped`。
 - Actions 默认 Token 权限经 GitHub API 核验为 `read`，且不能批准 Pull Request Review。
 - `main` Branch Protection 已启用：`contracts` 为严格 Required Check，管理员同样受约束，禁止强推和删除，并要求线性历史与会话解决。

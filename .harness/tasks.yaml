@@ -14,7 +14,7 @@ tasks:
     category: test
     automation_level: routine
     auto_allowed: true
-    source: .github/workflows/harness.yml#contracts
+    source: .github/workflows/routine-contracts.yml#contracts
     backend: github-actions
     working_directory: repository-root
     supports_scope: contract
