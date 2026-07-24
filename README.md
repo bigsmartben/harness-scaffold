@@ -156,7 +156,7 @@ Merge、Publish、Release 和 Deploy 都属于 `critical`，每次必须获得�
 | Work、Verify、Merge、Publish Skill 路由 | Available | P3 | 四类中英文路由及三级自动化语义测试 |
 | 最低充分验证与 Task Runner | Available | P3 | 验证级别、自动化等级、零 Backend 调用与摘要测试 |
 | Local 与 GitHub Actions Adapter | Available | P3 | 同形 Evidence、确认门禁和平台来源字段测试 |
-| CI/CD 平台权限与门禁 | In Progress | P4 | 本地契约与 Fixture 已通过；等待真实 GitHub 设置 Evidence |
+| CI/CD 平台权限与门禁 | In Progress | P4 | Public 仓库、Required Check 与 Protected Environment 已配置；等待 Gate Run 与凭证隔离 Evidence |
 | Skill 评测、安装与发布 | Planned | P5 | 未来前向评测与发布记录 |
 
 详细依赖和验收条件见 [`plan.md`](plan.md)。

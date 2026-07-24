@@ -254,7 +254,11 @@ flowchart LR
 **当前进度（2026-07-24）**：
 
 - 本地平台契约、GitHub Evidence 归一化、正反夹具和零 Backend 调用测试已通过。
-- 真实目标已创建为当前用户的私有仓库 `bigsmartben/harness-scaffold`；截至 2026-07-24，远端仓库为空，本地 `main` 已准备首次提交，并补齐仅允许 `workflow_dispatch` 的 routine Contract Check 与需确认 Full CI。
+- 真实目标 [`bigsmartben/harness-scaffold`](https://github.com/bigsmartben/harness-scaffold) 已按用户选择从 Private 改为 Public；`main` 已推送 Commit `78e66e5`。expensive / critical Workflow 只允许 `workflow_dispatch`；routine Contract Check 使用独立 Workflow，可由 Pull Request 自动触发。
+- routine Contract Check Run [`30076965922`](https://github.com/bigsmartben/harness-scaffold/actions/runs/30076965922) 已绑定该 Commit 并通过 24 项测试；同次 Run 的 `full-ci` Job 为 `skipped`。
+- Actions 默认 Token 权限经 GitHub API 核验为 `read`，且不能批准 Pull Request Review。
+- `main` Branch Protection 已启用：`contracts` 为严格 Required Check，管理员同样受约束，禁止强推和删除，并要求线性历史与会话解决。
+- `production` Protected Environment 已启用：只允许受保护分支，Required Reviewer 为 `bigsmartben`。无副作用 Gate Evidence Workflow 正在准备，用于证明未审批 Job 不启动。
 - 当前 Codex 会话可调用已登录且带 `repo` scope 的 `gh`；若该凭证能执行正式交付动作，就不满足“交付凭证不暴露给 Agent / Skill”。P4 Available 前必须改为只读身份，或把写权限只放入受保护的 CI/CD Job。
 
 ### 实施内容

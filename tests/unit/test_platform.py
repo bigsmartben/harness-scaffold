@@ -185,13 +185,38 @@ def test_merge_evidence_requires_required_checks() -> None:
 
 
 def test_repository_workflow_has_controlled_triggers_and_read_only_token() -> None:
-    workflow = (
-        ROOT / ".github" / "workflows" / "harness.yml"
-    ).read_text("utf-8")
+    workflow_dir = ROOT / ".github" / "workflows"
+    workflows = {
+        path.name: path.read_text("utf-8")
+        for path in workflow_dir.glob("*.yml")
+    }
 
-    assert "workflow_dispatch:" in workflow
-    assert "\n  push:" not in workflow
-    assert "\n  pull_request:" not in workflow
-    assert "\n  schedule:" not in workflow
-    assert "permissions:\n  contents: read" in workflow
-    assert "test \"$CONFIRMED\" = \"true\"" in workflow
+    assert set(workflows) == {
+        "delivery-gate-evidence.yml",
+        "harness.yml",
+        "routine-contracts.yml",
+    }
+    for name, workflow in workflows.items():
+        assert "workflow_dispatch:" in workflow
+        assert "\n  push:" not in workflow
+        assert "\n  schedule:" not in workflow
+        assert "permissions:\n  contents: read" in workflow
+        if name == "routine-contracts.yml":
+            assert "\n  pull_request:" in workflow
+        else:
+            assert "\n  pull_request:" not in workflow
+    assert "test \"$CONFIRMED\" = \"true\"" in workflows["harness.yml"]
+    assert "ci:full)" in workflows["harness.yml"]
+    assert "test:contracts-ci)" not in workflows["harness.yml"]
+    assert (
+        "uv run pytest tests/unit/test_contracts.py tests/unit/test_platform.py"
+        in workflows["routine-contracts.yml"]
+    )
+    assert (
+        "environment:\n      name: production\n      deployment: false"
+        in workflows["delivery-gate-evidence.yml"]
+    )
+    assert (
+        "- Side effects: none"
+        in workflows["delivery-gate-evidence.yml"]
+    )
