@@ -213,7 +213,7 @@ def test_repository_workflow_has_controlled_triggers_and_read_only_token() -> No
         in workflows["routine-contracts.yml"]
     )
     assert (
-        "environment:\n      name: production"
+        "environment:\n      name: production\n      deployment: false"
         in workflows["delivery-gate-evidence.yml"]
     )
     assert (

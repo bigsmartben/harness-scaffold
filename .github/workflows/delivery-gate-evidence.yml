@@ -49,6 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: production
+      deployment: false
     steps:
       - name: Record inert gate evidence
         shell: bash
