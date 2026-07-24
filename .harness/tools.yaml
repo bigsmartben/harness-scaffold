@@ -137,3 +137,23 @@ tools:
     constraints:
       - current confirmation required
       - workflow_dispatch only
+
+  - id: github-production-gate-evidence
+    type: project-action
+    purpose: validate-protected-environment-approval
+    capability: platform-validation
+    invocation_mode: managed
+    task_ref: platform:gate-evidence
+    working_directory: repository-root
+    use_when:
+      - prove that an inert Job waits for production approval
+    do_not_use_when:
+      - publish or deploy an artifact
+    inputs:
+      scope: integration
+    outputs:
+      evidence: .harness/reports/production-gate.json
+    constraints:
+      - current confirmation required
+      - no delivery side effects
+      - workflow_dispatch only

@@ -32,3 +32,14 @@ tasks:
     timeout: 20m
     outputs:
       report: .harness/reports/full-ci.json
+  - id: platform:gate-evidence
+    category: validation
+    automation_level: expensive
+    auto_allowed: false
+    source: .github/workflows/delivery-gate-evidence.yml#production-gate
+    backend: github-actions
+    working_directory: repository-root
+    supports_scope: integration
+    timeout: 10m
+    outputs:
+      report: .harness/reports/production-gate.json
