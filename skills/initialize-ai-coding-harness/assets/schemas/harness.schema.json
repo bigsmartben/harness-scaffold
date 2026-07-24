@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-coding-harness.local/schemas/harness.schema.json",
+  "title": "Harness project binding",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "mode", "delivery_authority", "fact_sources"],
+  "properties": {
+    "schema_version": { "const": "0.2.0" },
+    "mode": { "enum": ["adopt", "bootstrap"] },
+    "delivery_authority": { "const": "ci-platform" },
+    "fact_sources": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      },
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_-]*$"
+      }
+    }
+  }
+}

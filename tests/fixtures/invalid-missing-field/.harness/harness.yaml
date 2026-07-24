@@ -1,0 +1,4 @@
+schema_version: 0.2.0
+mode: adopt
+fact_sources:
+  project_manifest: pyproject.toml

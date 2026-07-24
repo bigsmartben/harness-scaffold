@@ -1,0 +1,139 @@
+tools:
+  - id: repository-search
+    type: cli
+    purpose: repository-text-search
+    capability: repository-search
+    entrypoint: rg
+    invocation_mode: direct
+    version_source:
+      command: rg
+      arguments:
+        - --version
+    working_directory: repository-root
+    use_when:
+      - locate source, tests, configuration, or documentation
+    do_not_use_when:
+      - run project validation
+    inputs:
+      query: string
+    outputs:
+      matches: text
+    constraints:
+      - read-only
+
+  - id: python-read-analysis
+    type: runtime
+    purpose: execute-read-only-project-analysis
+    capability: python-analysis
+    entrypoint: uv
+    arguments:
+      - run
+      - python
+    invocation_mode: direct
+    version_source: pyproject.toml#project.requires-python
+    working_directory: repository-root
+    use_when:
+      - run a registered read-only Python analysis script
+    do_not_use_when:
+      - lint, validate, test, build, package, merge, or publish
+    inputs:
+      script: registered-read-only-script
+    outputs:
+      format: text-or-json
+    constraints:
+      - no project mutation
+
+  - id: github-server
+    type: mcp-server
+    purpose: index-github-capabilities
+    capability: github
+    entrypoint: github-connector
+    invocation_mode: direct
+    version_source: connector-manifest
+    working_directory: repository-root
+    use_when:
+      - discover registered GitHub tools
+    do_not_use_when:
+      - perform project delivery actions
+    inputs: {}
+    outputs:
+      tools: connector-tools
+    constraints:
+      - registry entry is not authorization
+
+  - id: github-get-file
+    type: mcp-tool
+    purpose: read-github-file
+    capability: github-file-read
+    entrypoint: github.get_file_contents
+    server_ref: github-server
+    method: get_file_contents
+    invocation_mode: direct
+    version_source: connector-manifest
+    working_directory: repository-root
+    use_when:
+      - read a repository file through the GitHub connector
+    do_not_use_when:
+      - create releases, merge, or publish
+    inputs:
+      repository: string
+      path: string
+    outputs:
+      content: text
+    constraints:
+      - read-only
+
+  - id: contract-tests
+    type: project-action
+    purpose: validate-harness-contracts
+    capability: project-test
+    invocation_mode: managed
+    task_ref: test:contracts
+    working_directory: repository-root
+    use_when:
+      - validate Harness contracts and templates
+    do_not_use_when:
+      - perform ordinary read-only analysis
+    inputs:
+      scope: validation-level
+    outputs:
+      evidence: .harness/reports/contracts.json
+    constraints:
+      - invoke only through Harness
+
+  - id: github-contract-check
+    type: project-action
+    purpose: validate-harness-contracts-on-github
+    capability: project-test
+    invocation_mode: managed
+    task_ref: test:contracts-ci
+    working_directory: repository-root
+    use_when:
+      - produce the routine Required Check on GitHub
+    do_not_use_when:
+      - run full CI
+    inputs:
+      scope: contract
+    outputs:
+      evidence: .harness/reports/contracts-ci.json
+    constraints:
+      - workflow_dispatch only
+
+  - id: github-full-ci
+    type: project-action
+    purpose: run-confirmed-full-ci
+    capability: project-ci
+    invocation_mode: managed
+    task_ref: ci:full
+    working_directory: repository-root
+    use_when:
+      - run Full CI after current confirmation
+    do_not_use_when:
+      - perform routine validation
+    inputs:
+      scope: full
+    outputs:
+      evidence: .harness/reports/full-ci.json
+    constraints:
+      - current confirmation required
+      - workflow_dispatch only

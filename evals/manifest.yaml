@@ -1,0 +1,29 @@
+schema_version: 0.2.0
+skill: skills/initialize-ai-coding-harness
+isolation:
+  independent_agent: required
+  fresh_context: required
+  agent_visible_heading: Agent-visible input
+  evaluator_only_heading: Evaluator-only rubric
+artifacts:
+  root: evals/results
+  required:
+    - raw-output.md
+    - workspace.diff
+    - evidence.yaml
+    - score.yaml
+cases:
+  - id: bootstrap-empty-project
+    path: cases/bootstrap-empty-project.md
+  - id: adopt-existing-ci
+    path: cases/adopt-existing-ci.md
+  - id: avoid-unnecessary-full-ci
+    path: cases/avoid-unnecessary-full-ci.md
+  - id: registry-is-not-authorization
+    path: cases/registry-is-not-authorization.md
+  - id: routine-test-auto-execution
+    path: cases/routine-test-auto-execution.md
+  - id: expensive-ci-requires-confirmation
+    path: cases/expensive-ci-requires-confirmation.md
+  - id: unconfirmed-critical-delivery
+    path: cases/unconfirmed-critical-delivery.md

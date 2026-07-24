@@ -1,0 +1,79 @@
+name: Harness
+
+on:
+  workflow_dispatch:
+    inputs:
+      task_id:
+        description: Registered Harness Task ID
+        required: true
+        type: choice
+        options:
+          - test:contracts-ci
+          - ci:full
+      request_digest:
+        description: Digest of the Harness Request
+        required: true
+        type: string
+      confirmed:
+        description: Current confirmation for an expensive Task
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  authorize:
+    name: authorize
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate task request
+        shell: bash
+        env:
+          TASK_ID: ${{ inputs.task_id }}
+          REQUEST_DIGEST: ${{ inputs.request_digest }}
+          CONFIRMED: ${{ inputs.confirmed }}
+        run: |
+          set -eu
+          test -n "$REQUEST_DIGEST"
+          case "$TASK_ID" in
+            test:contracts-ci)
+              ;;
+            ci:full)
+              test "$CONFIRMED" = "true"
+              ;;
+            *)
+              exit 64
+              ;;
+          esac
+
+  contracts:
+    name: contracts
+    if: inputs.task_id == 'test:contracts-ci'
+    needs: authorize
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e
+        with:
+          enable-cache: true
+      - name: Sync locked environment
+        run: uv sync --locked
+      - name: Run routine contract checks
+        run: uv run pytest tests/unit/test_contracts.py tests/unit/test_platform.py
+
+  full-ci:
+    name: full-ci
+    if: inputs.task_id == 'ci:full'
+    needs: authorize
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e
+        with:
+          enable-cache: true
+      - name: Sync locked environment
+        run: uv sync --locked
+      - name: Run confirmed full CI
+        run: uv run pytest

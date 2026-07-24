@@ -1,0 +1,28 @@
+tools:
+  - id: missing-task
+    type: project-action
+    purpose: run-missing-task
+    capability: project-tests
+    invocation_mode: managed
+    task_ref: test:missing
+    working_directory: repository-root
+    use_when: [validate changes]
+    do_not_use_when: [search text]
+    inputs: {}
+    outputs: {}
+    constraints: []
+  - id: missing-server:tool
+    type: mcp-tool
+    purpose: read-missing-server
+    capability: remote-read
+    server_ref: missing-server
+    method: read
+    invocation_mode: direct
+    version_source: mcp.json#missing
+    working_directory: repository-root
+    use_when: [read remote data]
+    do_not_use_when: [write remote data]
+    inputs: {}
+    outputs: {}
+    constraints: [read-only]
+

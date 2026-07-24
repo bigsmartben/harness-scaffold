@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-coding-harness.local/schemas/tools.schema.json",
+  "title": "Tool Registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["tools"],
+  "properties": {
+    "tools": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/tool" }
+    }
+  },
+  "$defs": {
+    "versionCommand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "arguments"],
+      "properties": {
+        "command": { "type": "string", "minLength": 1 },
+        "arguments": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "purpose",
+        "capability",
+        "invocation_mode",
+        "working_directory",
+        "use_when",
+        "do_not_use_when",
+        "inputs",
+        "outputs",
+        "constraints"
+      ],
+      "properties": {
+        "id": { "$ref": "common.schema.json#/$defs/stableId" },
+        "type": {
+          "enum": ["runtime", "cli", "shell", "package-manager", "mcp-server", "mcp-tool", "external-api", "repository-script", "project-action"]
+        },
+        "purpose": { "type": "string", "minLength": 1 },
+        "capability": { "type": "string", "minLength": 1 },
+        "entrypoint": { "type": "string", "minLength": 1 },
+        "arguments": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "server_ref": { "$ref": "common.schema.json#/$defs/stableId" },
+        "method": { "type": "string", "minLength": 1 },
+        "invocation_mode": { "enum": ["direct", "managed"] },
+        "task_ref": { "$ref": "common.schema.json#/$defs/stableId" },
+        "version_source": {
+          "oneOf": [
+            { "type": "string", "minLength": 1 },
+            { "$ref": "#/$defs/versionCommand" }
+          ]
+        },
+        "working_directory": { "type": "string", "minLength": 1 },
+        "use_when": { "$ref": "common.schema.json#/$defs/stringList" },
+        "do_not_use_when": { "$ref": "common.schema.json#/$defs/stringList" },
+        "inputs": { "type": "object" },
+        "outputs": { "type": "object" },
+        "constraints": { "type": "array", "items": { "type": "string" } }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "invocation_mode": { "const": "managed" } } },
+          "then": {
+            "required": ["task_ref"],
+            "not": { "required": ["entrypoint"] }
+          },
+          "else": {
+            "required": ["version_source"],
+            "anyOf": [
+              { "required": ["entrypoint"] },
+              {
+                "required": ["server_ref", "method"],
+                "properties": { "type": { "const": "mcp-tool" } }
+              }
+            ],
+            "not": { "required": ["task_ref"] }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "mcp-tool" } } },
+          "then": { "required": ["server_ref", "method"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "mcp-server" } } },
+          "then": { "required": ["entrypoint"] }
+        }
+      ]
+    }
+  }
+}

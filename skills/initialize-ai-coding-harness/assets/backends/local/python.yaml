@@ -1,0 +1,11 @@
+id: local-python
+type: local
+runtime: python
+execution:
+  shell: false
+  command:
+    - uv
+    - run
+    - pytest
+  working_directory: repository-root
+

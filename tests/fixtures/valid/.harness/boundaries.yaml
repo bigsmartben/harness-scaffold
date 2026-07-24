@@ -1,0 +1,7 @@
+write_scope:
+  include: [src/**, tests/**]
+  exclude: [.git/**]
+expansion:
+  action: stop-and-handoff
+  blocker_codes: [WRITE_SCOPE_EXPANDED, HANDOFF_REQUIRED]
+

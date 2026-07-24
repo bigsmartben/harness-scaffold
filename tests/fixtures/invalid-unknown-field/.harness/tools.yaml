@@ -1,0 +1,16 @@
+tools:
+  - id: repository-search
+    type: cli
+    purpose: repository-text-search
+    capability: repository-search
+    entrypoint: rg
+    invocation_mode: direct
+    version_source: rg-version
+    working_directory: repository-root
+    use_when: [search text]
+    do_not_use_when: [run tests]
+    inputs: {}
+    outputs: {}
+    constraints: []
+    allowed_agents: [codex]
+

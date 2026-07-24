@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-coding-harness.local/schemas/common.schema.json",
+  "title": "AI Coding Harness shared contract",
+  "$defs": {
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*(?::[a-z][a-z0-9-]*)*$"
+    },
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "stringList": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/nonEmptyString" },
+      "uniqueItems": true
+    },
+    "validationLevel": {
+      "enum": ["inspect", "affected", "contract", "integration", "full", "publish"]
+    },
+    "blockerCode": {
+      "enum": [
+        "WRITE_SCOPE_EXPANDED",
+        "TOOL_NOT_REGISTERED",
+        "TOOL_ENTRY_STALE",
+        "IMPACT_UNRESOLVED",
+        "TASK_BYPASS_ATTEMPT",
+        "ACTION_CLASSIFICATION_UNRESOLVED",
+        "HANDOFF_REQUIRED",
+        "PUBLISH_CONFIRMATION_REQUIRED",
+        "PROTECTED_TRIGGER_UNCONTROLLED",
+        "CONFIG_INVALID",
+        "BACKEND_UNAVAILABLE",
+        "EVIDENCE_INCOMPLETE"
+      ]
+    }
+  }
+}

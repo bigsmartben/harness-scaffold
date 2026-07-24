@@ -1,0 +1,28 @@
+rules:
+  - id: docs-only
+    paths:
+      - "**/*.md"
+    validation_level: inspect
+    reason: documentation-only changes have no runtime effect
+
+  - id: contract-code
+    paths:
+      - contracts/**
+      - templates/**
+      - src/**
+      - tests/**
+      - pyproject.toml
+      - uv.lock
+    validation_level: affected
+    tasks:
+      - test:contracts
+    reason: contract implementation or tests changed
+
+  - id: ci-platform
+    paths:
+      - .github/**
+      - .harness/adapters/github-actions.yaml
+    validation_level: contract
+    tasks:
+      - test:contracts-ci
+    reason: CI/CD platform configuration requires the routine GitHub contract check

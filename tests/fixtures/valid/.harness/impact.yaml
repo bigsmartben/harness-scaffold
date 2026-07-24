@@ -1,0 +1,11 @@
+rules:
+  - id: docs-only
+    paths: ["**/*.md"]
+    validation_level: inspect
+    reason: documentation inspection is sufficient
+  - id: python-code
+    paths: [src/**, tests/**]
+    validation_level: affected
+    tasks: [test:python]
+    reason: Python changes require affected tests
+

@@ -1,0 +1,8 @@
+id: publish:default
+kind: publish
+requires_independent_confirmation: true
+stages:
+  - id: publish
+    tasks: ["{{ publish_task_id }}"]
+    requires_evidence: true
+

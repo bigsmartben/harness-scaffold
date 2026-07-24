@@ -1,0 +1,20 @@
+id: github-actions
+type: github-actions
+execution:
+  workflow_source: "{{ workflow_path }}"
+  trigger: workflow_dispatch
+  ref: "{{ git_ref }}"
+authority:
+  delivery_credentials_visible_to_agent: false
+  default_token_permissions: read-only
+  required_checks_source: github-branch-protection
+  protected_environments_source: github-environments
+  approval_source: github-actions
+evidence:
+  required:
+    - workflow
+    - run_id
+    - commit_sha
+    - request_digest
+    - confirmation_status
+    - approval_status

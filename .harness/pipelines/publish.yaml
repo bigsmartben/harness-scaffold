@@ -1,0 +1,9 @@
+id: pipeline:publish
+kind: publish
+requires_independent_confirmation: true
+stages:
+  - id: contracts
+    tasks:
+      - test:contracts
+    requires_evidence: true
+

@@ -1,0 +1,8 @@
+{
+  "name": "fixture-node",
+  "version": "0.1.0",
+  "scripts": {
+    "test": "node --test"
+  }
+}
+

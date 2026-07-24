@@ -1,0 +1,7 @@
+rules:
+  - id: broken
+    paths: [src/**]
+    validation_level: affected
+    tasks: [test:also-missing]
+    reason: deliberately invalid reference fixture
+

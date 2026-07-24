@@ -1,0 +1,34 @@
+tasks:
+  - id: test:contracts
+    category: test
+    automation_level: routine
+    auto_allowed: true
+    command_source: pyproject.toml#tool.pytest.ini_options
+    backend: local
+    working_directory: repository-root
+    supports_scope: affected
+    timeout: 5m
+    outputs:
+      report: .harness/reports/contracts.json
+  - id: test:contracts-ci
+    category: test
+    automation_level: routine
+    auto_allowed: true
+    source: .github/workflows/harness.yml#contracts
+    backend: github-actions
+    working_directory: repository-root
+    supports_scope: contract
+    timeout: 10m
+    outputs:
+      report: .harness/reports/contracts-ci.json
+  - id: ci:full
+    category: ci
+    automation_level: expensive
+    auto_allowed: false
+    source: .github/workflows/harness.yml#full-ci
+    backend: github-actions
+    working_directory: repository-root
+    supports_scope: full
+    timeout: 20m
+    outputs:
+      report: .harness/reports/full-ci.json

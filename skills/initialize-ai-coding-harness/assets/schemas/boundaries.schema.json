@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-coding-harness.local/schemas/boundaries.schema.json",
+  "title": "Workspace write boundaries",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["write_scope", "expansion"],
+  "properties": {
+    "write_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["include", "exclude"],
+      "properties": {
+        "include": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "exclude": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      }
+    },
+    "expansion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "blocker_codes"],
+      "properties": {
+        "action": { "const": "stop-and-handoff" },
+        "blocker_codes": {
+          "type": "array",
+          "const": ["WRITE_SCOPE_EXPANDED", "HANDOFF_REQUIRED"]
+        }
+      }
+    }
+  }
+}
+

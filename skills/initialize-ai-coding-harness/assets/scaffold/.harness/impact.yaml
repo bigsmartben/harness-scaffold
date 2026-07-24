@@ -1,0 +1,11 @@
+rules:
+  - id: docs-only
+    paths: ["**/*.md"]
+    validation_level: inspect
+    reason: documentation changes require structural inspection
+  - id: project-code
+    paths: ["{{ source_scope }}", "{{ test_scope }}"]
+    validation_level: affected
+    tasks: ["{{ task_id }}"]
+    reason: project code requires affected tests
+

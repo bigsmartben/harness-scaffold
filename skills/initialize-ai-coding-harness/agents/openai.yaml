@@ -1,0 +1,4 @@
+interface:
+  display_name: "Initialize AI Coding Harness"
+  short_description: "Configure and operate policy-gated CI/CD workflows"
+  default_prompt: "Use $initialize-ai-coding-harness to inspect this repository and apply the correct routine, expensive, or critical CI/CD gate."

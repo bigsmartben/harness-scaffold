@@ -1,0 +1,5 @@
+id: local
+type: local
+working_directory: repository-root
+command_source: pyproject.toml
+

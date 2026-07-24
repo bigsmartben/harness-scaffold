@@ -1,0 +1,11 @@
+id: local-node
+type: local
+runtime: node
+execution:
+  shell: false
+  command:
+    - npm
+    - test
+    - --
+  working_directory: repository-root
+

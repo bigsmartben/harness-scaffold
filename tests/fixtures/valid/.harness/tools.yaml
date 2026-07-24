@@ -1,0 +1,95 @@
+tools:
+  - id: python-read-analysis
+    type: runtime
+    purpose: execute-read-only-python-analysis
+    capability: python-runtime
+    entrypoint: python
+    invocation_mode: direct
+    version_source: pyproject.toml#project.requires-python
+    working_directory: repository-root
+    use_when: [run read-only Python analysis]
+    do_not_use_when: [run tests]
+    inputs: {}
+    outputs: {}
+    constraints: [read-only]
+  - id: repository-search
+    type: cli
+    purpose: repository-text-search
+    capability: repository-search
+    entrypoint: rg
+    invocation_mode: direct
+    version_source:
+      command: rg
+      arguments: [--version]
+    working_directory: repository-root
+    use_when: [search repository text]
+    do_not_use_when: [run tests]
+    inputs: {}
+    outputs: {}
+    constraints: [read-only]
+  - id: shell-read-helper
+    type: shell
+    purpose: run-registered-read-helper
+    capability: shell-read
+    entrypoint: powershell
+    invocation_mode: direct
+    version_source:
+      command: powershell
+      arguments: [-Version]
+    working_directory: repository-root
+    use_when: [run a registered ordinary shell helper]
+    do_not_use_when: [test, build, push, merge, publish, release, or deploy]
+    inputs: {}
+    outputs: {}
+    constraints: [ordinary action only]
+  - id: github
+    type: mcp-server
+    purpose: access-github
+    capability: github-server
+    entrypoint: github-mcp
+    invocation_mode: direct
+    version_source: mcp.json#github
+    working_directory: repository-root
+    use_when: [access registered GitHub tools]
+    do_not_use_when: [run local tests]
+    inputs: {}
+    outputs: {}
+    constraints: []
+  - id: github:get-pull-request
+    type: mcp-tool
+    purpose: read-pull-request
+    capability: pull-request-read
+    server_ref: github
+    method: get_pull_request
+    invocation_mode: direct
+    version_source: mcp.json#github
+    working_directory: repository-root
+    use_when: [read a pull request]
+    do_not_use_when: [publish a release]
+    inputs: {}
+    outputs: {}
+    constraints: [read-only]
+  - id: python-tests
+    type: project-action
+    purpose: validate-python-project
+    capability: project-tests
+    invocation_mode: managed
+    task_ref: test:python
+    working_directory: repository-root
+    use_when: [validate Python changes]
+    do_not_use_when: [perform read-only analysis]
+    inputs: {}
+    outputs: {}
+    constraints: []
+  - id: release-package
+    type: project-action
+    purpose: publish-project
+    capability: package-publish
+    invocation_mode: managed
+    task_ref: publish:package
+    working_directory: repository-root
+    use_when: [publish confirmed package]
+    do_not_use_when: [validate source changes]
+    inputs: {}
+    outputs: {}
+    constraints: [independent confirmation required]
