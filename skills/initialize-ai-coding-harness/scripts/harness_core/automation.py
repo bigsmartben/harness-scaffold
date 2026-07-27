@@ -19,12 +19,20 @@ ACTION_SEMANTICS = {
     "ci",
     "package",
     "push",
+    "pull-request",
     "merge",
     "publish",
     "release",
     "deploy",
 }
-CRITICAL_CATEGORIES = {"push", "merge", "publish", "release", "deploy"}
+CRITICAL_CATEGORIES = {
+    "push",
+    "pull-request",
+    "merge",
+    "publish",
+    "release",
+    "deploy",
+}
 EXPENSIVE_VALIDATION_LEVELS = {"integration", "full"}
 TOOL_BINDING_FIELDS = {
     "type",
@@ -66,6 +74,13 @@ def _missing_request_fields(
     missing: list[str] = []
     if category in CRITICAL_CATEGORIES and not request.get("target"):
         missing.append("target")
+    if category == "pull-request" and not request.get("source_ref"):
+        missing.append("source_ref")
+    if category == "merge":
+        if not request.get("pull_request_number"):
+            missing.append("pull_request_number")
+        if not request.get("merge_method"):
+            missing.append("merge_method")
     if category in {"publish", "release", "deploy"}:
         for field in ("version", "artifact_digest", "environment"):
             if not request.get(field):
@@ -240,6 +255,9 @@ def create_task_request(
         "action_semantics": task["category"],
         "validation_level": validation_level,
         "target": context.get("target"),
+        "source_ref": context.get("source_ref"),
+        "pull_request_number": context.get("pull_request_number"),
+        "merge_method": context.get("merge_method"),
         "commit_sha": context["commit_sha"],
         "version": context.get("version"),
         "artifact_digest": context.get("artifact_digest"),

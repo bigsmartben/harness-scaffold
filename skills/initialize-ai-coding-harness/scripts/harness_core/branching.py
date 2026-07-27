@@ -16,8 +16,12 @@ def default_branch_gate() -> dict[str, Any]:
             "refs/heads/release/**",
             "refs/heads/hotfix/**",
         ],
+        "private": [
+            "refs/heads/codex/**",
+            "refs/heads/agent/**",
+        ],
         "unmatched": "unrestricted",
-        "actions": ["push", "merge"],
+        "actions": ["push", "pull-request", "merge"],
         "confirmation": "strong",
         "platform_gate": "required",
         "blocker_codes": [

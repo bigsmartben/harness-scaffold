@@ -22,6 +22,7 @@ EXPECTED_BLOCKER_CODES = {
     "TASK_BYPASS_ATTEMPT",
     "ACTION_CLASSIFICATION_UNRESOLVED",
     "HANDOFF_REQUIRED",
+    "CONTROLLED_BRANCH_GATE_REQUIRED",
     "PUBLISH_CONFIRMATION_REQUIRED",
     "PROTECTED_TRIGGER_UNCONTROLLED",
     "CONFIG_INVALID",
@@ -306,5 +307,12 @@ def test_task_contract_requires_explicit_automation_policy() -> None:
         assert isinstance(task["auto_allowed"], bool)
         if task["automation_level"] in {"expensive", "critical"}:
             assert task["auto_allowed"] is False
-        if task["category"] in {"push", "merge", "publish", "release", "deploy"}:
+        if task["category"] in {
+            "push",
+            "pull-request",
+            "merge",
+            "publish",
+            "release",
+            "deploy",
+        }:
             assert task["automation_level"] == "critical"

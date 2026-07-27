@@ -344,6 +344,15 @@
           "$ref": "common.schema.json#/$defs/validationLevel"
         },
         "target": { "$ref": "#/$defs/nullableString" },
+        "source_ref": { "$ref": "#/$defs/nullableString" },
+        "pull_request_number": {
+          "type": ["integer", "null"],
+          "minimum": 1
+        },
+        "merge_method": {
+          "type": ["string", "null"],
+          "enum": ["merge", "squash", "rebase", null]
+        },
         "commit_sha": { "type": "string", "minLength": 1 },
         "version": { "$ref": "#/$defs/nullableString" },
         "artifact_digest": { "$ref": "#/$defs/nullableDigest" },

@@ -188,3 +188,49 @@ tools:
       - current confirmation required
       - no force push
       - git-remote backend only
+  - id: github-create-pull-request
+    type: project-action
+    purpose: create-confirmed-pull-request
+    capability: project-pull-request
+    action_semantics: pull-request
+    invocation_mode: managed
+    task_ref: pull-request:create
+    working_directory: repository-root
+    use_when:
+      - create a pull request for one exact source ref and base ref
+    do_not_use_when:
+      - push commits or merge a pull request
+    inputs:
+      scope: publish
+      source_ref: remote-branch
+      target: base-branch
+      commit_sha: git-commit
+    outputs:
+      evidence: .harness/reports/pull-request-create.json
+    constraints:
+      - current confirmation required
+      - github-actions platform evidence required
+  - id: github-merge-pull-request
+    type: project-action
+    purpose: merge-confirmed-pull-request
+    capability: project-merge
+    action_semantics: merge
+    invocation_mode: managed
+    task_ref: merge:pull-request
+    working_directory: repository-root
+    use_when:
+      - merge one exact pull request head into one protected base ref
+    do_not_use_when:
+      - create a pull request or bypass required checks
+    inputs:
+      scope: publish
+      target: protected-base-ref
+      pull_request_number: positive-integer
+      commit_sha: expected-head-sha
+      merge_method: merge-or-squash-or-rebase
+    outputs:
+      evidence: .harness/reports/merge-pull-request.json
+    constraints:
+      - independent current confirmation required
+      - required checks must pass
+      - github-actions platform evidence required

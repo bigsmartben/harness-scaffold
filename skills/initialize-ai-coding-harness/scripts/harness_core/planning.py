@@ -33,7 +33,14 @@ CONFIG_PATHS = (
     ".harness/pipelines/publish.yaml",
     ".harness/.gitignore",
 )
-DELIVERY_CATEGORIES = {"push", "merge", "publish", "release", "deploy"}
+DELIVERY_CATEGORIES = {
+    "push",
+    "pull-request",
+    "merge",
+    "publish",
+    "release",
+    "deploy",
+}
 SCOPE_ORDER = ("inspect", "affected", "contract", "integration", "full", "publish")
 
 
@@ -55,6 +62,7 @@ def _supports_scope(category: str) -> str:
         "ci": "full",
         "package": "integration",
         "push": "publish",
+        "pull-request": "publish",
         "merge": "publish",
         "publish": "publish",
         "release": "publish",
@@ -111,7 +119,31 @@ def _catalogs(
             "supports_scope": "publish",
             "timeout": "2m",
             "outputs": {"report": ".harness/reports/push-branch.json"},
-        }
+        },
+        {
+            "id": "pull-request:create",
+            "category": "pull-request",
+            "automation_level": "critical",
+            "auto_allowed": False,
+            "source": ".github/workflows/harness.yml#jobs.pull-request",
+            "backend": "github-actions",
+            "working_directory": "repository-root",
+            "supports_scope": "publish",
+            "timeout": "10m",
+            "outputs": {"report": ".harness/reports/pull-request-create.json"},
+        },
+        {
+            "id": "merge:pull-request",
+            "category": "merge",
+            "automation_level": "critical",
+            "auto_allowed": False,
+            "source": ".github/workflows/harness.yml#jobs.merge",
+            "backend": "github-actions",
+            "working_directory": "repository-root",
+            "supports_scope": "publish",
+            "timeout": "10m",
+            "outputs": {"report": ".harness/reports/merge-pull-request.json"},
+        },
     ]
     tools.append(
         {
@@ -137,6 +169,68 @@ def _catalogs(
                 "git-remote backend only",
             ],
         }
+    )
+    tools.extend(
+        [
+            {
+                "id": "github-create-pull-request",
+                "type": "project-action",
+                "purpose": "create-confirmed-pull-request",
+                "capability": "project-pull-request",
+                "action_semantics": "pull-request",
+                "invocation_mode": "managed",
+                "task_ref": "pull-request:create",
+                "working_directory": "repository-root",
+                "use_when": [
+                    "create a pull request for one exact source ref and base ref"
+                ],
+                "do_not_use_when": ["push commits or merge a pull request"],
+                "inputs": {
+                    "scope": "publish",
+                    "source_ref": "remote-branch",
+                    "target": "base-branch",
+                    "commit_sha": "git-commit",
+                },
+                "outputs": {
+                    "evidence": ".harness/reports/pull-request-create.json"
+                },
+                "constraints": [
+                    "current confirmation required",
+                    "github-actions platform evidence required",
+                ],
+            },
+            {
+                "id": "github-merge-pull-request",
+                "type": "project-action",
+                "purpose": "merge-confirmed-pull-request",
+                "capability": "project-merge",
+                "action_semantics": "merge",
+                "invocation_mode": "managed",
+                "task_ref": "merge:pull-request",
+                "working_directory": "repository-root",
+                "use_when": [
+                    "merge one exact pull request head into one protected base ref"
+                ],
+                "do_not_use_when": [
+                    "create a pull request or bypass required checks"
+                ],
+                "inputs": {
+                    "scope": "publish",
+                    "target": "protected-base-ref",
+                    "pull_request_number": "positive-integer",
+                    "commit_sha": "expected-head-sha",
+                    "merge_method": "merge-or-squash-or-rebase",
+                },
+                "outputs": {
+                    "evidence": ".harness/reports/merge-pull-request.json"
+                },
+                "constraints": [
+                    "independent current confirmation required",
+                    "required checks must pass",
+                    "github-actions platform evidence required",
+                ],
+            },
+        ]
     )
     rules: list[dict[str, Any]] = [
         {

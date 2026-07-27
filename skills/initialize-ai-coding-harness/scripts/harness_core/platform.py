@@ -8,7 +8,14 @@ from .artifacts import SCHEMA_VERSION, attach_digest, digest_matches
 from .contracts import runtime_artifact_is_valid
 
 
-PROTECTED_CATEGORIES = {"push", "merge", "publish", "release", "deploy"}
+PROTECTED_CATEGORIES = {
+    "push",
+    "pull-request",
+    "merge",
+    "publish",
+    "release",
+    "deploy",
+}
 EXTERNAL_TRIGGERS = {"push", "pull_request", "schedule", "repository_dispatch"}
 
 
@@ -227,7 +234,7 @@ def platform_evidence_complete(
             return False
     if category in PROTECTED_CATEGORIES and evidence.get("approval_status") != "approved":
         return False
-    if category in {"push", "merge"}:
+    if category in {"push", "pull-request", "merge"}:
         if (
             not request
             or not request.get("target")

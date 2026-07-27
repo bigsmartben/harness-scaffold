@@ -333,7 +333,7 @@ def run_git_remote_push_task(
         selection,
         request,
         confirmation,
-        require_confirmation=True if controlled_target else False,
+        require_confirmation=True,
     )
     if (
         task.get("backend") != "git-remote"
@@ -525,7 +525,7 @@ def run_github_actions_task(
         selection,
         request,
         confirmation,
-        require_confirmation=controlled_target,
+        require_confirmation=True if controlled_target else None,
     )
     if controlled_target and not authorization["allowed"]:
         blockers = sorted(
