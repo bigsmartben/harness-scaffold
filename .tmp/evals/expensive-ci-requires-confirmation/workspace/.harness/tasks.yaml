@@ -1,0 +1,21 @@
+tasks:
+  - id: integration-suite
+    category: integration
+    automation_level: expensive
+    auto_allowed: false
+    backend: local
+    working_directory: repository-root
+    supports_scope: repository
+    timeout: 5m
+    outputs:
+      artifacts: []
+  - id: full-ci
+    category: ci
+    automation_level: expensive
+    auto_allowed: false
+    backend: local
+    working_directory: repository-root
+    supports_scope: repository
+    timeout: 30m
+    outputs:
+      artifacts: []

@@ -28,6 +28,9 @@ def main() -> int:
     catalog = yaml.safe_load(
         (args.repository / ".harness" / "tasks.yaml").read_text("utf-8")
     )
+    boundaries = yaml.safe_load(
+        (args.repository / ".harness" / "boundaries.yaml").read_text("utf-8")
+    )
     task = next(item for item in catalog["tasks"] if item["id"] == args.task_id)
     adapter = yaml.safe_load(args.adapter.read_text("utf-8"))
     evidence = run_git_remote_push_task(
@@ -40,6 +43,7 @@ def main() -> int:
         selection=json.loads(args.selection.read_text("utf-8")),
         request=json.loads(args.request.read_text("utf-8")),
         confirmation=json.loads(args.confirmation.read_text("utf-8")),
+        branch_gate=boundaries["branch_gate"],
     )
     print(json.dumps(evidence, indent=2, sort_keys=True))
     return 0 if evidence["status"] == "passed" else 1

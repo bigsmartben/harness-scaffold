@@ -1,0 +1,10 @@
+{
+  "task_id": "publish:production",
+  "automation_level": "critical",
+  "version": null,
+  "artifact": null,
+  "artifact_digest": null,
+  "target": "production",
+  "protected_environment": "production",
+  "commit_sha": null
+}

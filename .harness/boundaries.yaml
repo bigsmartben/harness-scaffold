@@ -1,14 +1,15 @@
-write_scope:
-  include:
-    - "**"
-  exclude:
-    - .git/**
-    - .harness/runs/**
-    - .harness/reports/**
-    - .harness/cache/**
-expansion:
-  action: stop-and-handoff
+branch_gate:
+  controlled:
+    - refs/heads/main
+    - refs/heads/master
+    - refs/heads/release/**
+    - refs/heads/hotfix/**
+  unmatched: unrestricted
+  actions:
+    - push
+    - merge
+  confirmation: strong
+  platform_gate: required
   blocker_codes:
-    - WRITE_SCOPE_EXPANDED
+    - CONTROLLED_BRANCH_GATE_REQUIRED
     - HANDOFF_REQUIRED
-

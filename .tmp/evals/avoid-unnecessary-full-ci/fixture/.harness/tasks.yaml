@@ -1,0 +1,51 @@
+tasks:
+  - id: docs:check
+    category: lint
+    automation_level: routine
+    auto_allowed: true
+    backend: local
+    working_directory: repository-root
+    supports_scope: inspect
+    timeout: 10s
+    outputs:
+      artifacts: []
+  - id: test:inventory
+    category: test
+    automation_level: routine
+    auto_allowed: true
+    backend: local
+    working_directory: repository-root
+    supports_scope: affected
+    timeout: 30s
+    outputs:
+      artifacts: []
+  - id: test:billing
+    category: test
+    automation_level: routine
+    auto_allowed: true
+    backend: local
+    working_directory: repository-root
+    supports_scope: affected
+    timeout: 30s
+    outputs:
+      artifacts: []
+  - id: test:contract
+    category: test
+    automation_level: routine
+    auto_allowed: true
+    backend: local
+    working_directory: repository-root
+    supports_scope: contract
+    timeout: 30s
+    outputs:
+      artifacts: []
+  - id: ci:full
+    category: ci
+    automation_level: expensive
+    auto_allowed: false
+    backend: local
+    working_directory: repository-root
+    supports_scope: full
+    timeout: 20m
+    outputs:
+      artifacts: []

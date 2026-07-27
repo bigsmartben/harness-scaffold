@@ -1,0 +1,99 @@
+{
+  "actions": [
+    {
+      "action": "update",
+      "merge": "preserve-existing",
+      "path": "AGENTS.md",
+      "template": "scaffold/AGENTS.md"
+    },
+    {
+      "action": "create",
+      "merge": "replace",
+      "path": ".harness/harness.yaml",
+      "template": "scaffold/.harness/harness.yaml"
+    },
+    {
+      "action": "create",
+      "merge": "replace",
+      "path": ".harness/boundaries.yaml",
+      "template": "scaffold/.harness/boundaries.yaml"
+    },
+    {
+      "action": "create",
+      "merge": "replace",
+      "path": ".harness/tools.yaml",
+      "template": "scaffold/.harness/tools.yaml"
+    },
+    {
+      "action": "create",
+      "merge": "replace",
+      "path": ".harness/tasks.yaml",
+      "template": "scaffold/.harness/tasks.yaml"
+    },
+    {
+      "action": "create",
+      "merge": "replace",
+      "path": ".harness/impact.yaml",
+      "template": "scaffold/.harness/impact.yaml"
+    },
+    {
+      "action": "create",
+      "merge": "replace",
+      "path": ".harness/pipelines/merge.yaml",
+      "template": "scaffold/.harness/pipelines/merge.yaml"
+    },
+    {
+      "action": "create",
+      "merge": "replace",
+      "path": ".harness/pipelines/publish.yaml",
+      "template": "scaffold/.harness/pipelines/publish.yaml"
+    },
+    {
+      "action": "create",
+      "merge": "replace",
+      "path": ".harness/.gitignore",
+      "template": "scaffold/.harness/.gitignore"
+    },
+    {
+      "action": "create",
+      "merge": "replace",
+      "path": ".harness/adapters/local.yaml",
+      "template": "backends/local/node.yaml"
+    },
+    {
+      "action": "create",
+      "merge": "replace",
+      "path": ".harness/adapters/github-actions.yaml",
+      "template": "backends/github-actions/adapter.yaml"
+    }
+  ],
+  "approved": false,
+  "blocker_codes": [
+    "PROTECTED_TRIGGER_UNCONTROLLED"
+  ],
+  "plan_digest": "sha256:20c8de1cc0dd4e1666b8cb5b83e62a0a8e124da1fb0be3ab2ef9e127b043afb1",
+  "plan_type": "adopt",
+  "preserve": [
+    ".github/workflows/ci.yml"
+  ],
+  "read_only": false,
+  "render_context": {
+    "backend": "local",
+    "command_source": "package.json#test",
+    "git_ref": "current-branch",
+    "project_manifest": "package.json",
+    "project_mode": "adopt",
+    "publish_task_id": "publish:node",
+    "source_scope": "**/*",
+    "task_id": "test:node",
+    "task_report": "node-tests.json",
+    "test_scope": "tests/**",
+    "validation_command": "npm test",
+    "workflow_path": ".github/workflows/ci.yml"
+  },
+  "repository_root": "C:\\Users\\24598\\Documents\\github\\harness\\.tmp\\evals\\adopt-existing-ci\\workspace",
+  "write_scope": [
+    "AGENTS.md",
+    ".harness/**"
+  ]
+}

@@ -311,7 +311,7 @@ Agent 提交执行意图，或 Work 流程进入验证阶段。
 - **阶段**：P3–P4
 - **主要参与者**：用户
 - **协作参与者**：Harness、Backend、Agent / Skill
-- **用户目标**：完成必要验证后看清本次 Merge 目标，并在明确确认和平台 Required Checks 通过后合并。
+- **用户目标**：完成必要验证后看清本次受控分支 Merge 目标，并在强确认和平台 Required Checks 通过后合并。
 - **关联规则**：`TR-008`、`DM-001`、`DM-008`、`DM-010`、`HF-001`、`HF-003`、`HF-005`、`EV-004`、`EV-006`
 
 ### 前置条件
@@ -328,8 +328,8 @@ Harness 收到进入 Merge Pipeline 的执行意图。
 
 1. Harness 校验 Grant、Change Manifest 和验证 Evidence。
 2. Harness 运行已允许的 `routine` 门禁；需要 `expensive` 验证时先走 UC-005 的确认。
-3. Harness 生成绑定目标分支、提交摘要和验证 Evidence 的 Merge Request。
-4. 用户明确确认本次 Merge。
+3. Harness 将目标分类为受控分支，生成绑定 Task、动作语义、完整目标 ref、commit SHA、策略版本、Request digest 和验证 Evidence 的 Merge Request。
+4. 用户对上述未变化绑定作出本次强确认。
 5. GitHub Required Checks 与 Branch Protection 决定平台是否允许 Merge。
 6. 平台执行 Merge 并返回 Run、提交和审批状态。
 7. Harness 归一化正式 Merge Evidence。
@@ -340,6 +340,7 @@ Harness 收到进入 Merge Pipeline 的执行意图。
 - Evidence 不完整时返回 `EVIDENCE_INCOMPLETE`。
 - Merge 目标或写入范围改变时返回 `HANDOFF_REQUIRED`。
 - 缺少本次 Merge 确认时，Merge Backend 调用次数为零。
+- 本地或 `git-remote` Backend 试图直接修改受控或未分类分支时，返回 `CONTROLLED_BRANCH_GATE_REQUIRED` 与 `HANDOFF_REQUIRED`，调用次数为零。
 - Required Checks 缺失或失败时 Merge 保持 `blocked`。
 - 本地 Merge 命令的结果只能用于调试，不能生成正式 Merge Evidence。
 
@@ -496,7 +497,7 @@ Harness 开始归一化 Backend 结果。
 - **阶段**：P2–P3
 - **主要参与者**：用户
 - **协作参与者**：Agent / Skill、Harness
-- **用户目标**：检查 Registry、Task、Impact 和 Pipeline 是否仍与项目事实一致，并安全应用必要更新。
+- **用户目标**：检查 AGENTS 治理区块、工作区 / 分支边界、Registry、Task、Impact 和 Pipeline 是否仍与项目事实一致，并安全应用必要更新。
 - **关联规则**：`TR-006`、`TR-007`、`DM-005`、`DM-006`、`DM-007`、`HF-001`、`EV-002`、`EV-005`
 
 ### 前置条件
@@ -511,17 +512,18 @@ Harness 开始只读比较配置与当前仓库事实。
 ### 主成功流程
 
 1. Harness 校验 YAML 结构和跨文件引用。
-2. Harness 比较工具版本事实源、任务入口、Workflow 和模块影响规则。
+2. Harness 比较 `AGENTS.md` 标记完整性、私有 / 受控分支模式、工具版本事实源、任务入口、Workflow 和模块影响规则。
 3. Harness 报告有效项、漂移项、缺失项和已失效项。
 4. 对需要写入的修复生成字段级 Drift Plan，并标出保留与修改的字段。
 5. 用户批准写入范围。
-6. Harness 保留自定义 Tools、Tasks、Adapters、项目 `mode` 和 `AGENTS.md` 标记外指令，只应用明确批准的最小变更并重新校验。
+6. Harness 保留自定义 Tools、Tasks、Adapters、项目 `mode` 和 `AGENTS.md` 标记外指令，只替换唯一成对标记内的治理入口，并应用明确批准的最小变更后重新校验。
 
 ### 替代与失败流程
 
 - 只请求 Audit 时不得写文件。
 - 配置不是 `0.3.0` 时返回 `CONFIG_INVALID`，要求重新 Adopt 或 Bootstrap，不自动迁移。
 - 配置与事实冲突但无法自动决定时，返回 `CONFIG_INVALID`，保留差异。
+- `AGENTS.md` 标记缺失、重复或无法无损合并时，返回 `CONFIG_INVALID` 与 `HANDOFF_REQUIRED`，写入次数为零。
 - Update Plan 扩大写入范围时转入 `UC-011`。
 
 ### 结束状态与 Evidence
@@ -583,7 +585,7 @@ Harness 发现计划路径或实际 Diff 超出边界。
 - **阶段**：P4
 - **主要参与者**：CI/CD 平台
 - **协作参与者**：Agent / Skill、Harness、用户
-- **用户目标**：即使 Agent 不遵循 Skill 指令，也无法获得正式 Push、Merge、Publish、Release 或 Deploy 的平台权限。
+- **用户目标**：即使 Agent 不遵循 Skill 指令，也只能在本地工作区和私有分支内使用 Harness 直接执行；受控或未分类分支无法绕过强确认与平台门禁。
 - **关联规则**：`DM-008`、`DM-011`、`HF-003`、`HF-004`、`HF-006`、`EV-004`、`EV-005`、`EV-006`
 
 ### 前置条件
@@ -600,12 +602,13 @@ Agent / Skill 请求执行 `critical` 动作，或未经确认尝试推动正式
 ### 主成功流程
 
 1. Harness 按动作语义将请求分类为 `critical`。
-2. Harness 生成绑定本次动作、目标、提交摘要、版本、制品和环境的 Request。
-3. 没有本次确认时，Harness 不调用 Backend。
-4. 确认后，CI/CD 平台继续校验 Required Checks、Branch Protection、Protected Environment 和平台审批。
-5. 任一平台门禁不满足时，正式副作用不发生。
-6. 平台允许后执行动作，并返回可追溯 Run 与审批状态。
-7. Harness 归一化正式交付 Evidence。
+2. Harness 分类目标分支；受控模式优先，未分类按受控失败关闭。
+3. Harness 生成绑定本次 Task、动作语义、完整目标 ref、提交摘要、策略版本、Request digest、版本、制品和环境的 Request。
+4. 没有匹配强确认时，Harness 不调用直接 Backend，并返回 `CONTROLLED_BRANCH_GATE_REQUIRED` 与 `HANDOFF_REQUIRED`。
+5. 强确认后，CI/CD 平台继续校验 Required Checks、Branch Protection、Protected Environment 和平台审批。
+6. 任一平台门禁不满足时，正式副作用不发生。
+7. 平台允许后执行动作，并返回可追溯 Run 与审批状态。
+8. Harness 归一化正式交付 Evidence。
 
 ### 替代与失败流程
 
@@ -624,12 +627,13 @@ Agent / Skill 请求执行 `critical` 动作，或未经确认尝试推动正式
 
 - 未确认的 Integration、E2E、Full CI 或大型 Build 不产生 CI/CD Run。
 - 未确认的 Push、Merge、Publish、Release 或 Deploy 不产生目标系统副作用。
+- 受控或未分类分支不能通过 Local 或 `git-remote` Backend 直接修改。
 - Required Checks 缺失时 Merge 保持 `blocked`。
 - Protected Environment 未批准时 Publish / Deploy Job 不启动。
 - Agent / Skill 没有可直接使用的高权限交付凭证。
 - 普通 MCP、CLI、Shell 和网络调用不经过 Harness 权限代理。
 - 本地执行结果不能伪造正式 CI/CD Evidence。
-- Git Remote Push 是窄化的正式 Push 通道：例如确认 `origin + refs/heads/codex/demo + abc123` 后，只能非强推该 commit 到该 ref；其 Evidence 不代表 Merge、Publish、Release 或 Deploy 已获准。
+- Git Remote Push 是仅面向私有分支的窄化正式 Push 通道：例如确认 `origin + refs/heads/codex/demo + abc123` 后，只能非强推该 commit 到该 ref；`main` 和未分类分支必须被拒绝，其 Evidence 不代表 Merge、Publish、Release 或 Deploy 已获准。
 
 ### P4 平台闭环验收
 

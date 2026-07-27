@@ -1,0 +1,13 @@
+diff --git a/docs/operator-guide.md b/docs/operator-guide.md
+index 5c609bc..8f110b3 100644
+--- a/docs/operator-guide.md
++++ b/docs/operator-guide.md
+@@ -3,7 +3,7 @@
+ Use the current status endpoint when checking a deployment:
+ 
+ ```text
+-GET /api/v1/status
++GET /api/v2/status
+ ```
+ 
+ The response includes the deployment state and last successful reconciliation.

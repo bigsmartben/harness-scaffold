@@ -2,19 +2,11 @@
 
 from __future__ import annotations
 
-from fnmatch import fnmatch
 from typing import Any
 
 from .artifacts import SCHEMA_VERSION, canonical_digest, digest_matches
 from .automation import CRITICAL_CATEGORIES
 from .contracts import runtime_artifact_is_valid
-
-
-def _path_matches(path: str, pattern: str) -> bool:
-    normalized = path.replace("\\", "/")
-    return fnmatch(normalized, pattern) or (
-        pattern.startswith("**/") and fnmatch(normalized, pattern[3:])
-    )
 
 
 def execution_binding_blockers(
@@ -34,14 +26,6 @@ def execution_binding_blockers(
         or grant.get("schema_version") != SCHEMA_VERSION
         or grant.get("status") != "active"
         or not digest_matches(grant, "grant_digest")
-    ):
-        return ["GRANT_STALE", "HANDOFF_REQUIRED"]
-
-    scopes = grant.get("write_scope", [])
-    changed_paths = manifest.get("changed_paths", []) if isinstance(manifest, dict) else []
-    if any(
-        not any(_path_matches(str(path), str(scope)) for scope in scopes)
-        for path in changed_paths
     ):
         return ["GRANT_STALE", "HANDOFF_REQUIRED"]
 

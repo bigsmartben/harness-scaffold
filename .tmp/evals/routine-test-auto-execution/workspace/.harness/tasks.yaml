@@ -1,0 +1,12 @@
+tasks:
+  - id: test:unit
+    category: test
+    automation_level: routine
+    auto_allowed: true
+    source: fixture
+    backend: local
+    working_directory: repository-root
+    supports_scope: affected
+    timeout: 5s
+    outputs:
+      report: .harness/reports/unit.txt

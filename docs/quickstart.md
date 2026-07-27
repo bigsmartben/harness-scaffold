@@ -56,10 +56,14 @@ Harness 必须先完成只读发现和计划，再执行写入：
   → Evidence
 ```
 
-### 0.3 普通能力与三级 CI/CD 自动化
+### 0.3 治理边界与三级 CI/CD 自动化
 
-| 能力 | 使用方式 | 示例 |
+| 范围 / 能力 | 使用方式 | 示例 |
 |---|---|---|
+| `AGENTS.md` 治理区块 | Harness 只替换成对标记内入口，保留标记外项目规范 | Adopt / Update |
+| 本地工作区 | 按 Work Grant 声明并检查写入范围 | 局部实现与验证 |
+| 私有分支 | 当前确认后执行精确、非强推操作 | `refs/heads/codex/demo` |
+| 受控或未分类分支 | 禁止直接 Backend；强确认后交给平台门禁 | `main`、`release/*` |
 | 普通能力 | 查询 Registry 后直接调用，不逐次审批 | `rg`、Python、Shell、普通 MCP Tool |
 | `routine` | 只有项目明确允许时自动执行 | 快速 Unit Test |
 | `expensive` | 每次生成 Request 并等待确认 | Integration、E2E、Full CI、大型 Build |
@@ -710,7 +714,11 @@ Agent 默认只读取摘要。只有摘要不足时，才请求 `full_log` 的�
 - Merge 目标没有变化。
 - 所需 Required Checks 已声明。
 
-满足这些条件只表示可以生成 Merge Request。Merge 是 `critical`，Harness 必须展示目标分支、提交摘要和验证 Evidence，并等待本次明确确认；确认后仍由 Branch Protection 和 Required Checks 决定是否合并。
+满足这些条件只表示可以生成 Merge Request。Merge 目标属于受控分支，Harness
+必须展示目标分支、提交摘要和验证 Evidence，并等待强确认：确认绑定 Task、动作语义、
+完整目标 ref、commit SHA、策略版本与 Request digest。Harness 不得用本地或
+`git-remote` Backend 直接修改该分支；确认后仍由 Branch Protection 和 Required
+Checks 决定是否合并。
 
 ```yaml
 artifact_type: task-request
@@ -742,6 +750,7 @@ request_digest: sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
 | Impact Rules 无法覆盖路径 | `IMPACT_UNRESOLVED` | 补充项目事实，或用户明确选择验证级别 |
 | Full CI 无本次确认 | `HANDOFF_REQUIRED`，Backend 调用次数为零 | 查看并确认 `expensive` Request |
 | Merge 无本次确认 | `HANDOFF_REQUIRED`，Merge 调用次数为零 | 查看并确认 `critical` Request |
+| 受控或未分类分支尝试直接 Push | `CONTROLLED_BRANCH_GATE_REQUIRED` + `HANDOFF_REQUIRED`，调用次数为零 | 生成强确认 Request 并改走平台门禁 |
 | Required Checks 缺失 | `EVIDENCE_INCOMPLETE`，Merge 保持 `blocked` | 修复 Branch Protection 或补齐检查 |
 | 必要测试失败 | `failed` Evidence | 按摘要修复并重跑所选 Task |
 | Evidence 缺少日志引用 | `EVIDENCE_INCOMPLETE` | 修复 Backend 结果归一化 |
@@ -903,7 +912,7 @@ evidence_digest: sha256:99999999999999999999999999999999999999999999999999999999
 - [ ] 小范围修改默认选择 `affected`，没有静默全量 CI。
 - [ ] 只有显式自动允许的 `routine` Task 可以自动执行。
 - [ ] Integration、E2E、Full CI 和大型 Build 未确认时 Backend 调用次数为零。
-- [ ] Push、Merge、Publish、Release 和 Deploy 每次确认。
+- [ ] 私有分支 Push 只允许精确非强推；受控或未分类分支要求强确认与平台门禁。
 - [ ] 影响范围不明时返回 `IMPACT_UNRESOLVED`。
 - [ ] 写入范围扩大时停止并重新 Handoff。
 - [ ] Merge Evidence 与 Work Grant、Diff、本次确认、Required Checks 和提交摘要可追溯。

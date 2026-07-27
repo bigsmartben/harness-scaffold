@@ -24,8 +24,9 @@ Read the canonical enumeration from `assets/schemas/common.schema.json`; do not 
 - Changed Grant authority or delivery binding: `GRANT_STALE` plus `HANDOFF_REQUIRED`.
 - Broken runtime digest chain: `EVIDENCE_BINDING_MISMATCH` plus `HANDOFF_REQUIRED`.
 - Direct external trigger for a protected workflow: `PROTECTED_TRIGGER_UNCONTROLLED`.
+- Direct backend use against a controlled or unclassified branch: `CONTROLLED_BRANCH_GATE_REQUIRED` plus `HANDOFF_REQUIRED`.
 - Stale tool entry: `TOOL_ENTRY_STALE`.
 
 Workspace boundaries are declarative and checked against the plan or Diff. Do not claim host-level prevention for ordinary MCP, network, Shell, Runtime, CLI, or local file writes. Formal delivery authority comes from CI/CD credentials and platform gates.
 
-The narrow `git-remote` backend is a bootstrap exception for Push only. It requires an exact remote, `refs/heads/*` target, commit, and current Confirmation; it performs one non-force `git push` call. Its Evidence proves remote acceptance of that refspec, not Merge, Publish, Release, or Deploy authority.
+The narrow `git-remote` backend is a bootstrap exception for private-branch Push only. It requires an exact remote, a `private` `refs/heads/*` target, commit, and current Confirmation; it performs one non-force `git push` call. Controlled patterns take precedence, and an unclassified branch fails closed as controlled. Its Evidence proves remote acceptance of that private refspec, not Merge, Publish, Release, or Deploy authority.

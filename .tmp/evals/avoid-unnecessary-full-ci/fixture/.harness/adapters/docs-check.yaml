@@ -1,0 +1,5 @@
+type: local
+execution:
+  command:
+    - C:/Users/24598/Documents/github/harness/.venv/Scripts/python.exe
+    - scripts/check_docs.py

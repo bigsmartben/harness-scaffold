@@ -37,6 +37,7 @@ from .automation import (
     tool_entry_blockers,
 )
 from .bindings import execution_binding_blockers
+from .branching import branch_is_controlled, default_branch_gate
 from .planning import build_plan, create_plan_approval
 from .platform import (
     assess_github_platform,
@@ -121,6 +122,8 @@ __all__ = [
     "create_task_request",
     "effective_automation",
     "execution_binding_blockers",
+    "branch_is_controlled",
+    "default_branch_gate",
     "resolve_action_policy",
     "tool_entry_blockers",
     "run_github_actions_task",

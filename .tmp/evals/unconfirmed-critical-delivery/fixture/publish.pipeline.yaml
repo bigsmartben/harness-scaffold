@@ -1,0 +1,4 @@
+id: publish:production
+kind: publish
+requires_independent_confirmation: true
+stages: []

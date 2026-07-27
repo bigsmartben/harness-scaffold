@@ -4,11 +4,11 @@ Map only manifest-declared commands, explicitly referenced repository scripts, a
 
 - Use Local for registered project commands.
 - Use GitHub Actions only for an existing referenced workflow or a separately selected Bootstrap backend.
-- Use `git-remote` only for an exact confirmed non-force Push to `refs/heads/*`; it cannot Merge, Publish, Release, or Deploy.
+- Use `git-remote` only for an exact confirmed non-force Push to a branch classified as `private` by `boundaries.yaml`; it cannot target controlled or unclassified branches, or Merge, Publish, Release, or Deploy.
 - Map changed paths to the lowest sufficient validation level in `impact.yaml`.
 - Classify CI/CD actions by semantics, not by Shell, CLI, MCP, or API channel.
 - Require complete Task Evidence and a current confirmation before Merge.
-- Keep Push, Merge, Publish, Release, and Deploy critical and separately confirmed. A Push confirmation binds the remote, full ref, and exact commit.
+- Keep Push, Merge, Publish, Release, and Deploy critical and separately confirmed. A Push confirmation binds the remote, full ref, and exact commit. Controlled-branch operations additionally require strong current confirmation and a CI/CD platform gate; direct backends must make zero calls.
 
 The Registry indexes ordinary tools and does not authorize or proxy them. External `push`, `pull_request`, `schedule`, or webhook events must retain the configured automation gate. Report uncontrolled protected triggers; do not claim to control ordinary Shell, MCP, network, or file writes.
 
@@ -31,6 +31,7 @@ After selecting a validation level, apply the independent automation level:
 - Run `routine` only when `auto_allowed: true`.
 - For `expensive` Integration, E2E, Full CI, or large Build, create a request and wait for current confirmation.
 - For `critical` Push, Merge, Publish, Release, or Deploy, require current confirmation and CI/CD platform gates.
+- Treat controlled-pattern matches and every unclassified branch as `controlled`. A strong confirmation binds Task, action semantics, full target ref, commit, policy version, and Request digest; any changed binding invalidates it.
 - Treat missing or invalid automation metadata as confirmation-required; make zero backend calls.
 
 Run an allowed registered command as an argument array with a timeout and declared working directory. Save the full log and return a summary containing the first useful error.

@@ -1,0 +1,47 @@
+{
+  "automatic_tasks": [
+    {
+      "auto_allowed": true,
+      "automation_level": "routine",
+      "decision": "automatic",
+      "reason": "selected for inspect",
+      "task_id": "docs:check"
+    }
+  ],
+  "backend_calls": 0,
+  "blocker_codes": [],
+  "confirmation_required_tasks": [],
+  "manifest_matches_diff": true,
+  "reasons": [
+    "Matched 1 impact rule(s) at inspect"
+  ],
+  "selected_tasks": [
+    {
+      "auto_allowed": true,
+      "automation_level": "routine",
+      "decision": "automatic",
+      "reason": "selected for inspect",
+      "task_id": "docs:check"
+    }
+  ],
+  "skipped_tasks": [
+    {
+      "reason": "not required for inspect",
+      "task_id": "ci:full"
+    },
+    {
+      "reason": "not required for inspect",
+      "task_id": "test:billing"
+    },
+    {
+      "reason": "not required for inspect",
+      "task_id": "test:contract"
+    },
+    {
+      "reason": "not required for inspect",
+      "task_id": "test:inventory"
+    }
+  ],
+  "status": "selected",
+  "validation_level": "inspect"
+}

@@ -1,0 +1,89 @@
+{
+  "actions": [
+    {
+      "action": "create",
+      "merge": "replace",
+      "path": "AGENTS.md",
+      "template": "scaffold/AGENTS.md"
+    },
+    {
+      "action": "create",
+      "merge": "replace",
+      "path": ".harness/harness.yaml",
+      "template": "scaffold/.harness/harness.yaml"
+    },
+    {
+      "action": "create",
+      "merge": "replace",
+      "path": ".harness/boundaries.yaml",
+      "template": "scaffold/.harness/boundaries.yaml"
+    },
+    {
+      "action": "create",
+      "merge": "replace",
+      "path": ".harness/tools.yaml",
+      "template": "scaffold/.harness/tools.yaml"
+    },
+    {
+      "action": "create",
+      "merge": "replace",
+      "path": ".harness/tasks.yaml",
+      "template": "scaffold/.harness/tasks.yaml"
+    },
+    {
+      "action": "create",
+      "merge": "replace",
+      "path": ".harness/impact.yaml",
+      "template": "scaffold/.harness/impact.yaml"
+    },
+    {
+      "action": "create",
+      "merge": "replace",
+      "path": ".harness/pipelines/merge.yaml",
+      "template": "scaffold/.harness/pipelines/merge.yaml"
+    },
+    {
+      "action": "create",
+      "merge": "replace",
+      "path": ".harness/pipelines/publish.yaml",
+      "template": "scaffold/.harness/pipelines/publish.yaml"
+    },
+    {
+      "action": "create",
+      "merge": "replace",
+      "path": ".harness/.gitignore",
+      "template": "scaffold/.harness/.gitignore"
+    },
+    {
+      "action": "create",
+      "merge": "replace",
+      "path": ".harness/adapters/local.yaml",
+      "template": "backends/local/python.yaml"
+    }
+  ],
+  "approved": true,
+  "blocker_codes": [],
+  "plan_digest": "sha256:45e9e9f49ee9f2686de772a82a25bcf59dd121bb90843431c9f69a68e779bd31",
+  "plan_type": "bootstrap",
+  "preserve": [],
+  "read_only": false,
+  "render_context": {
+    "backend": "local",
+    "command_source": "pyproject.toml#test",
+    "git_ref": "current-branch",
+    "project_manifest": "pyproject.toml",
+    "project_mode": "bootstrap",
+    "publish_task_id": "publish:python",
+    "source_scope": "**/*",
+    "task_id": "test:python",
+    "task_report": "python-tests.json",
+    "test_scope": "tests/**",
+    "validation_command": "uv run pytest",
+    "workflow_path": ".github/workflows/harness.yml"
+  },
+  "repository_root": "C:\\Users\\24598\\Documents\\github\\harness\\.tmp\\local-directory-validation",
+  "write_scope": [
+    "AGENTS.md",
+    ".harness/**"
+  ]
+}

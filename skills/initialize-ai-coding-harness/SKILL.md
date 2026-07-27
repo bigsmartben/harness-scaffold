@@ -42,6 +42,7 @@ Stop before writes or Adapter calls when any of these conditions holds:
 - A repository contains unsupported MCP, Make, Gradle, Maven, Fastlane, or unclassified script facts. Record the source-backed gap; do not invent a Tool, Task, or Adapter.
 - Existing configuration is not `0.3.0`. Return `CONFIG_INVALID` and require a new Adopt or Bootstrap instead of migrating it.
 - An expensive or critical Task lacks current matching Confirmation.
+- A direct backend targets a controlled or unclassified branch. Return `CONTROLLED_BRANCH_GATE_REQUIRED` and require a strong current Confirmation plus CI/CD platform gates.
 - A Local backend is asked to perform Push, Merge, Publish, Release, or Deploy. The narrow `git-remote` backend is not Local: it supports only an exact confirmed, non-force Push.
 - Platform Evidence lacks a matching Workflow run, commit, approval, protected environment, required checks, or applicable artifact digest.
 

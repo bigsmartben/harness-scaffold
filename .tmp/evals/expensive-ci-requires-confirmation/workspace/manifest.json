@@ -1,0 +1,10 @@
+{
+  "paths": [
+    "services/orders/api.py",
+    "services/billing/client.py"
+  ],
+  "recommended_tasks": [
+    "integration-suite",
+    "full-ci"
+  ]
+}
