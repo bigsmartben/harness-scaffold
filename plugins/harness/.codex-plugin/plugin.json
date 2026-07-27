@@ -1,0 +1,19 @@
+{
+  "name": "harness",
+  "version": "1.0.0",
+  "description": "Repo-first deterministic Agent governance for Codex",
+  "author": {
+    "name": "bigsmartben"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Harness",
+    "shortDescription": "Generate and enforce repository Agent governance.",
+    "longDescription": "Harness connects Codex lifecycle events and narrow read/request tools to the repository's deterministic governance projection.",
+    "developerName": "bigsmartben",
+    "category": "Productivity",
+    "capabilities": ["skills", "hooks", "mcp"],
+    "defaultPrompt": "Use $harness to inspect the current repository governance projection."
+  },
+  "mcpServers": "./.mcp.json"
+}

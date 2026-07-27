@@ -58,8 +58,59 @@
         "EVIDENCE_INCOMPLETE",
         "PLAN_STALE",
         "GRANT_STALE",
-        "EVIDENCE_BINDING_MISMATCH"
+        "EVIDENCE_BINDING_MISMATCH",
+        "GOVERNANCE_SOURCE_MISSING",
+        "GOVERNANCE_CONFLICT",
+        "GOVERNANCE_SCOPE_UNRESOLVED",
+        "GOVERNANCE_INHERITANCE_INVALID",
+        "GOVERNANCE_PROJECTION_STALE",
+        "GOVERNANCE_COVERAGE_INCOMPLETE",
+        "TOOL_ACTION_UNCLASSIFIED",
+        "TOOL_BINDING_AMBIGUOUS",
+        "GOVERNANCE_PRECONDITION_FAILED",
+        "INVOCATION_BYPASS_ATTEMPT",
+        "GOVERNANCE_NOT_ENFORCEABLE",
+        "GOVERNANCE_EVIDENCE_INCOMPLETE",
+        "GOVERNANCE_DRIFT_DETECTED",
+        "AGENT_BINDING_UNAVAILABLE",
+        "AGENT_ROLE_CONTRACT_INVALID",
+        "AGENT_CONFIGURATION_UNTRUSTED"
       ]
+    },
+    "audience": {
+      "enum": ["maintainer", "consumer"]
+    },
+    "subdomain": {
+      "enum": [
+        "agent-runtime",
+        "engineering-runtime",
+        "poc",
+        "source-code",
+        "test-code",
+        "other-tools"
+      ]
+    },
+    "agentRole": {
+      "enum": [
+        "repo_mapper",
+        "governance_projector",
+        "projection_reconciler",
+        "governance_validator",
+        "governed_worker",
+        "evidence_verifier"
+      ]
+    },
+    "responsibility": {
+      "enum": ["generate", "enforce"]
+    },
+    "enforcementLevel": {
+      "enum": ["documented", "verified", "enforced"]
+    },
+    "confirmationPolicy": {
+      "enum": ["none", "once_per_change_set", "once_per_delivery"]
+    },
+    "bindingState": {
+      "enum": ["detected", "declared", "bound"]
     }
   }
 }

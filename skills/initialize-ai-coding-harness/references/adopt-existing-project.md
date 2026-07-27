@@ -1,15 +1,7 @@
 # Adopt an existing project
 
-1. Discover Python, Node, workspace-declared monorepo units, `AGENTS.md`, `.harness/`, manifest commands, referenced scripts, and GitHub Actions without writing.
-2. Record every fact source and identify protected workflow triggers.
-3. Build a Plan that:
-   - creates `AGENTS.md` only when absent;
-   - updates it with a preservation merge when present;
-   - creates or updates `.harness/`;
-   - lists existing workflows under `preserve`.
-4. Stop on `PROTECTED_TRIGGER_UNCONTROLLED`; do not report Adopt complete.
-5. Record MCP, Make, Gradle, Maven, Fastlane, and unclassified scripts as source-backed gaps; do not invent registrations.
-6. Apply only after the user confirms the digest and write scope.
-7. Validate, then report preserved paths and Evidence.
+Read existing governance, Manifests, scripts, Workflows, boundaries, Tool and Task declarations without writing. Build a fixed Snapshot, source-backed Facts, Action Graph and 2 × 6 Projection.
 
-Example: an existing `.github/workflows/ci.yml` stays unchanged while each discovered job becomes a GitHub Actions Task whose `source` names the Workflow and job.
+Preflight every target path. Preserve user-owned content and manage only explicit Harness blocks or files carrying the managed marker. If an intended role file already exists but cannot be proven Harness-managed, return `AGENT_CONFIGURATION_UNTRUSTED` with zero writes.
+
+Present one Plan bound to its input digest. After the required single change-set confirmation, recheck the digest and publish through one writer. Repeating Adopt with unchanged inputs must produce an empty action list.

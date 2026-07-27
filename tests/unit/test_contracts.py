@@ -31,6 +31,22 @@ EXPECTED_BLOCKER_CODES = {
     "PLAN_STALE",
     "GRANT_STALE",
     "EVIDENCE_BINDING_MISMATCH",
+    "GOVERNANCE_SOURCE_MISSING",
+    "GOVERNANCE_CONFLICT",
+    "GOVERNANCE_SCOPE_UNRESOLVED",
+    "GOVERNANCE_INHERITANCE_INVALID",
+    "GOVERNANCE_PROJECTION_STALE",
+    "GOVERNANCE_COVERAGE_INCOMPLETE",
+    "TOOL_ACTION_UNCLASSIFIED",
+    "TOOL_BINDING_AMBIGUOUS",
+    "GOVERNANCE_PRECONDITION_FAILED",
+    "INVOCATION_BYPASS_ATTEMPT",
+    "GOVERNANCE_NOT_ENFORCEABLE",
+    "GOVERNANCE_EVIDENCE_INCOMPLETE",
+    "GOVERNANCE_DRIFT_DETECTED",
+    "AGENT_BINDING_UNAVAILABLE",
+    "AGENT_ROLE_CONTRACT_INVALID",
+    "AGENT_CONFIGURATION_UNTRUSTED",
 }
 
 
@@ -54,7 +70,8 @@ def test_all_committed_schemas_are_valid_draft_2020_12() -> None:
     for schema_path in SCHEMAS.glob("*.schema.json"):
         schema = yaml.safe_load(schema_path.read_text("utf-8"))
         Draft202012Validator.check_schema(schema)
-        assert schema["x-harness-schema-version"] == "0.3.0"
+        expected = "1.0.0" if schema_path.name == "governance.schema.json" else "0.3.0"
+        assert schema["x-harness-schema-version"] == expected
 
 
 def test_repository_self_configuration_uses_same_contracts() -> None:
