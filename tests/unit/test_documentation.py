@@ -13,7 +13,7 @@ USER_CASES = ROOT / "uc.md"
 SKILL = ROOT / "skills" / "initialize-ai-coding-harness"
 MARKDOWN_LINK = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 HEADING = re.compile(r"^#{1,6}\s+(.+?)\s*#*\s*$", re.MULTILINE)
-RULE = re.compile(r"\b(?:WB|TR|DM|HF|EV)-\d{3}\b")
+RULE = re.compile(r"\b(?:GG|AG|GE|CF)-\d{3}\b")
 USER_CASE = re.compile(r"^## (UC-\d{3})[：:]", re.MULTILINE)
 
 
@@ -102,12 +102,12 @@ def test_public_status_projections_match_plan() -> None:
     readme = (ROOT / "README.md").read_text("utf-8")
     quickstart = (ROOT / "docs" / "quickstart.md").read_text("utf-8")
 
-    assert "P0–P4 Available" in plan
-    assert "P5 In Progress" in plan
-    assert "P0–P4 Available" in readme
-    assert "P5 In Progress" in readme
-    assert "P4 平台契约 Available" in quickstart
-    assert "P5 In Progress" in quickstart
+    assert "H01–H13" in plan
+    assert "1.0.0" in plan
+    assert "1.0.0" in readme
+    assert "$harness" in readme
+    assert "1.0.0" in quickstart
+    assert "G0–G7" in quickstart
 
 
 def test_skill_metadata_matches_skill_identity() -> None:
@@ -117,13 +117,13 @@ def test_skill_metadata_matches_skill_identity() -> None:
         (SKILL / "agents" / "openai.yaml").read_text("utf-8")
     )["interface"]
 
-    assert frontmatter["name"] == "initialize-ai-coding-harness"
-    assert metadata["display_name"] == "Initialize AI Coding Harness"
-    assert "$initialize-ai-coding-harness" in metadata["default_prompt"]
-    assert "AI Coding Harness" in frontmatter["description"]
+    assert frontmatter["name"] == "harness"
+    assert metadata["display_name"] == "Harness"
+    assert "$harness" in metadata["default_prompt"]
+    assert "Agent governance" in frontmatter["description"]
     assert "Merge" in frontmatter["description"]
     assert "Publish" in frontmatter["description"]
-    assert "CI/CD" in metadata["short_description"]
+    assert "governance" in metadata["short_description"]
 
 
 def test_skill_routes_load_every_reference_directly_and_only_one_layer() -> None:

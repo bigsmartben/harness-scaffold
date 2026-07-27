@@ -1,4 +1,4 @@
 interface:
-  display_name: "Initialize AI Coding Harness"
-  short_description: "Configure and operate policy-gated CI/CD workflows"
-  default_prompt: "Use $initialize-ai-coding-harness to inspect this repository and apply the correct routine, expensive, or critical CI/CD gate."
+  display_name: "Harness"
+  short_description: "Generate and enforce repository Agent governance"
+  default_prompt: "Use $harness to compile the repository governance projection and execute the requested Action through G0-G7."

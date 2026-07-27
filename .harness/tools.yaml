@@ -106,6 +106,26 @@ tools:
     constraints:
       - invoke only through Harness
 
+  - id: distribution-smoke
+    type: project-action
+    purpose: build-wheel-and-verify-isolated-uv-tool-install
+    capability: distribution-test
+    action_semantics: test
+    invocation_mode: managed
+    task_ref: test:distribution-smoke
+    working_directory: repository-root
+    use_when:
+      - verify the public sdd-harness distribution and init entrypoint
+    do_not_use_when:
+      - publish a package or modify the user tool installation
+    inputs:
+      scope: contract
+    outputs:
+      evidence: .harness/reports/distribution-smoke.json
+    constraints:
+      - invoke only through Harness
+      - isolate UV_TOOL_DIR and UV_TOOL_BIN_DIR
+
   - id: github-contract-check
     type: project-action
     purpose: validate-harness-contracts-on-github

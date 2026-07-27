@@ -1,12 +1,11 @@
-# Tool Registry
+# Action binding
 
-Register capabilities or actions, not unrestricted executables.
+Registry entries are facts, not authorization. Build an Action Graph where each executable behavior has:
 
-| Entry | `invocation_mode` | Example |
-|---|---|---|
-| Ordinary capability | `direct` | `rg`, Python analysis, Shell helper, ordinary MCP tool |
-| CI/CD semantic action | `managed` | test, build, push, merge, publish, release, deploy |
+- stable `action_id` and source references;
+- semantic classification and Subdomains;
+- exact argument array, working directory, controlled environment and Scope;
+- preconditions, Postconditions and Evidence requirements;
+- Standing Policy and confirmation mode.
 
-Every `managed` entry references a valid Task with automation metadata. Classify by action semantics, not by Runtime, Shell, CLI, MCP, or API channel. Register MCP servers and individual MCP tools separately. Record version and task facts by source reference rather than copying a value.
-
-Never add Agent or Skill identity authorization fields such as `allowed_agents` or `denied_agents`. Registry is an index and usage guide, not an authorization matrix, per-call approver, or proxy.
+Tool presence alone stays a non-executable environment capability. Multiple bindings for one Action return `TOOL_BINDING_AMBIGUOUS`; no classified binding returns `TOOL_ACTION_UNCLASSIFIED`.

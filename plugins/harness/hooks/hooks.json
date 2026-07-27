@@ -1,0 +1,73 @@
+{
+  "description": "Harness projection, bypass, drift, and Evidence checks.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sdd-harness hook",
+            "commandWindows": "sdd-harness hook",
+            "timeout": 10,
+            "statusMessage": "Checking Harness projection"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sdd-harness hook",
+            "commandWindows": "sdd-harness hook",
+            "timeout": 10,
+            "statusMessage": "Checking governed action"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sdd-harness hook",
+            "commandWindows": "sdd-harness hook",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sdd-harness hook",
+            "commandWindows": "sdd-harness hook",
+            "timeout": 10,
+            "statusMessage": "Checking governance drift"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sdd-harness hook",
+            "commandWindows": "sdd-harness hook",
+            "timeout": 10,
+            "statusMessage": "Checking Harness Evidence"
+          }
+        ]
+      }
+    ]
+  }
+}

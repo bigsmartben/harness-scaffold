@@ -12,6 +12,9 @@ from typing import Any
 ABSENT = "absent"
 ABSENT_DIGEST = ABSENT
 SCHEMA_VERSION = "0.3.0"
+GOVERNANCE_SCHEMA_VERSION = "1.0.0"
+CORE_VERSION = "1.0.0"
+PROJECTION_COMPILER_VERSION = "1.0.0"
 
 
 def canonical_json_bytes(

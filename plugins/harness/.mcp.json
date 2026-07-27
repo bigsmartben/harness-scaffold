@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "harness": {
+      "command": "sdd-harness",
+      "args": ["mcp"]
+    }
+  }
+}

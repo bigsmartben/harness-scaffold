@@ -1,4 +1,20 @@
 tasks:
+  - id: test:distribution-smoke
+    category: test
+    automation_level: routine
+    auto_allowed: true
+    command_source: scripts/smoke_distribution.py
+    command:
+      - uv
+      - run
+      - python
+      - scripts/smoke_distribution.py
+    backend: local
+    working_directory: repository-root
+    supports_scope: contract
+    timeout: 5m
+    outputs:
+      report: .harness/reports/distribution-smoke.json
   - id: test:contracts
     category: test
     automation_level: routine

@@ -1,45 +1,7 @@
-# Delivery model
+# Governed execution
 
-Map only manifest-declared commands, explicitly referenced repository scripts, and existing Workflow jobs into `tasks.yaml`; do not rewrite their implementation.
+Route every state-changing or authoritative Action by `action_id`. The Agent Request cannot contain a command or override binding fields.
 
-- Use Local for registered project commands.
-- Use GitHub Actions only for an existing referenced workflow or a separately selected Bootstrap backend.
-- Use `git-remote` only for an exact confirmed non-force Push to a branch classified as `private` by `boundaries.yaml`; it cannot target controlled or unclassified branches, or Merge, Publish, Release, or Deploy.
-- Map changed paths to the lowest sufficient validation level in `impact.yaml`.
-- Classify CI/CD actions by semantics, not by Shell, CLI, MCP, or API channel.
-- Require complete Task Evidence and a current confirmation before Merge.
-- Keep Push, Merge, Publish, Release, and Deploy critical and separately confirmed. A Push confirmation binds the remote, full ref, and exact commit. Controlled-branch operations additionally require strong current confirmation and a CI/CD platform gate; direct backends must make zero calls.
+Run G0 snapshot, G1 source, G2 coverage, G3 binding, G4 preconditions and G5 dispatcher before the narrow Adapter. After invocation validate Postconditions, G6 Evidence and G7 drift. A zero exit code alone is not an accepted conclusion.
 
-The Registry indexes ordinary tools and does not authorize or proxy them. External `push`, `pull_request`, `schedule`, or webhook events must retain the configured automation gate. Report uncontrolled protected triggers; do not claim to control ordinary Shell, MCP, network, or file writes.
-
-## Work and Verify
-
-Validate every received runtime Artifact against `runtime.schema.json` before using its digest or fields. A digest-correct but incomplete Artifact returns `EVIDENCE_BINDING_MISMATCH` and `HANDOFF_REQUIRED` with zero Adapter calls.
-
-Compare the Change Manifest with actual changed paths. Resolve every path through `impact.yaml`; unmatched paths return `IMPACT_UNRESOLVED`. Agent recommendations never determine the final set.
-
-Choose the maximum matched level in this order:
-
-`inspect → affected → contract → integration → full`
-
-After choosing the level, verify `supports_scope`. Contract needs a contract-capable Task; Integration and Full need a Task that covers that level. Return `IMPACT_UNRESOLVED` when coverage is insufficient. Never add Push, Merge, Publish, Release, or Deploy to Full.
-
-Only a DM-004 fact can select `full`: Harness/CI execution semantics, broad build/Lockfile changes, public foundation/architecture, an explicit user request, or Merge Policy.
-
-After selecting a validation level, apply the independent automation level:
-
-- Run `routine` only when `auto_allowed: true`.
-- For `expensive` Integration, E2E, Full CI, or large Build, create a request and wait for current confirmation.
-- For `critical` Push, Merge, Publish, Release, or Deploy, require current confirmation and CI/CD platform gates.
-- Treat controlled-pattern matches and every unclassified branch as `controlled`. A strong confirmation binds Task, action semantics, full target ref, commit, policy version, and Request digest; any changed binding invalidates it.
-- Treat missing or invalid automation metadata as confirmation-required; make zero backend calls.
-
-Run an allowed registered command as an argument array with a timeout and declared working directory. Save the full log and return a summary containing the first useful error.
-
-## Merge and Publish
-
-Evaluate Merge or Publish in three states: readiness, dispatch, and finalize. Readiness makes no Adapter call and returns `ready-for-dispatch`; dispatch calls `prepare` then `dispatch`; finalization accepts `passed` only after `poll` and `normalize` yield complete Platform Evidence.
-
-Merge requires passed Evidence for every required stage, bound to Grant, Change Manifest, actual Diff, final Selection, commit and Task Request. Work approval and passed checks do not replace current Merge confirmation. Required Checks and Branch Protection provide the authoritative result.
-
-Publish requires a separate confirmation matching the canonical digest of version, artifact, target, commit and execution bindings. Protected Environment approval, platform Run metadata and the observed artifact digest are required for formal Evidence. A Local backend cannot complete a critical delivery Task.
+Routine registered actions inside a Work Grant need no per-tool confirmation. Aggregate Scope expansion once per change set and Push/Merge/Publish/Release/Deploy once per delivery. Destructive or production actions still require independent authority or platform gates.

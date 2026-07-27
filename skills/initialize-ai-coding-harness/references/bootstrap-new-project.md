@@ -1,11 +1,5 @@
 # Bootstrap a new project
 
-1. Discover verified Python, Node, or workspace-declared monorepo units without writing.
-2. If no project type is supported, return `CONFIG_INVALID` with missing facts.
-3. Default to the minimal Local backend.
-4. Present GitHub Actions as optional; create a workflow only when the user selects it in the approved Plan.
-5. Create the minimal `AGENTS.md` and `.harness/` files.
-6. Validate all Schema and cross-file references.
-7. Repeat the same approved operation to verify idempotence.
+Bootstrap uses the same Repo-first compiler as Adopt. An empty repository is valid: it produces inheritance and control-plane rules but must not invent a language, package manager, command, CI system, or delivery target.
 
-Example: a Python project whose `pyproject.toml` declares pytest receives `test:python-root`; it does not receive a guessed Node Task or GitHub Actions workflow.
+Generate `AGENTS.md`, `.codex/config.toml`, six role TOMLs, `.agents/skills/harness/`, and `.harness/governance/` from one plan-bound write. Validate the complete staged output before replacement; rollback all written paths if publication fails.

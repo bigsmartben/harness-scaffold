@@ -9,11 +9,19 @@ import uuid
 from pathlib import Path
 from typing import Any, Protocol
 
-from .artifacts import SCHEMA_VERSION, attach_digest, canonical_digest
+from .artifacts import (
+    GOVERNANCE_SCHEMA_VERSION,
+    SCHEMA_VERSION,
+    attach_digest,
+    canonical_digest,
+)
 from .automation import CRITICAL_CATEGORIES, authorize_task
 from .bindings import execution_binding_blockers
 from .branching import branch_is_controlled, default_branch_gate
+from .gates import evaluate_gates
 from .platform import normalize_git_remote_evidence, platform_evidence_complete
+from .postconditions import validate_postconditions
+from .snapshot import create_repository_snapshot
 
 
 DIGEST = re.compile(r"^sha256:[a-f0-9]{64}$")
@@ -64,6 +72,113 @@ class PlatformAdapter(Protocol):
         request: dict[str, Any],
         confirmation: dict[str, Any] | None,
     ) -> dict[str, Any]: ...
+
+
+def run_governed_action(
+    *,
+    repository: Path,
+    projection_lock: dict[str, Any],
+    action_graph: dict[str, Any],
+    rules: dict[str, Any],
+    grant: dict[str, Any],
+    request: dict[str, Any],
+    confirmation: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Run one local Action using only its projection-owned binding."""
+
+    repository = repository.resolve()
+    before = create_repository_snapshot(repository)
+    preflight = evaluate_gates(
+        projection_lock=projection_lock,
+        action_graph=action_graph,
+        rules=rules,
+        grant=grant,
+        request=request,
+        current_snapshot_digest=before["snapshot_digest"],
+        confirmation=confirmation,
+    )
+    blocking = [
+        gate
+        for gate in preflight["gates"]
+        if gate["gate_id"] in {"G0", "G1", "G2", "G3", "G4", "G5"}
+        and gate["status"] != "passed"
+    ]
+    if blocking:
+        return attach_digest(
+            {
+                "artifact_type": "action-evidence",
+                "schema_version": GOVERNANCE_SCHEMA_VERSION,
+                "projection_id": projection_lock.get("projection_id"),
+                "request_digest": request.get("request_digest"),
+                "action_id": request.get("action_id"),
+                "status": "blocked",
+                "gate_decision": preflight,
+                "blocker_codes": preflight["blocker_codes"],
+            },
+            "evidence_digest",
+        )
+
+    action = next(
+        item
+        for item in action_graph["actions"]
+        if item["action_id"] == request["action_id"]
+    )
+    invocation = action["invocation"]
+    argv = invocation.get("argv")
+    cwd = (repository / invocation.get("cwd", ".")).resolve()
+    if (
+        not isinstance(argv, list)
+        or not argv
+        or not all(isinstance(item, str) and item for item in argv)
+        or not cwd.is_relative_to(repository)
+    ):
+        raise ValueError("projection contains an invalid local invocation")
+
+    completed = subprocess.run(
+        argv,
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+        shell=False,
+        check=False,
+    )
+    postconditions = validate_postconditions(
+        repository=repository,
+        semantics=action["semantics"],
+        exit_code=completed.returncode,
+        required_reports=invocation.get("required_reports", []),
+        expected_files=invocation.get("expected_files", []),
+    )
+    after = create_repository_snapshot(repository)
+    decision = evaluate_gates(
+        projection_lock=projection_lock,
+        action_graph=action_graph,
+        rules=rules,
+        grant=grant,
+        request=request,
+        current_snapshot_digest=before["snapshot_digest"],
+        confirmation=confirmation,
+        postcondition_result=postconditions,
+        final_snapshot_digest=after["snapshot_digest"],
+    )
+    evidence = {
+        "artifact_type": "action-evidence",
+        "schema_version": GOVERNANCE_SCHEMA_VERSION,
+        "projection_id": projection_lock["projection_id"],
+        "request_digest": request["request_digest"],
+        "action_id": request["action_id"],
+        "invocation_digest": canonical_digest(
+            {"argv": argv, "cwd": invocation.get("cwd", "."), "environment": invocation.get("environment", {})}
+        ),
+        "exit_code": completed.returncode,
+        "stdout_digest": canonical_digest(completed.stdout),
+        "stderr_digest": canonical_digest(completed.stderr),
+        "postconditions": postconditions,
+        "gate_decision": decision,
+        "status": "passed" if decision["status"] == "passed" else "blocked",
+        "blocker_codes": decision["blocker_codes"],
+    }
+    return attach_digest(evidence, "evidence_digest")
 
 
 def _timeout_seconds(value: str) -> float:
