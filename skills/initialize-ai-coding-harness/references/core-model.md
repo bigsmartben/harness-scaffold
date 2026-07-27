@@ -27,3 +27,5 @@ Read the canonical enumeration from `assets/schemas/common.schema.json`; do not 
 - Stale tool entry: `TOOL_ENTRY_STALE`.
 
 Workspace boundaries are declarative and checked against the plan or Diff. Do not claim host-level prevention for ordinary MCP, network, Shell, Runtime, CLI, or local file writes. Formal delivery authority comes from CI/CD credentials and platform gates.
+
+The narrow `git-remote` backend is a bootstrap exception for Push only. It requires an exact remote, `refs/heads/*` target, commit, and current Confirmation; it performs one non-force `git push` call. Its Evidence proves remote acceptance of that refspec, not Merge, Publish, Release, or Deploy authority.

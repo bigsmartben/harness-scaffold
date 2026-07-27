@@ -12,7 +12,7 @@ from typing import Any, Protocol
 from .artifacts import SCHEMA_VERSION, attach_digest, canonical_digest
 from .automation import CRITICAL_CATEGORIES, authorize_task
 from .bindings import execution_binding_blockers
-from .platform import platform_evidence_complete
+from .platform import normalize_git_remote_evidence, platform_evidence_complete
 
 
 DIGEST = re.compile(r"^sha256:[a-f0-9]{64}$")
@@ -293,6 +293,186 @@ def run_local_task(
         formal_authority=False,
         platform=None,
         blocker_codes=blockers,
+        run_id=run_id,
+    )
+
+
+def run_git_remote_push_task(
+    task: dict[str, Any],
+    adapter: dict[str, Any],
+    repository: Path,
+    validation_level: str,
+    *,
+    grant: dict[str, Any] | None = None,
+    manifest: dict[str, Any] | None = None,
+    selection: dict[str, Any] | None = None,
+    request: dict[str, Any] | None = None,
+    confirmation: dict[str, Any] | None = None,
+    executor: Any = subprocess.run,
+) -> dict[str, Any]:
+    """Push one confirmed commit to one exact remote branch without a shell."""
+
+    started = time.monotonic()
+    run_id = f"run-{uuid.uuid4().hex}"
+    authorization, blockers = _preflight(
+        task,
+        validation_level,
+        grant,
+        manifest,
+        selection,
+        request,
+        confirmation,
+    )
+    if (
+        task.get("backend") != "git-remote"
+        or task.get("category") != "push"
+        or adapter.get("type") != "git-remote"
+    ):
+        blockers = sorted(
+            set(blockers) | {"CONFIG_INVALID", "HANDOFF_REQUIRED"}
+        )
+    execution = adapter.get("execution", {})
+    if (
+        execution.get("shell") is not False
+        or execution.get("force") is not False
+        or execution.get("operation") != "push-ref"
+    ):
+        blockers = sorted(
+            set(blockers) | {"CONFIG_INVALID", "HANDOFF_REQUIRED"}
+        )
+    remote = adapter.get("remote")
+    target = request.get("target") if isinstance(request, dict) else None
+    commit_sha = request.get("commit_sha") if isinstance(request, dict) else None
+    if not isinstance(remote, str) or not remote:
+        blockers = sorted(set(blockers) | {"CONFIG_INVALID", "HANDOFF_REQUIRED"})
+    if not isinstance(target, str) or not target:
+        blockers = sorted(
+            set(blockers) | {"EVIDENCE_INCOMPLETE", "HANDOFF_REQUIRED"}
+        )
+    if not isinstance(commit_sha, str) or not commit_sha:
+        blockers = sorted(
+            set(blockers) | {"EVIDENCE_INCOMPLETE", "HANDOFF_REQUIRED"}
+        )
+    repository = repository.resolve()
+    try:
+        local_head = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=repository,
+            capture_output=True,
+            text=True,
+            shell=False,
+            timeout=30,
+            check=False,
+        )
+    except (FileNotFoundError, OSError, subprocess.TimeoutExpired):
+        local_head = None
+    if (
+        local_head is None
+        or local_head.returncode != 0
+        or local_head.stdout.strip() != commit_sha
+    ):
+        blockers = sorted(
+            set(blockers) | {"EVIDENCE_BINDING_MISMATCH", "HANDOFF_REQUIRED"}
+        )
+    if blockers or not authorization["allowed"]:
+        output = f"{task['id']} was not dispatched: {', '.join(blockers)}"
+        full_log = _write_log(repository, run_id, output)
+        return _evidence(
+            task=task,
+            validation_level=validation_level,
+            backend="git-remote",
+            status="blocked",
+            duration=time.monotonic() - started,
+            output=output,
+            full_log=full_log,
+            grant=grant,
+            manifest=manifest,
+            selection=selection,
+            request=request,
+            confirmation_status=authorization["confirmation_status"],
+            automation_level=authorization["automation_level"],
+            backend_calls=0,
+            formal_authority=False,
+            platform=None,
+            blocker_codes=blockers,
+            run_id=run_id,
+        )
+
+    branch = target.removeprefix("refs/heads/")
+    target_ref = f"refs/heads/{branch}"
+    command = [
+        "git",
+        "push",
+        "--porcelain",
+        "--set-upstream",
+        remote,
+        f"{commit_sha}:{target_ref}",
+    ]
+    try:
+        completed = executor(
+            command,
+            cwd=repository,
+            capture_output=True,
+            text=True,
+            shell=False,
+            timeout=_timeout_seconds(task["timeout"]),
+            check=False,
+        )
+        output = completed.stdout + completed.stderr
+    except (FileNotFoundError, OSError, subprocess.TimeoutExpired) as exc:
+        output = str(exc)
+        completed = None
+    if completed is None or completed.returncode != 0:
+        full_log = _write_log(repository, run_id, output)
+        return _evidence(
+            task=task,
+            validation_level=validation_level,
+            backend="git-remote",
+            status="blocked",
+            duration=time.monotonic() - started,
+            output=output,
+            full_log=full_log,
+            grant=grant,
+            manifest=manifest,
+            selection=selection,
+            request=request,
+            confirmation_status=authorization["confirmation_status"],
+            automation_level=authorization["automation_level"],
+            backend_calls=1,
+            formal_authority=False,
+            platform=None,
+            blocker_codes=["BACKEND_UNAVAILABLE"],
+            run_id=run_id,
+        )
+
+    platform = normalize_git_remote_evidence(
+        remote=remote,
+        target_ref=target_ref,
+        commit_sha=commit_sha,
+        request=request,
+        confirmation=confirmation,
+        operation_id=run_id,
+    )
+    complete = platform_evidence_complete(platform, "push", request)
+    full_log = _write_log(repository, run_id, output)
+    return _evidence(
+        task=task,
+        validation_level=validation_level,
+        backend="git-remote",
+        status="passed" if complete else "blocked",
+        duration=time.monotonic() - started,
+        output=output,
+        full_log=full_log,
+        grant=grant,
+        manifest=manifest,
+        selection=selection,
+        request=request,
+        confirmation_status=authorization["confirmation_status"],
+        automation_level=authorization["automation_level"],
+        backend_calls=1,
+        formal_authority=complete,
+        platform=platform if complete else None,
+        blocker_codes=[] if complete else ["EVIDENCE_INCOMPLETE"],
         run_id=run_id,
     )
 

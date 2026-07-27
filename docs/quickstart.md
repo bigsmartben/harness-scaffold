@@ -38,7 +38,7 @@
 
 阶段进度以 [`plan.md`](../plan.md) 为准。
 
-P4 已通过本地 Fixture、Fake Adapter、零调用断言和独立目录产品验收。真实 GitHub Run、Required Checks、Protected Environment 与审批 Evidence 仍在具体正式交付时逐次校验。P5 已确认私有发布和当前用户安装目标，尚未 Push、Release 或安装。
+P4 已通过本地 Fixture、Fake Adapter、零调用断言和独立目录产品验收。真实 GitHub Run、Required Checks、Protected Environment 与审批 Evidence 仍在具体正式交付时逐次校验。Push 可使用窄化的 Git Remote Backend：例如本次确认只绑定 `origin`、`refs/heads/codex/demo` 和一个精确 commit，并且禁止 force；该 Evidence 不能替代 Merge、Publish、Release 或 Deploy 的平台门禁。P5 已确认私有发布和当前用户安装目标，尚未 Push、Release 或安装。
 
 ### 0.3 用户入口
 

@@ -314,6 +314,7 @@ flowchart LR
 - 用户已确认：不添加许可证并保持私有；安装到当前用户 Codex Skills 目录；通过 GitHub 私有仓库 `bigsmartben/harness-scaffold` 的 `v0.3.0` 标签发布。
 - P5 已进入安装与发布准备，状态为 `In Progress`。当前 Phase A 只同步文档和断言，不安装、不 Commit、不 Push、不 Merge、不 Release。
 - Phase A Contract Task `test:contracts` 已通过：Backend 调用 1 次，无需 Confirmation，无 blocker；Evidence digest 为 `sha256:e54013cd70eb0cba7a1d9a4b1ec3116eaf8d70574c22db876ede363352a52797`。
+- 为解除首次 Push 尚无远端 Workflow 的引导死锁，P3 增加窄化 `git-remote` Backend：只接受绑定 remote、完整 ref 和精确 commit 的本次确认，执行一次非 force Push；Merge、Publish、Release、Deploy 仍只接受平台门禁 Evidence。
 
 ### 实施内容
 
@@ -361,7 +362,7 @@ flowchart LR
 | 子进程 | 参数数组，不拼接 Shell 命令字符串 |
 | 测试 | `pytest`、Schema Fixture、集成 Fixture、Skill Evals |
 | 平台 | Windows 与 Linux |
-| V1 Backend | Local、GitHub Actions |
+| V1 Backend | Local、Git Remote（仅 Push）、GitHub Actions |
 | V1 项目类型 | Python、Node |
 | 公共 CLI | V1 不发布 |
 | Tool Registry | 普通 Tool / MCP / CLI / Shell 只注册和引导，不承担授权 |

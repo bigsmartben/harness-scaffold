@@ -582,6 +582,8 @@ Pipeline readiness 使用 `blocked`、`confirmation-required` 或
 | `critical` | 每次生成 Request；确认后提交平台门禁 | CI/CD 凭证、Required Checks、Protected Environment、平台审批 |
 | 本地调试执行 | 可以产生诊断 Evidence | 不能推动正式 Merge、Publish、Release 或 Deploy 状态 |
 
+Push MAY 使用窄化的 `git-remote` Backend，但 Request 与 Confirmation MUST 精确绑定 remote、完整 `refs/heads/*` 目标和 commit。Adapter MUST 使用参数数组执行一次非 force Push；HEAD、Request 或目标不一致时 MUST 在调用前停止。成功 Evidence 只证明远端接受该精确 refspec，不授予 Merge、Publish、Release 或 Deploy 权限。例如，确认 `origin + refs/heads/codex/demo + abc123` 不能用于 Push `main` 或另一个 commit。
+
 平台 Adapter MUST 实现 `prepare → dispatch → poll → normalize` 协议，并分别记录
 readiness、dispatch 与 finalize 状态。没有实际 Adapter 调用时最多只能返回
 `ready-for-dispatch`；轮询未获得完整且同链的 Platform Evidence 时不得返回
@@ -624,5 +626,6 @@ P4 的本地接口验收与真实平台验收必须分开：
 19. P4 正反平台事实 Fixture 能分别得到 `ready` 和稳定 blocker codes，且失败场景 Backend 调用次数为零。
 20. 全新本地目录可以完成最小 Local Bootstrap、Schema / 跨文件验证，并在第二次应用时产生空 Diff。
 21. P4 本地产品验收通过后可标记为 `Available`；具体正式交付动作仍必须取得完整且同链的真实 GitHub 平台 Evidence，本地 Fixture 不能替代该运行时门禁。
+22. `git-remote` Push 在缺少本次确认、HEAD 不匹配或目标不是完整 `refs/heads/*` 时调用次数为零；成功时只调用一次非 force Push，并生成绑定 remote、ref 与 commit 的 Evidence。
 
 若第 1 项中的已有 Workflow 存在直接外部触发，则“可以 Adopt”表示 Harness 必须先返回 `PROTECTED_TRIGGER_UNCONTROLLED`；只有用户批准改造，或有来源事实证明该 Workflow 只是非 CI/CD 的信息自动化后，接管才能完成。

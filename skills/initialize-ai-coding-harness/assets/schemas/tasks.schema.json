@@ -25,7 +25,7 @@
             "minItems": 1,
             "items": { "type": "string", "minLength": 1 }
           },
-          "backend": { "enum": ["local", "github-actions"] },
+          "backend": { "enum": ["local", "github-actions", "git-remote"] },
           "working_directory": { "type": "string", "minLength": 1 },
           "supports_scope": { "$ref": "common.schema.json#/$defs/validationLevel" },
           "timeout": { "type": "string", "pattern": "^[1-9][0-9]*(ms|s|m|h)$" },
@@ -58,6 +58,19 @@
               "required": ["backend"]
             },
             "then": { "required": ["command"] }
+          },
+          {
+            "if": {
+              "properties": { "backend": { "const": "git-remote" } },
+              "required": ["backend"]
+            },
+            "then": {
+              "properties": {
+                "category": { "const": "push" },
+                "automation_level": { "const": "critical" },
+                "auto_allowed": { "const": false }
+              }
+            }
           },
           {
             "if": {

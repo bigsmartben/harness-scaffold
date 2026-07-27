@@ -397,7 +397,7 @@
       "properties": {
         "artifact_type": { "const": "platform-evidence" },
         "schema_version": { "$ref": "#/$defs/schemaVersion" },
-        "platform": { "const": "github-actions" },
+        "platform": { "enum": ["github-actions", "git-remote"] },
         "workflow": { "type": "string", "minLength": 1 },
         "run_id": { "type": "string", "minLength": 1 },
         "commit_sha": { "type": "string", "minLength": 1 },
@@ -464,7 +464,7 @@
           "items": { "$ref": "common.schema.json#/$defs/blockerCode" },
           "uniqueItems": true
         },
-        "backend": { "enum": ["local", "github-actions"] },
+        "backend": { "enum": ["local", "github-actions", "git-remote"] },
         "grant_digest": { "$ref": "#/$defs/digest" },
         "manifest_digest": { "$ref": "#/$defs/digest" },
         "diff_digest": { "$ref": "#/$defs/digest" },

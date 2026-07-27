@@ -97,7 +97,45 @@ def _catalogs(
             "constraints": ["read-only"],
         }
     ]
-    tasks: list[dict[str, Any]] = []
+    tasks: list[dict[str, Any]] = [
+        {
+            "id": "push:branch",
+            "category": "push",
+            "automation_level": "critical",
+            "auto_allowed": False,
+            "source": ".harness/adapters/git-remote.yaml#origin",
+            "backend": "git-remote",
+            "working_directory": "repository-root",
+            "supports_scope": "publish",
+            "timeout": "2m",
+            "outputs": {"report": ".harness/reports/push-branch.json"},
+        }
+    ]
+    tools.append(
+        {
+            "id": "git-push-branch",
+            "type": "project-action",
+            "purpose": "push-confirmed-commit-to-remote-branch",
+            "capability": "project-push",
+            "action_semantics": "push",
+            "invocation_mode": "managed",
+            "task_ref": "push:branch",
+            "working_directory": "repository-root",
+            "use_when": ["push an exact confirmed commit to an exact remote branch"],
+            "do_not_use_when": ["force push, merge, publish, release, or deploy"],
+            "inputs": {
+                "scope": "publish",
+                "target": "remote-branch",
+                "commit_sha": "git-commit",
+            },
+            "outputs": {"evidence": ".harness/reports/push-branch.json"},
+            "constraints": [
+                "current confirmation required",
+                "no force push",
+                "git-remote backend only",
+            ],
+        }
+    )
     rules: list[dict[str, Any]] = [
         {
             "id": "docs-only",
@@ -583,6 +621,18 @@ def build_plan(
                     ),
                     "path": ".harness/adapters/local.yaml",
                     "template": "backends/local/adapter.yaml",
+                    "merge": "replace",
+                }
+            )
+            actions.append(
+                {
+                    "action": (
+                        "update"
+                        if (root / ".harness/adapters/git-remote.yaml").is_file()
+                        else "create"
+                    ),
+                    "path": ".harness/adapters/git-remote.yaml",
+                    "template": "backends/git-remote/adapter.yaml",
                     "merge": "replace",
                 }
             )
