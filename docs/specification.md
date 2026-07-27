@@ -50,12 +50,12 @@
 
 ### 2.1 目标
 
-AI Coding Harness 是项目工作区、工具发现与 CI/CD 交付执行的统一控制层。它的目标是：
+AI Coding Harness 是由 `AGENTS.md` 治理入口和工作区 / 分支交付门禁组成的窄控制层。它的目标是：
 
-1. 让 Agent / Skill 在已批准的路径内自由实现，并在计划或检查中发现写入范围扩散。
-2. 为 Agent / Skill 提供确定的 Runtime、CLI、Shell、MCP、API 和项目能力索引，消除工具发现与调用试错。
-3. 按动作语义统一管理 Test、Build、CI、Push、Merge、Publish、Release 和 Deploy，选择最低充分验证集，并执行三级自动化策略。
-4. 以结构化 Evidence 返回执行结论，避免完整日志直接污染 Agent 上下文。
+1. 通过 `AGENTS.md` 的成对标记区块向 Agent / Skill 发布稳定、可合并的项目治理入口。
+2. 在本地工作区声明并检查写入范围，只直接执行私有分支上的已登记交付动作。
+3. 对受控或未分类分支停止直接执行，要求绑定本次目标的强确认，并把正式权限交给 CI/CD 平台门禁。
+4. 为 Agent / Skill 提供确定的工具和 Task 索引，并以结构化 Evidence 返回结论。
 
 ### 2.2 要解决的问题
 
@@ -88,6 +88,7 @@ Harness MUST NOT 负责：
 | Agent | 在工作区内分析和修改项目的执行主体 | Codex 编码 Agent |
 | Skill | 为 Agent 提供垂直流程或领域能力的可复用包 | Figma 实现 Skill |
 | Harness | 维护边界、工具索引、交付选择和 Evidence 的控制层 | 本项目计划实现的 Skill 与 Python 执行层 |
+| AGENTS 治理（AGENTS Governance） | 由 `AGENTS.md` 成对标记区块提供的 Harness 入口规范 | 保留标记外项目指令，只替换标记内区块 |
 | 普通能力（Ordinary Capability） | Registry 提供入口和使用指导、且不命中 CI/CD 交付语义的能力 | `rg`、Python 分析、普通 MCP Tool |
 | CI/CD Task | 按动作语义进入 Delivery Management 的任务 | Unit Test、Build、Merge、Publish |
 | `routine` | 项目明确允许后可自动执行的低成本常规 CI/CD Task | 快速 Unit Test |
@@ -95,6 +96,9 @@ Harness MUST NOT 负责：
 | `critical` | 每次执行前必须确认，并由平台门禁决定正式权限的关键动作 | Push、Merge、Publish、Release、Deploy |
 | Harness Request | 描述待确认 CI/CD 动作、目标、变更和风险的结构化请求 | Full CI Request、Publish Request |
 | 平台门禁（Platform Gate） | CI/CD 平台提供的凭证隔离、Required Checks、Protected Environment 和审批 | GitHub Branch Protection |
+| 私有分支（Private Branch） | `boundaries.yaml` 显式匹配、由单一工作主体隔离使用且允许 Harness 直接调度的分支 | `refs/heads/codex/order-fix` |
+| 受控分支（Controlled Branch） | 由共享协作、默认分支、发布策略或平台保护规则治理，Harness 不得直接修改的分支；未分类分支也按此类处理 | `main`、`release/*` |
+| 强确认（Strong Confirmation） | 一次性绑定 Task、动作语义、完整目标 ref、commit SHA、策略版本和 Request digest 的当前确认 | 对 `main@abc123` 的本次 Merge 确认 |
 | 受保护 Pipeline（Protected Pipeline） | 包含 `expensive` 或 `critical` 动作并受平台门禁保护的 Pipeline | GitHub Actions 发布 Workflow |
 | 执行后端（Backend） | 实际运行受控任务的工具或平台 | Local、GitHub Actions、npm、pytest |
 | 工作授权（Work Grant） | 用户批准的一次工作意图、写入范围、Merge 目标、验证策略及适用的交付与风险事实 | “低风险修改 `src/order/**` 并合并到当前分支” |
@@ -112,8 +116,8 @@ flowchart LR
     A -->|"查询入口与用法"| R["Tool Registry"]
     R --> O["Runtime / CLI / Shell / MCP / API"]
     A -->|"Change Manifest / CI/CD 意图"| H["Harness"]
-    H -->|"routine 且自动允许"| B["Local / CI Backend"]
-    H -->|"expensive / critical"| Q["待确认 Request"]
+    H -->|"本地工作区 / 私有分支"| B["Local / Private-branch Backend"]
+    H -->|"受控或未分类分支"| Q["强确认 Request"]
     Q --> U
     U -->|"本次确认"| G["CI/CD 平台门禁"]
     G --> B
@@ -121,13 +125,12 @@ flowchart LR
     E --> A
 ```
 
-Harness 包含三个职责域：
+Harness 只包含两个职责域。Tool Registry（工具注册表）和 Task Catalog（任务目录）是这两个职责域使用的支持机制，不构成第三个授权域：
 
 | 职责域 | Harness 负责 | Harness 不负责 |
 |---|---|---|
-| 工作区写边界（Workspace Boundary） | 声明、检查和升级写入范围 | 宿主级拦截普通文件写入 |
-| 工具注册表（Tool Registry） | 注册、索引、说明 Runtime、CLI、Shell、MCP、API 和脚本 | 身份授权、逐次审批或调用代理 |
-| 交付管理（Delivery Management） | 按语义分类 CI/CD Task，生成 Request，调度已允许动作并汇总 Evidence | 控制普通工具权限或重写底层 CI/CD 平台 |
+| AGENTS 治理（AGENTS Governance） | 维护 `AGENTS.md` 标记区块中的 Harness 入口、配置发现和停止规则 | 覆盖标记外项目规范，或定义业务、架构、编码风格和垂直 Skill 行为 |
+| 工作区与分支门禁（Workspace and Branch Gate） | 检查本地写范围；分类私有 / 受控分支；在私有分支调度已允许 Task；为受控分支生成强确认 Request 并校验平台 Evidence | 直接修改受控分支、替代 Branch Protection / Required Checks，或代理普通工具权限 |
 
 普通能力与 CI/CD Task 必须按动作语义保持不同路径；传输通道不改变分类：
 
@@ -138,12 +141,23 @@ Harness 包含三个职责域：
 
 CI/CD Task
   → 查询 tasks.yaml 与 impact.yaml
+  → 查询 boundaries.yaml 分类目标分支
   → Harness 计算最低充分集合与自动化等级
-  → routine：仅在显式自动允许时调度
+  → 本地工作区 / 私有分支：routine 仅在显式自动允许时调度
   → expensive / critical：生成 Request 并等待本次确认
-  → critical：同时经过 CI/CD 平台门禁
+  → 受控或未分类分支：禁止直接 Backend；强确认后提交 CI/CD 平台门禁
   → Harness 返回 Evidence
 ```
+
+### 4.1 AGENTS.md 治理契约
+
+`AGENTS.md` 中 Harness 规则 MUST 位于 `<!-- ai-coding-harness:start -->` 与
+`<!-- ai-coding-harness:end -->` 之间。Bootstrap MAY 创建该文件；Adopt 和 Update
+只能替换标记区块，并 MUST 逐字节保留标记外项目指令。缺少一侧标记、存在多组区块或
+无法无损合并时，写入次数必须为零，并返回 `CONFIG_INVALID` 与 `HANDOFF_REQUIRED`。
+
+该区块只负责指向 `.harness/`、规定工具 / Task 查询路径、声明本地与分支边界以及稳定
+停止条件。它 MUST NOT 写入产品规则、代码风格、架构决策或垂直 Skill 的内部流程。
 
 ## 5. 工作区写边界规则
 
@@ -167,7 +181,7 @@ Harness MUST 在修改前声明边界，并将实际 Diff 与边界比较。它 
 
 ### WB-005：权限范围边界
 
-工作区写边界 MUST NOT 被描述为通用 Sandbox、文件 Hook 或完整进程中介。普通工具造成的实际写入仍按 WB-003 和 WB-006 检查；正式 CI/CD 权限只由第 12 节的平台门禁提供。
+工作区写边界 MUST NOT 被描述为通用 Sandbox、文件 Hook 或完整进程中介。普通工具造成的实际写入仍按 WB-003 和 WB-006 检查；Harness 直接执行边界止于私有分支，受控分支的正式权限只由第 12 节的平台门禁提供。
 
 ### WB-006：删除与批量改写
 
@@ -327,7 +341,7 @@ Local Runner、GitHub Actions、pytest、npm 等是 Harness 的执行后端。Ha
 |---|---|---|
 | `routine` | 仅在项目明确登记 `auto_allowed: true` 后可由 Agent / Skill 自动执行 | 快速 Unit Test、低成本静态检查 |
 | `expensive` | 禁止自动执行；每次必须生成 Request 并获得本次确认 | Integration、E2E、Full CI、大型 Build |
-| `critical` | 禁止自动执行；每次必须确认，并同时满足 CI/CD 平台门禁 | Push、Merge、Publish、Release、Deploy |
+| `critical` | 禁止自动执行；私有分支动作每次确认，受控分支动作必须强确认并满足 CI/CD 平台门禁 | Push、Merge、Publish、Release、Deploy |
 
 未声明或无法分类的 CI/CD 动作 MUST 默认按 `confirmation-required` 处理，返回 `HANDOFF_REQUIRED`，且 Backend 调用次数必须为零。`critical` 动作的历史确认、工作批准或其他目标的确认不得复用。
 
@@ -355,11 +369,11 @@ Push、PR、Webhook 和 Schedule 等外部事件 MAY 创建 Harness Request，�
 
 ### HF-003：Merge 每次确认
 
-Merge 属于 `critical`。有效 Work Grant 和通过的验证 Evidence 只能使 Merge Request 进入待确认状态，不能替代本次 Merge 确认。确认后仍 MUST 满足 Required Checks、Branch Protection 等平台门禁；实际修改超出 Grant 时，HF-005 优先。
+Merge 属于 `critical`，目标 MUST 分类为受控分支。有效 Work Grant 和通过的验证 Evidence 只能使 Merge Request 进入待确认状态，不能替代本次强确认。确认后仍 MUST 满足 Required Checks、Branch Protection 等平台门禁；Harness 或 `git-remote` Backend MUST NOT 直接修改目标分支；实际修改超出 Grant 时，HF-005 优先。
 
 ### HF-004：关键动作独立确认
 
-Push、Merge、Publish、Release、Deploy 或其他 `critical` 动作 MUST 获得针对本次动作和目标的独立明确确认。Publish、Release 和 Deploy 的确认还 MUST 绑定版本、制品摘要与目标环境。一般性工作批准、其他关键动作批准或历史确认不得复用。
+Push、Merge、Publish、Release、Deploy 或其他 `critical` 动作 MUST 获得针对本次动作和目标的独立明确确认。目标为受控或未分类分支时，该确认 MUST 是强确认；缺少强确认或试图调用直接 Backend 时 MUST 返回 `CONTROLLED_BRANCH_GATE_REQUIRED` 与 `HANDOFF_REQUIRED`，Backend 调用次数为零。Publish、Release 和 Deploy 的确认还 MUST 绑定版本、制品摘要与目标环境。一般性工作批准、其他关键动作批准或历史确认不得复用。
 
 ### HF-005：Grant 失效
 
@@ -367,7 +381,7 @@ HF-001 所绑定的写入范围、Merge 目标、交付目标或风险级别发�
 
 ### HF-006：确认与平台状态完整性
 
-Harness Request 和确认记录 MUST 绑定 Task、动作语义、目标、提交摘要、自动化等级和策略版本；不适用的版本、制品摘要或环境必须显式为 `null` 或 `not-applicable`。任一绑定事实变化后，确认 MUST 失效。
+Harness Request 和确认记录 MUST 绑定 Task、动作语义、完整目标 ref、提交摘要、自动化等级、策略版本和 Request digest；不适用的版本、制品摘要或环境必须显式为 `null` 或 `not-applicable`。任一绑定事实变化后，确认 MUST 失效。受控分支模式优先于私有分支模式；没有匹配任何模式的分支 MUST 按受控分支失败关闭。
 
 对 `critical` 动作，正式权限和结果 MUST 来自 CI/CD 平台：Agent / Skill 不得读取高权限 Push、Merge、Publish 或 Deploy 凭证，不得把仓库内确认文件描述为平台批准。平台 Evidence MUST 能追溯审批状态、受保护分支或环境以及实际 Run。
 
@@ -419,6 +433,7 @@ Evidence MUST 能追溯到 Change Manifest、最终验证选择、自动化等�
 | `TASK_BYPASS_ATTEMPT` | 在 Harness 或 CI/CD 平台证据中观察到绕过 Task 门禁 |
 | `ACTION_CLASSIFICATION_UNRESOLVED` | 无法可靠判断动作是否命中 CI/CD 语义或自动化等级 |
 | `HANDOFF_REQUIRED` | 需要新的用户确认 |
+| `CONTROLLED_BRANCH_GATE_REQUIRED` | 受控或未分类分支需要强确认与 CI/CD 平台门禁，禁止直接 Backend |
 | `PUBLISH_CONFIRMATION_REQUIRED` | 缺少本次 Publish 的独立确认 |
 | `PROTECTED_TRIGGER_UNCONTROLLED` | 受保护 Pipeline 仍能被外部事件直接启动 |
 | `CONFIG_INVALID` | Harness 配置结构或跨文件关系无效 |
@@ -507,7 +522,7 @@ Audit MUST 只读解析现有 `.harness/`、事实源和引用关系，并报告
 
 Update MUST 先解析有效的 0.3 配置并生成字段级 Drift Plan。它 MUST 保留自定义
 Tools、Tasks、Adapters 和项目 `mode`，只修改无效字段或 Plan 明确列出的迁移字段。
-`AGENTS.md` 必须使用成对 Harness 标记，只替换标记内区块并保留其他项目指令。
+`AGENTS.md` 必须按第 4.1 节使用成对 Harness 标记，只替换标记内治理入口并保留其他项目指令。Harness 不得把工具注册表或交付实现细节展开复制到该文件。
 
 对应 [`UC-010`](../uc.md)。
 
@@ -534,7 +549,7 @@ Tools、Tasks、Adapters 和项目 `mode`，只修改无效字段或 Plan 明确
 | 文件或目录 | 唯一职责 | 是否提交 |
 |---|---|---|
 | `harness.yaml` | Schema 版本、Adopt/Bootstrap 模式、事实源绑定 | 是 |
-| `boundaries.yaml` | 默认写入路径与扩张策略 | 是 |
+| `boundaries.yaml` | 默认写入路径、私有 / 受控分支分类、失败关闭默认值与扩张策略 | 是 |
 | `tools.yaml` | Agent 可见工具与动作索引；CI/CD 语义条目引用 Task | 是 |
 | `tasks.yaml` | CI/CD Task、自动化等级、自动允许状态与 Backend 映射 | 是 |
 | `impact.yaml` | 变更事实到验证级别和 Task 的映射 | 是 |
@@ -563,7 +578,7 @@ Selection、Task Runner 与 Pipeline 的入口 MUST 在作出选择或调用 Ada
 | Work Grant | 目标、写范围、Merge/交付目标、验证策略、风险 |
 | Change Manifest | Grant digest、base commit、声明路径与影响事实 |
 | Selection | Manifest digest、实际 Diff digest、验证级别与 Task 集 |
-| Task Request / Confirmation | Task、动作语义、目标、commit、策略版本与 Request digest |
+| Task Request / Confirmation | Task、动作语义、完整目标 ref、commit、策略版本与 Request digest；受控分支必须为强确认 |
 | Evidence | Grant、Manifest、实际 Diff、Selection、Request、commit、Backend 与确认状态 |
 | Platform Evidence | Workflow、Run ID、commit、Request、审批、受保护分支或环境与适用制品摘要 |
 
@@ -582,7 +597,22 @@ Pipeline readiness 使用 `blocked`、`confirmation-required` 或
 | `critical` | 每次生成 Request；确认后提交平台门禁 | CI/CD 凭证、Required Checks、Protected Environment、平台审批 |
 | 本地调试执行 | 可以产生诊断 Evidence | 不能推动正式 Merge、Publish、Release 或 Deploy 状态 |
 
-Push MAY 使用窄化的 `git-remote` Backend，但 Request 与 Confirmation MUST 精确绑定 remote、完整 `refs/heads/*` 目标和 commit。Adapter MUST 使用参数数组执行一次非 force Push；HEAD、Request 或目标不一致时 MUST 在调用前停止。成功 Evidence 只证明远端接受该精确 refspec，不授予 Merge、Publish、Release 或 Deploy 权限。例如，确认 `origin + refs/heads/codex/demo + abc123` 不能用于 Push `main` 或另一个 commit。
+`boundaries.yaml` MUST 显式声明 `branch_scope.private` 与
+`branch_scope.controlled`。分类顺序固定为：先匹配 `controlled`，再匹配
+`private`，最后按 `default_class: controlled` 失败关闭。私有分支只表示处于 Harness
+可直接调度边界内，不把 Push 降级为 `routine`，也不允许强推、删除或改写历史。
+
+Push MAY 使用窄化的 `git-remote` Backend，但只允许目标为私有分支。Request 与
+Confirmation MUST 精确绑定 remote、完整 `refs/heads/*` 目标和 commit。Adapter MUST
+使用参数数组执行一次非 force Push；HEAD、Request 或目标不一致时 MUST 在调用前停止。
+成功 Evidence 只证明远端接受该精确 refspec，不授予 Merge、Publish、Release 或
+Deploy 权限。例如，确认 `origin + refs/heads/codex/demo + abc123` 不能用于 Push
+`main` 或另一个 commit。
+
+对受控分支，Harness 最多生成 `ready-for-dispatch` Request；直接 Local 或
+`git-remote` Backend 调用次数 MUST 为零。只有强确认有效，且平台 Adapter 返回与同一
+目标 ref、commit 与 Request digest 绑定的 Required Checks / Branch Protection
+Evidence 后，操作才可报告 `passed`。仓库内确认不能替代平台批准。
 
 平台 Adapter MUST 实现 `prepare → dispatch → poll → normalize` 协议，并分别记录
 readiness、dispatch 与 finalize 状态。没有实际 Adapter 调用时最多只能返回
@@ -592,6 +622,10 @@ readiness、dispatch 与 finalize 状态。没有实际 Adapter 调用时最多�
 Local Backend MUST 拒绝 Push、Merge、Publish、Release 和 Deploy 等 critical
 交付 Task。0.3 不提供 Publish 假后端；本地 Fake GitHub Adapter 只用于验证调用次数、
 状态迁移和 Evidence 绑定，不能产生正式交付 Evidence。
+
+窄化的 `git-remote` Backend 只允许对 `branch_scope.private` 中的完整 ref 执行一次
+精确、非强推 Push。目标命中 `controlled` 或未分类时，MUST 返回
+`CONTROLLED_BRANCH_GATE_REQUIRED` 与 `HANDOFF_REQUIRED`，且不得执行 `git push`。
 
 P4 的不可绕过保证只覆盖 CI/CD 平台能够保护的正式交付动作。它不覆盖普通 MCP、网络、Shell、Runtime、CLI、本地工具或文件写入，也不建设通用宿主强制根。
 
@@ -626,6 +660,8 @@ P4 的本地接口验收与真实平台验收必须分开：
 19. P4 正反平台事实 Fixture 能分别得到 `ready` 和稳定 blocker codes，且失败场景 Backend 调用次数为零。
 20. 全新本地目录可以完成最小 Local Bootstrap、Schema / 跨文件验证，并在第二次应用时产生空 Diff。
 21. P4 本地产品验收通过后可标记为 `Available`；具体正式交付动作仍必须取得完整且同链的真实 GitHub 平台 Evidence，本地 Fixture 不能替代该运行时门禁。
-22. `git-remote` Push 在缺少本次确认、HEAD 不匹配或目标不是完整 `refs/heads/*` 时调用次数为零；成功时只调用一次非 force Push，并生成绑定 remote、ref 与 commit 的 Evidence。
+22. `git-remote` Push 在缺少本次确认、HEAD 不匹配、目标不是完整 `refs/heads/*` 或目标不是私有分支时调用次数为零；成功时只调用一次非 force Push，并生成绑定 remote、ref 与 commit 的 Evidence。
+23. `AGENTS.md` Update 只替换唯一成对标记区块，标记外项目治理指令逐字节保留。
+24. 受控或未分类分支的直接 Push 返回 `CONTROLLED_BRANCH_GATE_REQUIRED` 与 `HANDOFF_REQUIRED`；只有强确认和同链平台 Evidence 可以推进该分支。
 
 若第 1 项中的已有 Workflow 存在直接外部触发，则“可以 Adopt”表示 Harness 必须先返回 `PROTECTED_TRIGGER_UNCONTROLLED`；只有用户批准改造，或有来源事实证明该 Workflow 只是非 CI/CD 的信息自动化后，接管才能完成。

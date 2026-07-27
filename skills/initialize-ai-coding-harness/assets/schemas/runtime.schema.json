@@ -474,6 +474,7 @@
         "confirmation_status": {
           "enum": [
             "not-required-by-explicit-policy",
+            "not-required-by-branch-policy",
             "confirmed",
             "required",
             "stale-or-mismatched",

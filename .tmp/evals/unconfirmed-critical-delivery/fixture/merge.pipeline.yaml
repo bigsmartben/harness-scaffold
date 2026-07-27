@@ -1,0 +1,8 @@
+id: merge:production
+kind: merge
+requires_independent_confirmation: true
+stages:
+  - id: routine-validation
+    tasks:
+      - verify:routine
+    requires_evidence: true

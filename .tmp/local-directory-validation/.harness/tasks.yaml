@@ -1,0 +1,23 @@
+tasks:
+  - id: "test:python"
+    category: test
+    automation_level: routine
+    auto_allowed: true
+    command_source: "pyproject.toml#test"
+    backend: "local"
+    working_directory: repository-root
+    supports_scope: affected
+    timeout: 5m
+    outputs:
+      report: ".harness/reports/python-tests.json"
+  - id: "publish:python"
+    category: publish
+    automation_level: critical
+    auto_allowed: false
+    command_source: harness-generated
+    backend: "local"
+    working_directory: repository-root
+    supports_scope: publish
+    timeout: 10m
+    outputs:
+      report: .harness/reports/publish.json

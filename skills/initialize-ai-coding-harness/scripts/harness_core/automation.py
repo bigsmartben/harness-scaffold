@@ -290,6 +290,7 @@ def authorize_task(
     validation_level: str,
     request: dict[str, Any] | None = None,
     confirmation: dict[str, Any] | None = None,
+    require_confirmation: bool | None = None,
 ) -> dict[str, Any]:
     """Authorize only a current, task-matching Request and Confirmation."""
 
@@ -330,6 +331,14 @@ def authorize_task(
             "blocker_codes": ["EVIDENCE_INCOMPLETE", "HANDOFF_REQUIRED"],
             "confirmation_status": "stale-or-mismatched",
             "missing_request_fields": missing_request_fields,
+        }
+    if require_confirmation is False:
+        return {
+            "allowed": True,
+            **automation,
+            "confirmation_required": False,
+            "blocker_codes": [],
+            "confirmation_status": "not-required-by-branch-policy",
         }
     if not automation["confirmation_required"]:
         return {

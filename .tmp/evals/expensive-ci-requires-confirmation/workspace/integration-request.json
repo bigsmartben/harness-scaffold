@@ -1,0 +1,11 @@
+{
+  "automation_level": "expensive",
+  "category": "integration",
+  "context": {
+    "change_manifest": "manifest.json",
+    "commit": "9cad6b6fb557c5a85bd2a01e8a51dfd921290869",
+    "selection_level": "full"
+  },
+  "task_id": "integration-suite",
+  "validation_level": "full"
+}

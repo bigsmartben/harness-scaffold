@@ -1,0 +1,22 @@
+{
+  "agents": {
+    "exists": false,
+    "path": "AGENTS.md"
+  },
+  "fact_sources": {
+    "python": "pyproject.toml"
+  },
+  "gaps": [],
+  "harness": {
+    "exists": false,
+    "path": ".harness"
+  },
+  "package_scripts": {},
+  "project_types": [
+    "python"
+  ],
+  "repository_root": "C:\\Users\\24598\\Documents\\github\\harness\\.tmp\\evals\\bootstrap-empty-project\\workspace",
+  "source_roots": [],
+  "test_roots": [],
+  "workflows": []
+}

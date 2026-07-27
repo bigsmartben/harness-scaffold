@@ -225,12 +225,6 @@ def platform_evidence_complete(
             )
         ):
             return False
-    if (
-        request is not None
-        and request.get("automation_level") != "routine"
-        and evidence.get("confirmation_status") != "confirmed"
-    ):
-        return False
     if category in PROTECTED_CATEGORIES and evidence.get("approval_status") != "approved":
         return False
     if category in {"push", "merge"}:

@@ -1,6 +1,6 @@
 # AI Coding Harness
 
-AI Coding Harness 是项目工作区、工具发现与 CI/CD 交付执行的统一控制层：它让 Agent / Skill 在明确写边界内工作，通过 Tool Registry 找到 Runtime、CLI、Shell、MCP、API 和脚本的正确入口，并按动作语义管理验证与正式交付。
+AI Coding Harness 是一个窄治理层：它通过 `AGENTS.md` 发布项目执行规范，只直接管理本地工作区和显式分类的私有分支；受控或未分类分支必须经过绑定本次目标的强确认与 CI/CD 平台门禁。
 
 > 当前状态：**P0–P4 Available；P5 In Progress**。`0.3` 已完成 Plan / Approval 分离、摘要链、能力校验和 P4 本地产品验收；真实平台 Evidence 仍按每个正式交付请求逐次校验。
 
@@ -14,31 +14,42 @@ Agent 通常能完成代码修改，但项目执行过程仍有三个高成本�
 | 工具调用试错 | 猜测 Python 入口、搜索命令或 MCP Tool 名称 | 通过 Registry 一次获得确定入口 |
 | 不必要的全量验证 | 修改一份文档后执行完整 Build 和 Test | 根据实际影响选择最低充分验证集 |
 
-Harness 不替代 Agent 的领域能力。它只回答三个项目执行问题：
+Harness 不替代 Agent 的领域能力。它只回答四个项目执行问题：
 
 ```text
-可以写到哪里？
+AGENTS.md 中哪一段由 Harness 治理？
+本地工作区可以写到哪里？
+目标是私有分支还是受控分支？
 应该使用什么工具？
-完成修改后最少需要执行什么？
 ```
 
-## 三个职责域
+## 两个职责域
 
-### 工作区写边界（Workspace Boundary）
+### AGENTS.md 治理（AGENTS Governance）
 
-Harness 记录一次 Work Grant 允许写入的路径。Agent / Skill 可以在范围内自由选择实现；范围扩张时必须停止并重新 Handoff。该机制负责声明和检查，不宣称宿主级拦截普通文件写入。
+Harness 只维护 `<!-- ai-coding-harness:start -->` 与
+`<!-- ai-coding-harness:end -->` 之间的治理入口。Adopt / Update 必须保留标记外的业务
+规则、代码风格和项目约定；标记缺失、重复或无法无损合并时停止写入。
 
-### 工具注册表（Tool Registry）
+### 工作区与 CI/CD 门禁（Workspace and CI/CD Gate）
 
-项目中的 Runtime、CLI、Shell、MCP Server、MCP Tool、API 和普通仓库脚本统一注册，条目说明用途、版本事实源、入口、工作目录、输入输出、适用场景和调用模式。
+Harness 记录 Work Grant 允许写入的本地路径，并从 `boundaries.yaml` 分类目标分支：
 
-Registry 是项目能力索引，**不是** Agent / Skill 授权矩阵、逐次审批器或调用代理。Agent 查询后直接调用普通工具。
+| 分支类型 | Harness 行为 | 示例 |
+|---|---|---|
+| `private` | 可调度已登记 Task；Push 仍需绑定当前 ref 与 commit，且禁止强推 | `refs/heads/codex/order-fix` |
+| `controlled` | 禁止直接 Backend；强确认后交给平台门禁 | `main`、`release/*` |
+| 未分类 | 按 `controlled` 失败关闭 | 新出现且未登记的分支 |
 
-调用模式分为 `direct` 和 `managed`。注册了 `npm`、Python、Shell 或 GitHub MCP，不代表 Test、Build、Push、Merge、Publish、Release 或 Deploy 自动获得执行权；是否进入 Harness Task 由动作语义决定，与调用通道无关。
+强确认（strong confirmation）一次性绑定 Task、动作语义、完整目标 ref、commit SHA、策略版本和 Request digest；任何绑定变化都会失效。它仍不能替代 Required Checks、Branch Protection 或 Protected Environment。
 
-### 交付管理（Delivery Management）
+### 支持机制：Registry 与 Task Catalog
 
-命中 Test、Build、CI、Push、Merge、Publish、Release 或 Deploy 语义的动作注册为 CI/CD Task。Agent 可以提交 Change Manifest 和验证建议，Harness 根据实际 Diff 与项目规则选择最终验证集合，并应用三级自动化策略：
+Runtime、CLI、Shell、MCP、API 和脚本登记在 Tool Registry；Test、Build、CI、Push、
+Merge、Publish、Release、Deploy 按动作语义登记为 Task。Registry 只是能力索引，
+**不是**第三个授权域、逐次审批器或调用代理。
+
+Task 继续使用三级自动化策略：
 
 | 等级 | 行为 | 示例 |
 |---|---|---|
@@ -55,11 +66,13 @@ flowchart LR
     A["Adopt 已有项目<br/>或 Bootstrap 新项目"] --> B["Tool Registry<br/>Task Catalog"]
     B --> C["用户批准 Work Grant"]
     C --> D["Agent 在写边界内修改"]
-    D --> E["Harness 选择最低充分验证<br/>并解析自动化等级"]
+    D --> E["Harness 选择最低充分验证<br/>并分类目标分支"]
     E -->|"routine + auto_allowed"| V["自动验证"]
-    E -->|"expensive / critical"| Q["待确认 Request"]
+    E -->|"私有分支 critical"| Q["当前确认 Request"]
+    E -->|"受控 / 未分类分支"| S["强确认 Request"]
     X["Push / PR / Webhook / Schedule"] --> Q
     Q --> Y["用户本次确认"]
+    S --> Y
     Y --> G["CI/CD 平台门禁"]
     G --> F["Required Checks / Merge / Publish"]
 ```
@@ -78,7 +91,7 @@ Harness 根据实际技术栈建立最小工具索引、Task Catalog、Impact Ru
 
 ### Merge 与 Publish
 
-Merge、Publish、Release 和 Deploy 都属于 `critical`，每次必须获得绑定本次目标的明确确认。正式权限与结果由 CI/CD 平台的最小权限凭证、Required Checks、Branch Protection、Protected Environment 和审批状态提供。
+Merge、Publish、Release 和 Deploy 都属于 `critical`。私有分支 Push 可以在当前确认后通过窄化 `git-remote` Backend 执行；受控或未分类分支不得直接执行，必须获得强确认并由 CI/CD 平台的最小权限凭证、Required Checks、Branch Protection、Protected Environment 和审批状态提供正式权限。
 
 ## 普通能力与 CI/CD Task
 
@@ -88,7 +101,8 @@ Merge、Publish、Release 和 Deploy 都属于 `critical`，每次必须获得�
 | 局部编辑工具 | 仅作用于批准文件的 Formatter | Agent 直接调用，写入受边界约束 | 否 |
 | `routine` CI/CD | 显式允许的低成本 Unit Test | Harness 选择后自动调度 | 仅首次政策登记 |
 | `expensive` CI/CD | Integration、E2E、Full CI、大型 Build | 生成本次 Request | 每次 |
-| `critical` CI/CD | Push、Merge、Publish、Release、Deploy | 本次确认后提交平台门禁 | 每次 |
+| 私有分支 `critical` | 精确、非强推 Push | 本次确认后由窄化 Backend 执行 | 每次 |
+| 受控分支 `critical` | Push、Merge、Publish、Release、Deploy | 强确认后提交平台门禁；禁止直接 Backend | 每次 |
 
 ## 最终使用入口
 

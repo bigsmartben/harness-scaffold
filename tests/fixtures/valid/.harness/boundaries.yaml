@@ -1,7 +1,11 @@
-write_scope:
-  include: [src/**, tests/**]
-  exclude: [.git/**]
-expansion:
-  action: stop-and-handoff
-  blocker_codes: [WRITE_SCOPE_EXPANDED, HANDOFF_REQUIRED]
-
+branch_gate:
+  controlled:
+    - refs/heads/main
+    - refs/heads/master
+    - refs/heads/release/**
+    - refs/heads/hotfix/**
+  unmatched: unrestricted
+  actions: [push, merge]
+  confirmation: strong
+  platform_gate: required
+  blocker_codes: [CONTROLLED_BRANCH_GATE_REQUIRED, HANDOFF_REQUIRED]

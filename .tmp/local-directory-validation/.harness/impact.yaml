@@ -1,0 +1,11 @@
+rules:
+  - id: docs-only
+    paths: ["**/*.md"]
+    validation_level: inspect
+    reason: documentation changes require structural inspection
+  - id: project-code
+    paths: ["**/*", "tests/**"]
+    validation_level: affected
+    tasks: ["test:python"]
+    reason: project code requires affected tests
+

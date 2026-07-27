@@ -1,0 +1,8 @@
+rules:
+  - id: calculator-module
+    paths:
+      - src/calculator.py
+    validation_level: affected
+    tasks:
+      - test:unit
+    reason: Changes to the calculator module require its fast unit test.

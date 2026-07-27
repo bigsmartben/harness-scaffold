@@ -1,0 +1,66 @@
+case_id: registry-is-not-authorization
+status: completed
+skill_under_test:
+  path: skills/initialize-ai-coding-harness/SKILL.md
+  relevant_reference: skills/initialize-ai-coding-harness/references/tool-registry.md
+workspace_fixture:
+  root: .
+  validation:
+    command: .venv/Scripts/python.exe skills/initialize-ai-coding-harness/scripts/validate_scaffold.py .
+    exit_code: 0
+    stdout: "[]"
+    interpretation: valid Harness configuration with no reported issues
+evidence:
+  - claim: Repository search is an ordinary direct capability.
+    source: .harness/tools.yaml
+    facts:
+      id: repository-search
+      entrypoint: rg
+      invocation_mode: direct
+      constraint: read-only
+  - claim: GitHub server and GitHub file reader are registered separately, and the file reader is the concrete direct entry.
+    source: .harness/tools.yaml
+    facts:
+      server_id: github-server
+      tool_id: github-get-file
+      entrypoint: github.get_file_contents
+      server_ref: github-server
+      invocation_mode: direct
+      inputs:
+        - repository
+        - path
+  - claim: Project tests use a managed project-action entry resolving to a Task.
+    source: .harness/tools.yaml
+    facts:
+      id: contract-tests
+      invocation_mode: managed
+      task_ref: test:contracts
+  - claim: The referenced test Task is routine, locally backed, and auto-allowed.
+    source: .harness/tasks.yaml
+    facts:
+      id: test:contracts
+      automation_level: routine
+      auto_allowed: true
+      backend: local
+      supports_scope: affected
+  - claim: Registry classification is based on action semantics and is not authorization.
+    source: skills/initialize-ai-coding-harness/references/tool-registry.md
+    facts:
+      ordinary_capabilities: direct
+      ci_cd_actions: managed
+      registry_role: index-and-usage-guide
+      excluded_roles:
+        - authorization-matrix
+        - per-call-approver
+        - proxy
+commands_observed:
+  - command: .venv/Scripts/python.exe skills/initialize-ai-coding-harness/scripts/run_task.py --help
+    exit_code: 0
+    purpose: verify runner invocation syntax without dispatching a Task
+actions_not_executed:
+  - project tests
+  - Publish
+  - any managed Task
+workspace_changes:
+  formal_source_changes: false
+  diff: empty

@@ -6,6 +6,7 @@ from typing import Any
 
 from .artifacts import digest_matches
 from .automation import request_digest
+from .branching import branch_is_controlled, default_branch_gate
 from .contracts import runtime_artifact_is_valid
 from .platform import platform_evidence_complete
 from .runner import PlatformAdapter
@@ -53,6 +54,7 @@ def evaluate_pipeline_readiness(
     evidence: list[dict[str, Any]],
     request: dict[str, Any] | None,
     confirmation: dict[str, Any] | None,
+    branch_gate: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Return blocked, confirmation-required, or ready-for-dispatch."""
 
@@ -134,7 +136,13 @@ def evaluate_pipeline_readiness(
             "backend_calls": 0,
             "blocker_codes": ["EVIDENCE_INCOMPLETE"],
         }
-    if (
+    controlled_target = (
+        kind == "merge"
+        and branch_is_controlled(
+            str(request["target"]), "merge", branch_gate or default_branch_gate()
+        )
+    )
+    if controlled_target and (
         pipeline.get("requires_independent_confirmation") is not True
         or not _confirmation_matches(request, confirmation)
     ):
@@ -143,9 +151,8 @@ def evaluate_pipeline_readiness(
             "missing_tasks": [],
             "backend_calls": 0,
             "blocker_codes": [
-                "PUBLISH_CONFIRMATION_REQUIRED"
-                if kind == "publish"
-                else "HANDOFF_REQUIRED"
+                "CONTROLLED_BRANCH_GATE_REQUIRED",
+                "HANDOFF_REQUIRED",
             ],
         }
     return {
@@ -208,11 +215,12 @@ def finalize_pipeline(
     request: dict[str, Any] | None,
     confirmation: dict[str, Any] | None,
     platform: dict[str, Any] | None,
+    branch_gate: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Finalize only with complete, request-bound Platform Evidence."""
 
     readiness = evaluate_pipeline_readiness(
-        pipeline, evidence, request, confirmation
+        pipeline, evidence, request, confirmation, branch_gate
     )
     if readiness["status"] != "ready-for-dispatch":
         return readiness
@@ -276,8 +284,11 @@ def evaluate_merge_readiness(
     evidence: list[dict[str, Any]],
     request: dict[str, Any] | None = None,
     confirmation: dict[str, Any] | None = None,
+    branch_gate: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    return evaluate_pipeline_readiness(pipeline, evidence, request, confirmation)
+    return evaluate_pipeline_readiness(
+        pipeline, evidence, request, confirmation, branch_gate
+    )
 
 
 def evaluate_publish_readiness(
@@ -285,7 +296,8 @@ def evaluate_publish_readiness(
     request: dict[str, Any] | None,
     confirmation: dict[str, Any] | None,
     evidence: list[dict[str, Any]] | None = None,
+    branch_gate: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return evaluate_pipeline_readiness(
-        pipeline, evidence or [], request, confirmation
+        pipeline, evidence or [], request, confirmation, branch_gate
     )

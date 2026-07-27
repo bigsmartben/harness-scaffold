@@ -12,6 +12,7 @@ from typing import Any, Protocol
 from .artifacts import SCHEMA_VERSION, attach_digest, canonical_digest
 from .automation import CRITICAL_CATEGORIES, authorize_task
 from .bindings import execution_binding_blockers
+from .branching import branch_is_controlled, default_branch_gate
 from .platform import normalize_git_remote_evidence, platform_evidence_complete
 
 
@@ -158,12 +159,14 @@ def _preflight(
     selection: dict[str, Any] | None,
     request: dict[str, Any] | None,
     confirmation: dict[str, Any] | None,
+    require_confirmation: bool | None = None,
 ) -> tuple[dict[str, Any], list[str]]:
     authorization = authorize_task(
         task,
         validation_level,
         request=request,
         confirmation=confirmation,
+        require_confirmation=require_confirmation,
     )
     bindings = execution_binding_blockers(
         grant,
@@ -202,6 +205,7 @@ def run_local_task(
         selection,
         request,
         confirmation,
+        require_confirmation=False,
     )
     registered_command = task.get("command")
     if (
@@ -308,12 +312,19 @@ def run_git_remote_push_task(
     selection: dict[str, Any] | None = None,
     request: dict[str, Any] | None = None,
     confirmation: dict[str, Any] | None = None,
+    branch_gate: dict[str, Any] | None = None,
     executor: Any = subprocess.run,
 ) -> dict[str, Any]:
     """Push one confirmed commit to one exact remote branch without a shell."""
 
     started = time.monotonic()
     run_id = f"run-{uuid.uuid4().hex}"
+    target = request.get("target") if isinstance(request, dict) else None
+    gate = branch_gate or default_branch_gate()
+    controlled_target = (
+        isinstance(target, str)
+        and branch_is_controlled(target, "push", gate)
+    )
     authorization, blockers = _preflight(
         task,
         validation_level,
@@ -322,6 +333,7 @@ def run_git_remote_push_task(
         selection,
         request,
         confirmation,
+        require_confirmation=True if controlled_target else False,
     )
     if (
         task.get("backend") != "git-remote"
@@ -341,13 +353,17 @@ def run_git_remote_push_task(
             set(blockers) | {"CONFIG_INVALID", "HANDOFF_REQUIRED"}
         )
     remote = adapter.get("remote")
-    target = request.get("target") if isinstance(request, dict) else None
     commit_sha = request.get("commit_sha") if isinstance(request, dict) else None
     if not isinstance(remote, str) or not remote:
         blockers = sorted(set(blockers) | {"CONFIG_INVALID", "HANDOFF_REQUIRED"})
     if not isinstance(target, str) or not target:
         blockers = sorted(
             set(blockers) | {"EVIDENCE_INCOMPLETE", "HANDOFF_REQUIRED"}
+        )
+    elif controlled_target:
+        blockers = sorted(
+            set(blockers)
+            | {"CONTROLLED_BRANCH_GATE_REQUIRED", "HANDOFF_REQUIRED"}
         )
     if not isinstance(commit_sha, str) or not commit_sha:
         blockers = sorted(
@@ -488,10 +504,19 @@ def run_github_actions_task(
     selection: dict[str, Any] | None = None,
     request: dict[str, Any] | None = None,
     confirmation: dict[str, Any] | None = None,
+    branch_gate: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Execute prepare → dispatch → poll → normalize exactly once."""
 
     started = time.monotonic()
+    target = request.get("target") if isinstance(request, dict) else None
+    category = str(task.get("category") or "")
+    controlled_target = (
+        isinstance(target, str)
+        and branch_is_controlled(
+            target, category, branch_gate or default_branch_gate()
+        )
+    )
     authorization, blockers = _preflight(
         task,
         validation_level,
@@ -500,7 +525,13 @@ def run_github_actions_task(
         selection,
         request,
         confirmation,
+        require_confirmation=controlled_target,
     )
+    if controlled_target and not authorization["allowed"]:
+        blockers = sorted(
+            set(blockers)
+            | {"CONTROLLED_BRANCH_GATE_REQUIRED", "HANDOFF_REQUIRED"}
+        )
     if task.get("backend") != "github-actions":
         blockers = sorted(set(blockers) | {"BACKEND_UNAVAILABLE"})
     source = task.get("source")

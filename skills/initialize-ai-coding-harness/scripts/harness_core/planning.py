@@ -6,6 +6,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from .branching import default_branch_gate
+
 import yaml
 
 from .artifacts import (
@@ -333,22 +335,7 @@ def _render_context(facts: dict[str, Any], mode: str) -> dict[str, str]:
         ),
         "boundaries_yaml": _yaml_text(
             {
-                "write_scope": {
-                    "include": roots,
-                    "exclude": [
-                        ".git/**",
-                        ".harness/runs/**",
-                        ".harness/reports/**",
-                        ".harness/cache/**",
-                    ],
-                },
-                "expansion": {
-                    "action": "stop-and-handoff",
-                    "blocker_codes": [
-                        "WRITE_SCOPE_EXPANDED",
-                        "HANDOFF_REQUIRED",
-                    ],
-                },
+                "branch_gate": default_branch_gate(),
             }
         ),
         "tools_yaml": _yaml_text({"tools": tools}),
