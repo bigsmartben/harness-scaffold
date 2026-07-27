@@ -38,7 +38,7 @@
           },
           "uniqueItems": true
         },
-        "unmatched": { "const": "unrestricted" },
+        "unmatched": { "const": "controlled" },
         "actions": {
           "type": "array",
           "minItems": 1,

@@ -20,7 +20,7 @@ def default_branch_gate() -> dict[str, Any]:
             "refs/heads/codex/**",
             "refs/heads/agent/**",
         ],
-        "unmatched": "unrestricted",
+        "unmatched": "controlled",
         "actions": ["push", "pull-request", "merge"],
         "confirmation": "strong",
         "platform_gate": "required",
@@ -34,9 +34,10 @@ def default_branch_gate() -> dict[str, Any]:
 def branch_is_controlled(
     ref: str, action: str, branch_gate: dict[str, Any]
 ) -> bool:
-    """Return true only for an explicitly gated action and controlled ref."""
+    """Require the controlled gate unless a delivery ref is explicitly private."""
 
-    return action in branch_gate.get("actions", []) and any(
-        fnmatchcase(ref, pattern)
-        for pattern in branch_gate.get("controlled", [])
+    if action not in branch_gate.get("actions", []):
+        return False
+    return not any(
+        fnmatchcase(ref, pattern) for pattern in branch_gate.get("private", [])
     )

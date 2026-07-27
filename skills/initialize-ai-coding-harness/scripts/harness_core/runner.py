@@ -205,7 +205,7 @@ def run_local_task(
         selection,
         request,
         confirmation,
-        require_confirmation=False,
+        require_confirmation=None,
     )
     registered_command = task.get("command")
     if (
