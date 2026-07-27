@@ -1,64 +1,122 @@
-# SDD Harness
+# SDD Harness 维护者手册
 
-Harness 是 Codex App / Codex CLI 中的仓库内 Agent 治理框架：它从仓库事实生成治理规范，并确保规范通过 Action、Gate 和 Evidence 被执行。当前规范版本为 `1.0.0`。
+当前正式版本：`1.0.0`
 
-## 快速开始
+本仓库维护 SDD Harness：一个运行在 Codex App / Codex CLI 中、绑定仓库事实的 Agent 治理框架。它把仓库里的 Manifest、Workflow、测试入口和既有治理声明编译成可追溯规则，再用 Gate（门禁）和 Evidence（证据）约束执行。
 
-```text
-uv tool install <source-or-package>
-sdd-harness init --yes
-```
+如果你只想在自己的仓库中使用 Harness，请直接阅读[使用者快速上手](docs/quickstart.md)。
 
-随后在目标仓库的 Codex App 或 Codex CLI 中显式调用：
+## 产品边界
 
-```text
-$harness
-```
+| Harness 负责 | Harness 不负责 |
+|---|---|
+| 从固定仓库快照生成治理投影 | 发明项目技术栈、命令或权限 |
+| 将行为解析到唯一 Action 和 Task | 接受 Agent 提交的任意 Shell 字符串 |
+| 以 G0–G7 检查范围、绑定和执行结果 | 用自然语言总结代替验证证据 |
+| 对关键外部动作要求确认和平台门禁 | 绕过分支保护直接 Push、Merge 或 Release |
 
-`sdd-harness init` 是确定性初始化入口，`$harness` 是正式工作入口。Plugin、Hook 和 MCP 只提供可选纵深防御，不保存治理状态，也不是基础前置条件。
+`docs/specification.md` 是唯一规范来源（SSOT, Single Source of Truth）。代码、测试、Plugin 和其他文档只能实现或解释该规范，不能建立平行政策。
 
 ## 工作方式
 
 ```text
-Repository Snapshot
-  → source-backed facts
-  → Action Graph
-  → Governance Projection (maintainer/consumer × 6 subdomains)
-  → AGENTS.md + .codex + .agents + .harness/governance
-  → Work Grant + G0–G7
+Repository Snapshot（仓库快照）
+  → source-backed facts（有来源事实）
+  → Action Graph（行为图）
+  → Governance Projection（治理投影）
+  → Work Grant（工作授权）
+  → G0–G7
   → accepted Evidence / stable blocker codes
 ```
 
-| 层 | 作用 | 例子 |
+| 层 | 维护内容 | 实例 |
 |---|---|---|
-| Agent 编排 | 理解目标、分解阶段、解释缺口 | `repo_mapper` 提取事实，`governed_worker` 单写 |
-| 确定性 Core | 摘要、Schema、Resolver、Gate、Evidence | 相同快照产生相同 `projection_id` |
-| 仓库 Artifact | 保存唯一治理状态 | `.harness/governance/rules.json` |
+| 编排层 | 理解目标、划定 Scope、选择角色 | `repo_mapper` 只读提取事实 |
+| 确定性 Core | Schema、Resolver、Gate、摘要链 | 相同输入产生相同 `projection_id` |
+| 仓库控制面 | Action Binding、Task、边界与 Evidence | `.harness/tools.yaml` 将行为绑定到 `task_ref` |
 
-## 固定治理维度
+固定治理维度为两类 Audience（适用用户）× 六类 Subdomain（治理子域）：
 
 - Audience：`maintainer`、`consumer`
 - Subdomain：`agent-runtime`、`engineering-runtime`、`poc`、`source-code`、`test-code`、`other-tools`
-- Responsibility：`generate`、`enforce`
+- Responsibility（职责）：`generate`、`enforce`
 
-例如 `uv run pytest` 是一个行为，不只是一个已安装工具：它同时受 `engineering-runtime` 和 `test-code` 约束，必须由仓库来源给出唯一调用绑定。
+例如，`uv run pytest` 不只是“系统里有 pytest”，而是一个需要来源、范围、后置条件和 Evidence 的测试行为。
 
-## 安全边界
+## 仓库结构与所有权
 
-- Harness 不发明技术栈、命令、权限或验证结论。
-- Agent Request 不能携带任意 `command`，也不能覆盖 `argv`、`cwd`、Scope 或 Postconditions。
-- 治理控制面写入先零写入预检，再按精确 Plan 单点发布。
-- 常规行为在 Standing Policy + Work Grant 下自动过门禁；只有范围或外部权限跃迁才集中确认。
-- 未分类、来源缺失、绑定歧义、投影过期、证据不全和执行漂移都会失败关闭。
+```text
+harness-scaffold/
+├── docs/                         规范与使用文档
+├── plugins/harness/              可选 Codex Plugin
+├── skills/initialize-ai-coding-harness/
+│   ├── assets/schemas/           JSON Schema
+│   └── scripts/harness_core/     确定性 Core
+├── scripts/                      分发验证脚本
+├── tests/                        单元、集成与契约测试
+├── .harness/                     本仓库 Action、Task、边界与 Pipeline
+├── .github/workflows/            平台验证与交付门禁
+├── pyproject.toml                Python 分发和 CLI 入口
+└── uv.lock                       可复现依赖锁
+```
 
-## 文档
+更完整的路径说明见[仓库结构](docs/repository-structure.md)。主要所有权如下：
+
+| 路径 | 权威来源 |
+|---|---|
+| `docs/specification.md` | Harness 规范 SSOT |
+| `skills/initialize-ai-coding-harness/assets/schemas/` | 机器契约 |
+| `.harness/*.yaml` | 本仓库 Action 与 Task 绑定 |
+| `.harness/governance/` | 从当前事实生成的治理状态 |
+| `.harness/reports/` | Task Evidence，不提交版本库 |
+
+## 维护流程
+
+依赖由 `pyproject.toml` 和 `uv.lock` 定义。首次准备本地环境时使用：
+
+```text
+uv sync --locked
+```
+
+之后在 Codex App 或 Codex CLI 中显式调用 `$harness`，并用 Task ID 描述需要的验证；不要直接绕过 Harness 运行 Test、Build、CI 或交付命令。
+
+| Task ID | 自动化等级 | 用途 |
+|---|---|---|
+| `test:contracts` | routine | 验证 Schema、Core、文档和仓库契约 |
+| `test:distribution-smoke` | routine | 构建 wheel，隔离安装并验证重复初始化 |
+| `test:contracts-ci` | routine | 产生 PR Required Check |
+| `ci:full` | expensive | 经当前确认运行完整 CI |
+| `package:wheel` | routine | 从精确 commit 生成已验证的 Release artifact |
+| `push:branch` | critical | Push 精确 commit，禁止强推 |
+| `pull-request:create` | critical | 从精确 source ref 创建 PR |
+| `merge:pull-request` | critical | Required Checks 通过后合并精确 PR head |
+| `release:github` | critical | 发布绑定版本、commit、artifact 摘要和环境审批的 GitHub Release |
+
+`main`、`release/**` 和 `hotfix/**` 是 controlled branch（受控分支）；`codex/**` 和 `agent/**` 是 private branch（私有工作分支）。受控分支上的 Push、PR、Merge 和 Release 必须绑定精确目标、commit、当前确认与平台 Evidence，缺一项即失败关闭。
+
+## v1.0.0 发布流程
+
+发布只走 `.harness/pipelines/publish.yaml`：
+
+```text
+test:contracts
+  → test:distribution-smoke
+  → package:wheel
+  → release:github
+```
+
+1. 在私有分支完成变更，通过 routine Task 和经确认的 `ci:full`。
+2. 以精确 SHA Push 并创建 PR；Required Checks 通过后独立确认 Merge。
+3. 在合并后的 `main` 上运行 `package:wheel`。GitHub Actions 会构建、隔离安装并上传 wheel、`SHA256SUMS` 和机器报告。
+4. 用 package run ID、wheel SHA-256、`version=1.0.0`、`target=refs/tags/v1.0.0`、`environment=production` 和 `main` commit 创建 Release 请求。
+5. `release:github` 在受保护的 `production` Environment 获批后创建或核对 GitHub Release。已有 Tag、commit 或资产摘要冲突时禁止覆盖。
+
+本项目不向 PyPI 发布：[PyPI 上的 `sdd-harness`](https://pypi.org/project/sdd-harness/) 属于另一个无关项目。正式安装源是本仓库的 GitHub Release。
+
+## 规范与状态
 
 - [治理规范 SSOT](docs/specification.md)
-- [快速上手](docs/quickstart.md)
+- [使用者快速上手](docs/quickstart.md)
 - [仓库结构](docs/repository-structure.md)
 - [可观察用户用例](uc.md)
 - [实施状态](plan.md)
-
-## 开发验证
-
-本仓库的 Test / Build / CI 等语义必须通过 `.harness/tools.yaml` 中登记的 `task_ref` 路由；不要绕过 Harness 直接运行项目验证命令。

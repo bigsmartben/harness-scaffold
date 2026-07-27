@@ -270,7 +270,17 @@ def test_repository_workflow_has_controlled_triggers_and_read_only_token() -> No
             assert "\n  pull_request:" not in workflow
     assert "test \"$CONFIRMED\" = \"true\"" in workflows["harness.yml"]
     assert "ci:full)" in workflows["harness.yml"]
+    assert "package:wheel)" in workflows["harness.yml"]
+    assert "release:github)" in workflows["harness.yml"]
     assert "test:contracts-ci)" not in workflows["harness.yml"]
+    assert "actions: read\n      contents: write" in workflows["harness.yml"]
+    assert "environment:\n      name: production" in workflows["harness.yml"]
+    assert "refs/tags/v1.0.0" in workflows["harness.yml"]
+    assert "actions-run:[1-9][0-9]*" in workflows["harness.yml"]
+    assert "sha256:[0-9a-f]{64}" in workflows["harness.yml"]
+    assert "gh release create" in workflows["harness.yml"]
+    assert "gh release upload" in workflows["harness.yml"]
+    assert "--draft=false" in workflows["harness.yml"]
     assert (
         "uv run pytest tests/unit/test_contracts.py tests/unit/test_platform.py"
         in workflows["routine-contracts.yml"]
@@ -283,3 +293,36 @@ def test_repository_workflow_has_controlled_triggers_and_read_only_token() -> No
         "- Side effects: none"
         in workflows["delivery-gate-evidence.yml"]
     )
+
+
+def test_harness_workflow_exposes_bound_package_and_release_inputs() -> None:
+    workflow = yaml.load(
+        (ROOT / ".github" / "workflows" / "harness.yml").read_text("utf-8"),
+        Loader=yaml.BaseLoader,
+    )
+
+    inputs = workflow["on"]["workflow_dispatch"]["inputs"]
+    assert set(inputs) == {
+        "task_id",
+        "request_digest",
+        "confirmed",
+        "target",
+        "source_ref",
+        "commit_sha",
+        "pull_request_number",
+        "merge_method",
+        "version",
+        "artifact_digest",
+        "environment",
+    }
+    assert workflow["permissions"] == {"contents": "read"}
+    assert workflow["jobs"]["package-wheel"]["if"] == (
+        "inputs.task_id == 'package:wheel'"
+    )
+    release = workflow["jobs"]["release"]
+    assert release["if"] == "inputs.task_id == 'release:github'"
+    assert release["environment"] == {"name": "production"}
+    assert release["permissions"] == {
+        "actions": "read",
+        "contents": "write",
+    }

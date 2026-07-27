@@ -17,15 +17,15 @@ on:
         default: false
         type: boolean
       target:
-        description: Exact base ref for a delivery Task
+        description: Exact branch or tag ref for a delivery Task
         required: false
         type: string
       source_ref:
-        description: Exact source ref for pull-request:create
+        description: Exact source ref, branch, or package Actions run
         required: false
         type: string
       commit_sha:
-        description: Expected source or pull-request head SHA
+        description: Expected source, package, or pull-request head SHA
         required: false
         type: string
       pull_request_number:
@@ -34,6 +34,18 @@ on:
         type: string
       merge_method:
         description: merge, squash, or rebase
+        required: false
+        type: string
+      version:
+        description: Exact version for release:github
+        required: false
+        type: string
+      artifact_digest:
+        description: Expected sha256 digest for the release wheel
+        required: false
+        type: string
+      environment:
+        description: Protected environment for release:github
         required: false
         type: string
 
@@ -51,28 +63,50 @@ jobs:
           TASK_ID: ${{ inputs.task_id }}
           REQUEST_DIGEST: ${{ inputs.request_digest }}
           CONFIRMED: ${{ inputs.confirmed }}
+          TARGET: ${{ inputs.target }}
+          SOURCE_REF: ${{ inputs.source_ref }}
+          COMMIT_SHA: ${{ inputs.commit_sha }}
+          VERSION: ${{ inputs.version }}
+          ARTIFACT_DIGEST: ${{ inputs.artifact_digest }}
+          RELEASE_ENVIRONMENT: ${{ inputs.environment }}
         run: |
           set -eu
-          test -n "$REQUEST_DIGEST"
+          printf '%s\n' "$REQUEST_DIGEST" |
+            grep -Eq '^sha256:[0-9a-f]{64}$'
           case "$TASK_ID" in
             ci:full)
               test "$CONFIRMED" = "true"
+              test -n "$COMMIT_SHA"
+              ;;
+            package:wheel)
+              test -n "$COMMIT_SHA"
               ;;
             pull-request:create)
               test "$CONFIRMED" = "true"
-              test -n "${{ inputs.target }}"
-              test -n "${{ inputs.source_ref }}"
-              test -n "${{ inputs.commit_sha }}"
+              test -n "$TARGET"
+              test -n "$SOURCE_REF"
+              test -n "$COMMIT_SHA"
               ;;
             merge:pull-request)
               test "$CONFIRMED" = "true"
-              test -n "${{ inputs.target }}"
+              test -n "$TARGET"
               test -n "${{ inputs.pull_request_number }}"
-              test -n "${{ inputs.commit_sha }}"
+              test -n "$COMMIT_SHA"
               case "${{ inputs.merge_method }}" in
                 merge|squash|rebase) ;;
                 *) exit 64 ;;
               esac
+              ;;
+            release:github)
+              test "$CONFIRMED" = "true"
+              test "$VERSION" = "1.0.0"
+              test "$TARGET" = "refs/tags/v1.0.0"
+              test "$RELEASE_ENVIRONMENT" = "production"
+              test -n "$COMMIT_SHA"
+              printf '%s\n' "$SOURCE_REF" |
+                grep -Eq '^actions-run:[1-9][0-9]*$'
+              printf '%s\n' "$ARTIFACT_DIGEST" |
+                grep -Eq '^sha256:[0-9a-f]{64}$'
               ;;
             *)
               exit 64
@@ -86,13 +120,69 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ inputs.commit_sha }}
       - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e
         with:
           enable-cache: true
+      - name: Verify exact commit
+        env:
+          EXPECTED_SHA: ${{ inputs.commit_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
       - name: Sync locked environment
         run: uv sync --locked
       - name: Run confirmed full CI
         run: uv run pytest
+
+  package-wheel:
+    name: package-wheel
+    if: inputs.task_id == 'package:wheel'
+    needs: authorize
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ inputs.commit_sha }}
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e
+        with:
+          enable-cache: true
+      - name: Verify exact commit
+        env:
+          EXPECTED_SHA: ${{ inputs.commit_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+      - name: Sync locked environment
+        run: uv sync --locked
+      - name: Build and smoke-test release wheel
+        shell: bash
+        run: |
+          set -eu
+          uv run python scripts/smoke_distribution.py \
+            --output-dir release-bundle \
+            --report .harness/reports/package-wheel.json
+          cp .harness/reports/package-wheel.json release-bundle/package-wheel.json
+      - name: Upload immutable package artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sdd-harness-wheel
+          path: release-bundle/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Record package evidence
+        shell: bash
+        env:
+          REQUEST_DIGEST: ${{ inputs.request_digest }}
+          COMMIT_SHA: ${{ inputs.commit_sha }}
+        run: |
+          set -eu
+          digest="$(jq -r '.artifact_digest' .harness/reports/package-wheel.json)"
+          {
+            echo "## package:wheel Evidence"
+            echo
+            echo "- Actions run: \`actions-run:${GITHUB_RUN_ID}\`"
+            echo "- Request: \`$REQUEST_DIGEST\`"
+            echo "- Commit: \`$COMMIT_SHA\`"
+            echo "- Artifact: \`$digest\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   pull-request:
     name: pull-request
@@ -151,3 +241,171 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             "--${MERGE_METHOD}" \
             --match-head-commit "$EXPECTED_HEAD_SHA"
+
+  release:
+    name: release
+    if: inputs.task_id == 'release:github'
+    needs: authorize
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.commit_sha }}
+      - name: Download exact verified package run
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_REF: ${{ inputs.source_ref }}
+        run: |
+          set -eu
+          package_run="${SOURCE_REF#actions-run:}"
+          mkdir -p release-artifact
+          gh run download "$package_run" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name sdd-harness-wheel \
+            --dir release-artifact
+      - name: Verify release bindings and protected environment
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ inputs.commit_sha }}
+          VERSION: ${{ inputs.version }}
+          ARTIFACT_DIGEST: ${{ inputs.artifact_digest }}
+        run: |
+          set -eu
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          main_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')"
+          test "$main_sha" = "$EXPECTED_SHA"
+          project_version="$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')"
+          test "$project_version" = "$VERSION"
+          gh api "repos/${GITHUB_REPOSITORY}/environments/production" \
+            --jq 'any(.protection_rules[]?; .type == "required_reviewers")' |
+            grep -qx true
+          wheel="release-artifact/sdd_harness-${VERSION}-py3-none-any.whl"
+          test -f "$wheel"
+          test -f release-artifact/SHA256SUMS
+          test -f release-artifact/package-wheel.json
+          actual_digest="sha256:$(sha256sum "$wheel" | cut -d' ' -f1)"
+          test "$actual_digest" = "$ARTIFACT_DIGEST"
+          (
+            cd release-artifact
+            sha256sum -c SHA256SUMS
+          )
+          jq -e \
+            --arg version "$VERSION" \
+            --arg digest "$ARTIFACT_DIGEST" \
+            '.status == "passed" and .version == $version and .artifact_digest == $digest' \
+            release-artifact/package-wheel.json >/dev/null
+      - name: Create or verify GitHub Release
+        id: publish
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ inputs.commit_sha }}
+          VERSION: ${{ inputs.version }}
+          ARTIFACT_DIGEST: ${{ inputs.artifact_digest }}
+        run: |
+          set -eu
+          tag="v${VERSION}"
+          wheel="release-artifact/sdd_harness-${VERSION}-py3-none-any.whl"
+          checksums="release-artifact/SHA256SUMS"
+
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            git fetch --force origin "refs/tags/${tag}:refs/tags/${tag}"
+            test "$(git rev-list -n 1 "$tag")" = "$EXPECTED_SHA"
+          else
+            gh release create "$tag" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$EXPECTED_SHA" \
+              --title "SDD Harness ${tag}" \
+              --generate-notes \
+              --draft
+          fi
+
+          assets="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"
+          mkdir -p existing-assets
+          for source in "$wheel" "$checksums"; do
+            name="$(basename "$source")"
+            if printf '%s\n' "$assets" | grep -Fxq "$name"; then
+              gh release download "$tag" \
+                --repo "$GITHUB_REPOSITORY" \
+                --pattern "$name" \
+                --dir existing-assets
+              if test "$name" = "$(basename "$wheel")"; then
+                existing_digest="sha256:$(sha256sum "existing-assets/$name" | cut -d' ' -f1)"
+                test "$existing_digest" = "$ARTIFACT_DIGEST"
+              else
+                cmp "existing-assets/$name" "$source"
+              fi
+            else
+              gh release upload "$tag" "$source" --repo "$GITHUB_REPOSITORY"
+            fi
+          done
+
+          prerelease="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isPrerelease --jq '.isPrerelease')"
+          test "$prerelease" = "false"
+          draft="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isDraft --jq '.isDraft')"
+          if test "$draft" = "true"; then
+            gh release edit "$tag" \
+              --repo "$GITHUB_REPOSITORY" \
+              --draft=false \
+              --prerelease=false
+          fi
+          url="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json url --jq '.url')"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+      - name: Write release Evidence
+        shell: bash
+        env:
+          REQUEST_DIGEST: ${{ inputs.request_digest }}
+          COMMIT_SHA: ${{ inputs.commit_sha }}
+          SOURCE_REF: ${{ inputs.source_ref }}
+          VERSION: ${{ inputs.version }}
+          ARTIFACT_DIGEST: ${{ inputs.artifact_digest }}
+          RELEASE_URL: ${{ steps.publish.outputs.url }}
+        run: |
+          set -eu
+          mkdir -p .harness/reports
+          jq -n \
+            --arg request "$REQUEST_DIGEST" \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg commit "$COMMIT_SHA" \
+            --arg source "$SOURCE_REF" \
+            --arg version "$VERSION" \
+            --arg artifact "$ARTIFACT_DIGEST" \
+            --arg url "$RELEASE_URL" \
+            '{
+              status: "passed",
+              task_id: "release:github",
+              request_digest: $request,
+              run_id: $run_id,
+              commit_sha: $commit,
+              source_ref: $source,
+              target: ("refs/tags/v" + $version),
+              version: $version,
+              artifact_digest: $artifact,
+              environment: "production",
+              approval_status: "approved",
+              url: $url
+            }' > .harness/reports/release-github.json
+          {
+            echo "## release:github Evidence"
+            echo
+            echo "- Request: \`$REQUEST_DIGEST\`"
+            echo "- Commit: \`$COMMIT_SHA\`"
+            echo "- Package: \`$SOURCE_REF\`"
+            echo "- Artifact: \`$ARTIFACT_DIGEST\`"
+            echo "- Release: $RELEASE_URL"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload release Evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-evidence-v1.0.0
+          path: .harness/reports/release-github.json
+          if-no-files-found: error
+          retention-days: 90

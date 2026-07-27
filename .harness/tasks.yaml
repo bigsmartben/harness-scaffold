@@ -15,6 +15,21 @@ tasks:
     timeout: 5m
     outputs:
       report: .harness/reports/distribution-smoke.json
+  - id: package:wheel
+    category: package
+    automation_level: routine
+    auto_allowed: true
+    source: .github/workflows/harness.yml#package-wheel
+    backend: github-actions
+    working_directory: repository-root
+    supports_scope: publish
+    timeout: 10m
+    outputs:
+      report: .harness/reports/package-wheel.json
+      artifacts:
+        - release-bundle/sdd_harness-1.0.0-py3-none-any.whl
+        - release-bundle/SHA256SUMS
+        - release-bundle/package-wheel.json
   - id: test:contracts
     category: test
     automation_level: routine
@@ -96,3 +111,17 @@ tasks:
     timeout: 10m
     outputs:
       report: .harness/reports/merge-pull-request.json
+  - id: release:github
+    category: release
+    automation_level: critical
+    auto_allowed: false
+    source: .github/workflows/harness.yml#release
+    backend: github-actions
+    working_directory: repository-root
+    supports_scope: publish
+    timeout: 15m
+    outputs:
+      report: .harness/reports/release-github.json
+      artifacts:
+        - sdd_harness-1.0.0-py3-none-any.whl
+        - SHA256SUMS

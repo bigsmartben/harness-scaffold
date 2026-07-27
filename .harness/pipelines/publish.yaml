@@ -6,4 +6,15 @@ stages:
     tasks:
       - test:contracts
     requires_evidence: true
-
+  - id: distribution-smoke
+    tasks:
+      - test:distribution-smoke
+    requires_evidence: true
+  - id: package
+    tasks:
+      - package:wheel
+    requires_evidence: true
+  - id: release
+    tasks:
+      - release:github
+    requires_evidence: true

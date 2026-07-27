@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import os
@@ -12,6 +13,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).parents[1]
+VERSION = "1.0.0"
 
 
 def _run(
@@ -45,10 +47,41 @@ def _tree_digest(root: Path) -> str:
     return f"sha256:{digest.hexdigest()}"
 
 
+def _file_digest(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return f"sha256:{digest.hexdigest()}"
+
+
+def _arguments() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Build and smoke-test the public sdd-harness wheel"
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        help="persist the verified wheel and SHA256SUMS in this directory",
+    )
+    parser.add_argument(
+        "--report",
+        type=Path,
+        help="write the machine-readable result to this JSON file",
+    )
+    return parser.parse_args()
+
+
 def main() -> int:
+    args = _arguments()
     with tempfile.TemporaryDirectory(prefix="sdd-harness-dist-smoke-") as raw:
         workspace = Path(raw)
-        distribution = workspace / "dist"
+        distribution = (
+            args.output_dir.resolve()
+            if args.output_dir is not None
+            else workspace / "dist"
+        )
+        distribution.mkdir(parents=True, exist_ok=True)
         tools = workspace / "tools"
         binaries = workspace / "bin"
         fixture = workspace / "fixture"
@@ -74,9 +107,9 @@ def main() -> int:
             cwd=ROOT,
             env=environment,
         )
-        wheels = list(distribution.glob("sdd_harness-1.0.0-*.whl"))
+        wheels = list(distribution.glob(f"sdd_harness-{VERSION}-*.whl"))
         if len(wheels) != 1:
-            raise RuntimeError(f"expected one 1.0.0 wheel, found {wheels}")
+            raise RuntimeError(f"expected one {VERSION} wheel, found {wheels}")
 
         _run(
             ["uv", "tool", "install", "--offline", str(wheels[0])],
@@ -87,13 +120,13 @@ def main() -> int:
         if not executable.is_file():
             raise RuntimeError(f"installed entrypoint is missing: {executable}")
 
-        version = _run(
+        cli_version = _run(
             [str(executable), "--version"],
             cwd=fixture,
             env=environment,
         ).stdout.strip()
-        if version != "sdd-harness 1.0.0":
-            raise RuntimeError(f"unexpected version: {version}")
+        if cli_version != f"sdd-harness {VERSION}":
+            raise RuntimeError(f"unexpected version: {cli_version}")
 
         first = json.loads(
             _run(
@@ -121,20 +154,29 @@ def main() -> int:
         if after_first != after_second:
             raise RuntimeError("repository bytes changed during idempotent init")
 
-        print(
-            json.dumps(
-                {
-                    "status": "passed",
-                    "wheel": wheels[0].name,
-                    "version": version,
-                    "projection_id": first["projection_id"],
-                    "second_init_changed_paths": second["changed_paths"],
-                    "tree_digest": after_second,
-                },
-                indent=2,
-                sort_keys=True,
-            )
+        artifact_digest = _file_digest(wheels[0])
+        checksums = distribution / "SHA256SUMS"
+        checksums.write_text(
+            f"{artifact_digest.removeprefix('sha256:')}  {wheels[0].name}\n",
+            encoding="utf-8",
         )
+        result = {
+            "status": "passed",
+            "wheel": wheels[0].name,
+            "version": VERSION,
+            "cli_version": cli_version,
+            "artifact_digest": artifact_digest,
+            "checksums": checksums.name,
+            "projection_id": first["projection_id"],
+            "second_init_changed_paths": second["changed_paths"],
+            "tree_digest": after_second,
+        }
+        rendered = json.dumps(result, indent=2, sort_keys=True) + "\n"
+        if args.report is not None:
+            report = args.report.resolve()
+            report.parent.mkdir(parents=True, exist_ok=True)
+            report.write_text(rendered, encoding="utf-8")
+        print(rendered, end="")
     return 0
 
 
