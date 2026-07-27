@@ -125,6 +125,28 @@ tools:
     constraints:
       - invoke only through Harness
       - isolate UV_TOOL_DIR and UV_TOOL_BIN_DIR
+  - id: package-release-wheel
+    type: project-action
+    purpose: build-and-upload-verified-release-wheel
+    capability: distribution-package
+    action_semantics: package
+    invocation_mode: managed
+    task_ref: package:wheel
+    working_directory: repository-root
+    use_when:
+      - create the immutable wheel artifact for a GitHub Release
+    do_not_use_when:
+      - publish, tag, or release the artifact
+    inputs:
+      scope: publish
+      commit_sha: git-commit
+    outputs:
+      evidence: .harness/reports/package-wheel.json
+      artifact: github-actions-run
+    constraints:
+      - invoke only through Harness
+      - build from the exact request commit
+      - isolated install smoke test required
 
   - id: github-contract-check
     type: project-action
@@ -254,3 +276,30 @@ tools:
       - independent current confirmation required
       - required checks must pass
       - github-actions platform evidence required
+  - id: github-create-release
+    type: project-action
+    purpose: create-confirmed-github-release
+    capability: project-release
+    action_semantics: release
+    invocation_mode: managed
+    task_ref: release:github
+    working_directory: repository-root
+    use_when:
+      - publish one exact version and verified artifact as a GitHub Release
+    do_not_use_when:
+      - build an artifact, publish to PyPI, or overwrite a conflicting release
+    inputs:
+      scope: publish
+      target: tag-ref
+      source_ref: github-actions-run
+      commit_sha: git-commit
+      version: release-version
+      artifact_digest: sha256
+      environment: protected-environment
+    outputs:
+      evidence: .harness/reports/release-github.json
+    constraints:
+      - independent current confirmation required
+      - protected production environment approval required
+      - exact package run and artifact digest required
+      - idempotent retry only; conflicting release replacement forbidden

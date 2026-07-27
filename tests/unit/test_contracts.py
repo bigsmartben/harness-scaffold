@@ -333,3 +333,81 @@ def test_task_contract_requires_explicit_automation_policy() -> None:
             "deploy",
         }:
             assert task["automation_level"] == "critical"
+
+
+def test_repository_release_pipeline_uses_registered_tasks() -> None:
+    tasks = {
+        task["id"]: task
+        for task in yaml.safe_load(
+            (ROOT / ".harness" / "tasks.yaml").read_text("utf-8")
+        )["tasks"]
+    }
+    tools = yaml.safe_load(
+        (ROOT / ".harness" / "tools.yaml").read_text("utf-8")
+    )["tools"]
+    pipeline = yaml.safe_load(
+        (ROOT / ".harness" / "pipelines" / "publish.yaml").read_text("utf-8")
+    )
+
+    assert tasks["package:wheel"] == {
+        "id": "package:wheel",
+        "category": "package",
+        "automation_level": "routine",
+        "auto_allowed": True,
+        "source": ".github/workflows/harness.yml#package-wheel",
+        "backend": "github-actions",
+        "working_directory": "repository-root",
+        "supports_scope": "publish",
+        "timeout": "10m",
+        "outputs": {
+            "report": ".harness/reports/package-wheel.json",
+            "artifacts": [
+                "release-bundle/sdd_harness-1.0.0-py3-none-any.whl",
+                "release-bundle/SHA256SUMS",
+                "release-bundle/package-wheel.json",
+            ],
+        },
+    }
+    assert tasks["release:github"]["category"] == "release"
+    assert tasks["release:github"]["automation_level"] == "critical"
+    assert tasks["release:github"]["auto_allowed"] is False
+    assert tasks["release:github"]["source"] == (
+        ".github/workflows/harness.yml#release"
+    )
+
+    task_refs = {
+        tool["action_semantics"]: tool["task_ref"]
+        for tool in tools
+        if tool.get("task_ref") in {"package:wheel", "release:github"}
+    }
+    assert task_refs == {
+        "package": "package:wheel",
+        "release": "release:github",
+    }
+    assert pipeline == {
+        "id": "pipeline:publish",
+        "kind": "publish",
+        "requires_independent_confirmation": True,
+        "stages": [
+            {
+                "id": "contracts",
+                "tasks": ["test:contracts"],
+                "requires_evidence": True,
+            },
+            {
+                "id": "distribution-smoke",
+                "tasks": ["test:distribution-smoke"],
+                "requires_evidence": True,
+            },
+            {
+                "id": "package",
+                "tasks": ["package:wheel"],
+                "requires_evidence": True,
+            },
+            {
+                "id": "release",
+                "tasks": ["release:github"],
+                "requires_evidence": True,
+            },
+        ],
+    }

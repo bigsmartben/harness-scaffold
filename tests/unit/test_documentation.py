@@ -110,6 +110,28 @@ def test_public_status_projections_match_plan() -> None:
     assert "G0–G7" in quickstart
 
 
+def test_readme_and_quickstart_have_distinct_audiences() -> None:
+    readme = (ROOT / "README.md").read_text("utf-8")
+    quickstart = (ROOT / "docs" / "quickstart.md").read_text("utf-8")
+
+    assert "# SDD Harness 维护者手册" in readme
+    assert "[使用者快速上手](docs/quickstart.md)" in readme
+    assert "package:wheel" in readme
+    assert "release:github" in readme
+
+    assert "# SDD Harness 使用者快速上手" in quickstart
+    assert "<source-or-package>" not in quickstart
+    assert (
+        "https://github.com/bigsmartben/harness-scaffold/releases/download/"
+        "v1.0.0/sdd_harness-1.0.0-py3-none-any.whl"
+        in quickstart
+    )
+    assert "sdd-harness --version" in quickstart
+    assert "sdd-harness init" in quickstart
+    assert "sdd-harness init --yes" in quickstart
+    assert "$harness" in quickstart
+
+
 def test_skill_metadata_matches_skill_identity() -> None:
     skill_text = (SKILL / "SKILL.md").read_text("utf-8")
     frontmatter = yaml.safe_load(skill_text.split("---", 2)[1])
