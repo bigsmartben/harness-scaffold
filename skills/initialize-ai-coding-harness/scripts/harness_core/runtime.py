@@ -113,6 +113,9 @@ def create_task_request_artifact(
     request_id: str,
     target: str | None,
     commit_sha: str,
+    source_ref: str | None = None,
+    pull_request_number: int | None = None,
+    merge_method: str | None = None,
     version: str | None = None,
     artifact_digest: str | None = None,
     environment: str | None = None,
@@ -155,6 +158,13 @@ def create_task_request_artifact(
     missing: list[str] = []
     if category in CRITICAL_CATEGORIES and not target:
         missing.append("target")
+    if category == "pull-request" and not source_ref:
+        missing.append("source_ref")
+    if category == "merge":
+        if pull_request_number is None:
+            missing.append("pull_request_number")
+        if merge_method not in {"merge", "squash", "rebase"}:
+            missing.append("merge_method")
     if category in {"publish", "release", "deploy"}:
         if not version:
             missing.append("version")
@@ -176,6 +186,9 @@ def create_task_request_artifact(
             "action_semantics": task["category"],
             "validation_level": validation_level,
             "target": target,
+            "source_ref": source_ref,
+            "pull_request_number": pull_request_number,
+            "merge_method": merge_method,
             "commit_sha": commit_sha,
             "version": version,
             "artifact_digest": artifact_digest,

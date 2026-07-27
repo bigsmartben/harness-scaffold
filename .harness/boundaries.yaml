@@ -4,9 +4,13 @@ branch_gate:
     - refs/heads/master
     - refs/heads/release/**
     - refs/heads/hotfix/**
+  private:
+    - refs/heads/codex/**
+    - refs/heads/agent/**
   unmatched: unrestricted
   actions:
     - push
+    - pull-request
     - merge
   confirmation: strong
   platform_gate: required

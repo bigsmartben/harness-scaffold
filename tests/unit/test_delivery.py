@@ -42,7 +42,14 @@ SCHEMAS = (
     / "assets"
     / "schemas"
 )
-DELIVERY = {"push", "merge", "publish", "release", "deploy"}
+DELIVERY = {
+    "push",
+    "pull-request",
+    "merge",
+    "publish",
+    "release",
+    "deploy",
+}
 
 
 def _task(
@@ -134,6 +141,17 @@ def _chain(
         request_id=f"request:{task['id']}",
         target=target,
         commit_sha=commit_sha,
+        source_ref=(
+            "refs/heads/feature"
+            if task["category"] == "pull-request"
+            else None
+        ),
+        pull_request_number=(
+            42 if task["category"] == "merge" else None
+        ),
+        merge_method=(
+            "squash" if task["category"] == "merge" else None
+        ),
         version=(
             "1.2.3"
             if task["category"] in {"publish", "release", "deploy"}
@@ -973,6 +991,8 @@ def test_pipeline_readiness_and_finalize_are_separate(tmp_path: Path) -> None:
         request_id="request:merge",
         target="main",
         commit_sha="commit123",
+        pull_request_number=42,
+        merge_method="squash",
     )
     confirmation = create_confirmation_artifact(
         merge_request, confirmed_at="2026-07-24T00:00:00Z"

@@ -375,6 +375,12 @@ Merge 属于 `critical`，目标 MUST 分类为受控分支。有效 Work Grant 
 
 Push、Merge、Publish、Release、Deploy 或其他 `critical` 动作 MUST 获得针对本次动作和目标的独立明确确认。目标为受控或未分类分支时，该确认 MUST 是强确认；缺少强确认或试图调用直接 Backend 时 MUST 返回 `CONTROLLED_BRANCH_GATE_REQUIRED` 与 `HANDOFF_REQUIRED`，Backend 调用次数为零。Publish、Release 和 Deploy 的确认还 MUST 绑定版本、制品摘要与目标环境。一般性工作批准、其他关键动作批准或历史确认不得复用。
 
+Pull Request 创建 MUST 作为独立的 `pull-request` 动作注册，并通过 `task_ref`
+绑定源分支、目标分支和精确 Head SHA。Merge Request MUST 绑定目标分支、PR
+编号、预期 Head SHA 与合并方法。Merge Pipeline MUST 在调度 Merge Backend
+前验证同一摘要链上的 Required Check 与 Full CI Evidence；任一字段缺失返回
+`EVIDENCE_INCOMPLETE` 与 `HANDOFF_REQUIRED`，Backend 调用次数为零。
+
 ### HF-005：Grant 失效
 
 HF-001 所绑定的写入范围、Merge 目标、交付目标或风险级别发生实质变化时，当前 Grant MUST 失效并返回 `HANDOFF_REQUIRED`。未绑定的新事实先按边界扩张处理，不得由实现自行推断为仍在原 Grant 内。
