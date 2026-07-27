@@ -69,6 +69,11 @@ def _arguments() -> argparse.Namespace:
         type=Path,
         help="write the machine-readable result to this JSON file",
     )
+    parser.add_argument(
+        "--allow-network",
+        action="store_true",
+        help="allow dependency downloads for the isolated tool install",
+    )
     return parser.parse_args()
 
 
@@ -111,11 +116,11 @@ def main() -> int:
         if len(wheels) != 1:
             raise RuntimeError(f"expected one {VERSION} wheel, found {wheels}")
 
-        _run(
-            ["uv", "tool", "install", "--offline", str(wheels[0])],
-            cwd=ROOT,
-            env=environment,
-        )
+        install_command = ["uv", "tool", "install"]
+        if not args.allow_network:
+            install_command.append("--offline")
+        install_command.append(str(wheels[0]))
+        _run(install_command, cwd=ROOT, env=environment)
         executable = binaries / ("sdd-harness.exe" if os.name == "nt" else "sdd-harness")
         if not executable.is_file():
             raise RuntimeError(f"installed entrypoint is missing: {executable}")

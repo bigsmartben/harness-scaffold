@@ -158,7 +158,8 @@ jobs:
           set -eu
           uv run python scripts/smoke_distribution.py \
             --output-dir release-bundle \
-            --report .harness/reports/package-wheel.json
+            --report .harness/reports/package-wheel.json \
+            --allow-network
           cp .harness/reports/package-wheel.json release-bundle/package-wheel.json
       - name: Upload immutable package artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

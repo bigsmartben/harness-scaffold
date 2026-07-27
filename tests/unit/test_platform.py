@@ -281,6 +281,7 @@ def test_repository_workflow_has_controlled_triggers_and_read_only_token() -> No
     assert "gh release create" in workflows["harness.yml"]
     assert "gh release upload" in workflows["harness.yml"]
     assert "--draft=false" in workflows["harness.yml"]
+    assert "--allow-network" in workflows["harness.yml"]
     assert (
         "uv run pytest tests/unit/test_contracts.py tests/unit/test_platform.py"
         in workflows["routine-contracts.yml"]
