@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import sys
+import subprocess
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -24,6 +26,7 @@ from harness_core import (
     resolve_action_policy,
     route_intent,
     run_github_actions_task,
+    run_git_remote_push_task,
     run_local_task,
     select_validation,
     tool_entry_blockers,
@@ -66,6 +69,8 @@ def _task(
     if backend == "local":
         task["command_source"] = "test-fixture"
         task["command"] = command or [sys.executable, "-c", "print('ok')"]
+    elif backend == "git-remote":
+        task["source"] = ".harness/adapters/git-remote.yaml#origin"
     else:
         task["source"] = f".github/workflows/{category}.yml#jobs.main"
     return task
@@ -78,6 +83,7 @@ def _chain(
     target: str | None = None,
     environment: str | None = None,
     artifact: str | None = None,
+    commit_sha: str = "commit123",
 ) -> dict[str, dict]:
     grant = create_work_grant(
         grant_id="grant:test",
@@ -127,7 +133,7 @@ def _chain(
         selection,
         request_id=f"request:{task['id']}",
         target=target,
-        commit_sha="commit123",
+        commit_sha=commit_sha,
         version=(
             "1.2.3"
             if task["category"] in {"publish", "release", "deploy"}
@@ -572,6 +578,146 @@ def test_local_backend_refuses_critical_delivery(
     assert evidence["status"] == "blocked"
     assert evidence["backend_calls"] == 0
     assert "BACKEND_UNAVAILABLE" in evidence["blocker_codes"]
+
+
+def _git_repository(tmp_path: Path) -> tuple[Path, str]:
+    repository = tmp_path / "repository"
+    repository.mkdir()
+    subprocess.run(["git", "init"], cwd=repository, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.com"],
+        cwd=repository,
+        check=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Harness Test"],
+        cwd=repository,
+        check=True,
+    )
+    (repository / "README.md").write_text("fixture\n", encoding="utf-8")
+    subprocess.run(["git", "add", "README.md"], cwd=repository, check=True)
+    subprocess.run(
+        ["git", "commit", "-m", "fixture"],
+        cwd=repository,
+        check=True,
+        capture_output=True,
+    )
+    commit_sha = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repository,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    return repository, commit_sha
+
+
+def test_git_remote_push_requires_matching_confirmation(tmp_path: Path) -> None:
+    repository, commit_sha = _git_repository(tmp_path)
+    task = _task(
+        task_id="push:branch",
+        category="push",
+        backend="git-remote",
+        automation_level="critical",
+        auto_allowed=False,
+        supports_scope="publish",
+    )
+    chain = _chain(
+        task,
+        level="publish",
+        target="refs/heads/codex/test",
+        commit_sha=commit_sha,
+    )
+    calls: list[list[str]] = []
+
+    def executor(command: list[str], **kwargs: object) -> SimpleNamespace:
+        calls.append(command)
+        return SimpleNamespace(returncode=0, stdout="ok\n", stderr="")
+
+    evidence = run_git_remote_push_task(
+        task,
+        {
+            "type": "git-remote",
+            "remote": "origin",
+            "execution": {
+                "shell": False,
+                "force": False,
+                "operation": "push-ref",
+            },
+        },
+        repository,
+        "publish",
+        executor=executor,
+        **chain,
+    )
+
+    assert evidence["status"] == "blocked"
+    assert evidence["backend_calls"] == 0
+    assert calls == []
+    assert "HANDOFF_REQUIRED" in evidence["blocker_codes"]
+
+
+def test_git_remote_push_uses_one_exact_non_force_refspec(tmp_path: Path) -> None:
+    repository, commit_sha = _git_repository(tmp_path)
+    task = _task(
+        task_id="push:branch",
+        category="push",
+        backend="git-remote",
+        automation_level="critical",
+        auto_allowed=False,
+        supports_scope="publish",
+    )
+    chain = _chain(
+        task,
+        level="publish",
+        target="refs/heads/codex/test",
+        commit_sha=commit_sha,
+    )
+    confirmation = create_confirmation_artifact(
+        chain["request"], confirmed_at="2026-07-27T00:00:00Z"
+    )
+    calls: list[list[str]] = []
+
+    def executor(command: list[str], **kwargs: object) -> SimpleNamespace:
+        assert kwargs["shell"] is False
+        calls.append(command)
+        return SimpleNamespace(returncode=0, stdout="ok\n", stderr="")
+
+    evidence = run_git_remote_push_task(
+        task,
+        {
+            "type": "git-remote",
+            "remote": "origin",
+            "execution": {
+                "shell": False,
+                "force": False,
+                "operation": "push-ref",
+            },
+        },
+        repository,
+        "publish",
+        confirmation=confirmation,
+        executor=executor,
+        **chain,
+    )
+
+    assert evidence["status"] == "passed"
+    assert evidence["backend_calls"] == 1
+    assert evidence["formal_authority"] is True
+    assert evidence["platform"]["platform"] == "git-remote"
+    assert evidence["platform"]["protected_ref"] == "refs/heads/codex/test"
+    assert calls == [
+        [
+            "git",
+            "push",
+            "--porcelain",
+            "--set-upstream",
+            "origin",
+            f"{commit_sha}:refs/heads/codex/test",
+        ]
+    ]
+    assert "--force" not in calls[0]
+    assert validate_runtime_artifact(evidence, SCHEMAS) == []
 
 
 def test_fake_adapter_is_not_called_without_matching_confirmation(

@@ -219,6 +219,7 @@ def create_platform_evidence_artifact(
     artifact_digest: str | None,
     source_ref: str,
     protected_ref: str | None = None,
+    platform: str = "github-actions",
 ) -> dict[str, Any]:
     if not verify_digest(request, "request_digest"):
         raise ValueError("EVIDENCE_BINDING_MISMATCH: request digest is invalid")
@@ -226,7 +227,7 @@ def create_platform_evidence_artifact(
         {
             "artifact_type": "platform-evidence",
             "schema_version": SCHEMA_VERSION,
-            "platform": "github-actions",
+            "platform": platform,
             "workflow": workflow,
             "run_id": run_id,
             "commit_sha": commit_sha,
@@ -287,8 +288,15 @@ def create_evidence_artifact(
             "Evidence Backend does not match the Task"
         )
     if status == "passed" and task.get("category") in CRITICAL_CATEGORIES:
+        expected_backend = (
+            "git-remote"
+            if task.get("category") == "push"
+            and isinstance(platform, dict)
+            and platform.get("platform") == "git-remote"
+            else "github-actions"
+        )
         if (
-            backend != "github-actions"
+            backend != expected_backend
             or confirmation_status != "confirmed"
             or not formal_authority
             or platform is None

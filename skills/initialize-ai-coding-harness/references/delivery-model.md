@@ -4,10 +4,11 @@ Map only manifest-declared commands, explicitly referenced repository scripts, a
 
 - Use Local for registered project commands.
 - Use GitHub Actions only for an existing referenced workflow or a separately selected Bootstrap backend.
+- Use `git-remote` only for an exact confirmed non-force Push to `refs/heads/*`; it cannot Merge, Publish, Release, or Deploy.
 - Map changed paths to the lowest sufficient validation level in `impact.yaml`.
 - Classify CI/CD actions by semantics, not by Shell, CLI, MCP, or API channel.
 - Require complete Task Evidence and a current confirmation before Merge.
-- Keep Push, Merge, Publish, Release, and Deploy critical and separately confirmed.
+- Keep Push, Merge, Publish, Release, and Deploy critical and separately confirmed. A Push confirmation binds the remote, full ref, and exact commit.
 
 The Registry indexes ordinary tools and does not authorize or proxy them. External `push`, `pull_request`, `schedule`, or webhook events must retain the configured automation gate. Report uncontrolled protected triggers; do not claim to control ordinary Shell, MCP, network, or file writes.
 

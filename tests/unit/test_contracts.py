@@ -258,11 +258,22 @@ def test_valid_fixture_covers_required_tool_kinds_and_invocation_modes() -> None
     )
 
 
-def test_backend_templates_cover_local_and_github_actions() -> None:
+def test_backend_templates_cover_local_github_actions_and_git_remote() -> None:
     assert (SKILL / "assets" / "backends" / "local" / "adapter.yaml").is_file()
     assert (
         SKILL / "assets" / "backends" / "github-actions" / "adapter.yaml"
     ).is_file()
+    git_remote = (
+        SKILL / "assets" / "backends" / "git-remote" / "adapter.yaml"
+    )
+    assert git_remote.is_file()
+    git_remote_document = yaml.safe_load(git_remote.read_text("utf-8"))
+    assert git_remote_document["type"] == "git-remote"
+    assert git_remote_document["execution"] == {
+        "shell": False,
+        "force": False,
+        "operation": "push-ref",
+    }
     workflow = (
         SKILL
         / "assets"

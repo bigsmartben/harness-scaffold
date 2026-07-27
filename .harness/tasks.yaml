@@ -47,3 +47,14 @@ tasks:
     timeout: 10m
     outputs:
       report: .harness/reports/production-gate.json
+  - id: push:branch
+    category: push
+    automation_level: critical
+    auto_allowed: false
+    source: .harness/adapters/git-remote.yaml#origin
+    backend: git-remote
+    working_directory: repository-root
+    supports_scope: publish
+    timeout: 2m
+    outputs:
+      report: .harness/reports/push-branch.json

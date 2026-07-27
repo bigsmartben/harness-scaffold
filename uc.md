@@ -629,6 +629,7 @@ Agent / Skill 请求执行 `critical` 动作，或未经确认尝试推动正式
 - Agent / Skill 没有可直接使用的高权限交付凭证。
 - 普通 MCP、CLI、Shell 和网络调用不经过 Harness 权限代理。
 - 本地执行结果不能伪造正式 CI/CD Evidence。
+- Git Remote Push 是窄化的正式 Push 通道：例如确认 `origin + refs/heads/codex/demo + abc123` 后，只能非强推该 commit 到该 ref；其 Evidence 不代表 Merge、Publish、Release 或 Deploy 已获准。
 
 ### P4 平台闭环验收
 

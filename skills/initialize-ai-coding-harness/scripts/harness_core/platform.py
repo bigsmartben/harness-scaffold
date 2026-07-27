@@ -119,6 +119,44 @@ def normalize_github_platform_evidence(
     return attach_digest(evidence, "platform_evidence_digest")
 
 
+def normalize_git_remote_evidence(
+    *,
+    remote: str,
+    target_ref: str,
+    commit_sha: str,
+    request: dict[str, Any],
+    confirmation: dict[str, Any] | None,
+    operation_id: str,
+) -> dict[str, Any]:
+    """Normalize a successful, exact-ref Git push response as platform Evidence."""
+
+    confirmation_matches = (
+        isinstance(confirmation, dict)
+        and runtime_artifact_is_valid(confirmation)
+        and confirmation.get("artifact_type") == "confirmation"
+        and confirmation.get("schema_version") == SCHEMA_VERSION
+        and confirmation.get("confirmation_status") == "confirmed"
+        and confirmation.get("request_digest") == request.get("request_digest")
+    )
+    evidence = {
+        "artifact_type": "platform-evidence",
+        "schema_version": SCHEMA_VERSION,
+        "platform": "git-remote",
+        "workflow": "git-push",
+        "run_id": operation_id,
+        "commit_sha": commit_sha,
+        "request_digest": request.get("request_digest"),
+        "confirmation_status": "confirmed" if confirmation_matches else "not-required",
+        "approval_status": "approved" if confirmation_matches else "not-required",
+        "required_checks": "not-applicable",
+        "protected_ref": target_ref,
+        "protected_environment": None,
+        "artifact_digest": None,
+        "source_ref": f"git+{remote}#{target_ref}",
+    }
+    return attach_digest(evidence, "platform_evidence_digest")
+
+
 def platform_evidence_complete(
     evidence: dict[str, Any],
     category: str,
@@ -165,9 +203,11 @@ def platform_evidence_complete(
         not runtime_artifact_is_valid(evidence)
         or evidence.get("artifact_type") != "platform-evidence"
         or evidence.get("schema_version") != SCHEMA_VERSION
-        or evidence.get("platform") != "github-actions"
+        or evidence.get("platform") not in {"github-actions", "git-remote"}
         or not digest_matches(evidence, "platform_evidence_digest")
     ):
+        return False
+    if evidence.get("platform") == "git-remote" and category != "push":
         return False
     if request is not None:
         if (

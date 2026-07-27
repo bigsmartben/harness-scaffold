@@ -124,12 +124,21 @@ def test_bootstrap_applies_only_approved_plan_and_is_idempotent(
         ".harness/pipelines/merge.yaml",
         ".harness/pipelines/publish.yaml",
         ".harness/adapters/local.yaml",
+        ".harness/adapters/git-remote.yaml",
         ".harness/.gitignore",
     }
     assert second["changed"] == []
+    tasks = yaml.safe_load(
+        (repository / ".harness" / "tasks.yaml").read_text("utf-8")
+    )["tasks"]
+    push_task = next(task for task in tasks if task["id"] == "push:branch")
+    assert push_task["backend"] == "git-remote"
+    assert push_task["category"] == "push"
+    assert push_task["automation_level"] == "critical"
+    assert push_task["auto_allowed"] is False
 
 
-def test_bootstrap_python_manifest_without_commands_creates_empty_catalog(
+def test_bootstrap_python_manifest_without_commands_creates_push_only_catalog(
     tmp_path: Path,
 ) -> None:
     repository = tmp_path / "minimal-python"
@@ -143,7 +152,9 @@ def test_bootstrap_python_manifest_without_commands_creates_empty_catalog(
     plan = build_plan(discover_repository(repository), "bootstrap")
 
     assert plan["blocker_codes"] == []
-    assert yaml.safe_load(plan["render_context"]["tasks_yaml"]) == {"tasks": []}
+    tasks = yaml.safe_load(plan["render_context"]["tasks_yaml"])["tasks"]
+    assert [task["id"] for task in tasks] == ["push:branch"]
+    assert tasks[0]["backend"] == "git-remote"
     approval = create_plan_approval(plan, "2026-07-24T00:00:00Z")
     first = apply_plan(plan, ASSETS, approval)
     second = apply_plan(plan, ASSETS, approval)
@@ -303,7 +314,11 @@ def test_monorepo_generates_independent_tools_tasks_and_impact_rules() -> None:
     rules = yaml.safe_load(plan["render_context"]["impact_yaml"])["rules"]
 
     task_ids = {task["id"] for task in tasks}
-    assert task_ids == {"test:python-root", "test:node-packages-web"}
+    assert task_ids == {
+        "push:branch",
+        "test:python-root",
+        "test:node-packages-web",
+    }
     assert {
         tool["task_ref"]
         for tool in tools

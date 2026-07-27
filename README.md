@@ -136,7 +136,7 @@ Merge、Publish、Release 和 Deploy 都属于 `critical`，每次必须获得�
 |---|---|---|
 | 项目模式 | Adopt、Bootstrap、Audit、Update、Work、Verify、Merge、Publish | 组织级策略同步 |
 | Runtime / 项目单元 | Python、Node、workspace Manifest 声明的 Monorepo 单元 | Java、移动端及其他 Runtime |
-| Backend | Local、GitHub Actions | GitLab CI、Jenkins、其他平台 |
+| Backend | Local、Git Remote（仅精确确认的非强推 Push）、GitHub Actions | GitLab CI、Jenkins、其他平台 |
 | 验证 | Inspect、Affected、Contract、Integration、Full | 基于历史数据的动态优化 |
 | 自动化 | `routine`、`expensive`、`critical` | 基于历史数据的成本优化 |
 | 权限门禁 | GitHub Required Checks、Protected Environment、平台审批 | 其他 CI/CD 平台 |
@@ -158,7 +158,7 @@ MCP、Make、Gradle/Maven、Fastlane 和未被 Manifest / Workflow 引用的仓�
 | Adopt、Bootstrap、Audit、Update | Available | P2 | Python、Node、现有 CI、空项目与 Monorepo Fixture 集成测试 |
 | Work、Verify、Merge、Publish Skill 路由 | Available | P3 | 四类中英文路由及三级自动化语义测试 |
 | 最低充分验证与 Task Runner | Available | P3 | 验证级别、自动化等级、零 Backend 调用与摘要测试 |
-| Local 与 GitHub Actions Adapter | Available | P3 | 同形 Evidence、确认门禁和平台来源字段测试 |
+| Local、Git Remote 与 GitHub Actions Adapter | Available | P3 | 同形 Evidence、确认门禁、精确 Push 绑定和平台来源字段测试 |
 | CI/CD 平台闭环 | Available | P4 | 本地 Fixture、Fake Adapter、零调用断言和独立目录流程验收通过 |
 | Skill 安装与正式发布 | In Progress | P5 | 私有发布与当前用户安装目标已确认；尚未 Push、Release 或安装 |
 

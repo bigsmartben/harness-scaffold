@@ -40,6 +40,7 @@ from .bindings import execution_binding_blockers
 from .planning import build_plan, create_plan_approval
 from .platform import (
     assess_github_platform,
+    normalize_git_remote_evidence,
     normalize_github_platform_evidence,
     platform_evidence_complete,
 )
@@ -55,6 +56,7 @@ from .runner import (
     EVIDENCE_FIELDS,
     PlatformAdapter,
     run_github_actions_task,
+    run_git_remote_push_task,
     run_local_task,
 )
 from .runtime import (
@@ -98,6 +100,7 @@ __all__ = [
     "digest_matches",
     "path_digest",
     "normalize_github_platform_evidence",
+    "normalize_git_remote_evidence",
     "platform_evidence_complete",
     "discover_repository",
     "summarize_discovery",
@@ -121,6 +124,7 @@ __all__ = [
     "resolve_action_policy",
     "tool_entry_blockers",
     "run_github_actions_task",
+    "run_git_remote_push_task",
     "run_local_task",
     "route_intent",
     "runtime_artifact_is_valid",

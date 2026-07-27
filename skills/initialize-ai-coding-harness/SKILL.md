@@ -28,8 +28,9 @@ Load only the listed Reference for the active route. Load each Reference directl
 3. For Audit, validate and report without writing.
 4. For Adopt, Bootstrap, or Update, stop until the user confirms the unchanged Plan digest and scope. Create a separate Approval outside the repository, then run `apply_scaffold.py PLAN --approval APPROVAL`.
 5. For Work or Verify, validate every runtime Artifact, then bind Grant, Manifest, actual Diff, Selection, Request, commit, and Confirmation before invoking a Task.
-6. For Merge or Publish, evaluate readiness first. Report `ready-for-dispatch` when no Adapter call was made. Finalize as `passed` only from complete, matching Platform Evidence.
-7. Run `validate_scaffold.py` after configuration writes and preserve complete Task logs under `.harness/runs/`.
+6. For Push, require an exact remote, `refs/heads/*` target, commit, and current Confirmation. A `git-remote` Adapter may make one non-force `git push` call and proves only that exact Push.
+7. For Merge or Publish, evaluate readiness first. Report `ready-for-dispatch` when no Adapter call was made. Finalize as `passed` only from complete, matching Platform Evidence.
+8. Run `validate_scaffold.py` after configuration writes and preserve complete Task logs under `.harness/runs/`.
 
 ## Stop
 
@@ -41,7 +42,7 @@ Stop before writes or Adapter calls when any of these conditions holds:
 - A repository contains unsupported MCP, Make, Gradle, Maven, Fastlane, or unclassified script facts. Record the source-backed gap; do not invent a Tool, Task, or Adapter.
 - Existing configuration is not `0.3.0`. Return `CONFIG_INVALID` and require a new Adopt or Bootstrap instead of migrating it.
 - An expensive or critical Task lacks current matching Confirmation.
-- A Local backend is asked to perform Push, Merge, Publish, Release, or Deploy.
+- A Local backend is asked to perform Push, Merge, Publish, Release, or Deploy. The narrow `git-remote` backend is not Local: it supports only an exact confirmed, non-force Push.
 - Platform Evidence lacks a matching Workflow run, commit, approval, protected environment, required checks, or applicable artifact digest.
 
 Return the stable blocker codes from `assets/schemas/common.schema.json` and include `HANDOFF_REQUIRED` when user or platform authority is needed.

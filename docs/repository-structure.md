@@ -36,7 +36,7 @@ flowchart LR
 |---|---|---|---|
 | 开发仓库 | 维护者、贡献者 | 规范、用例、路线、测试、评测、Skill 源码 | 目标项目的临时运行日志 |
 | Skill 包 | Codex Agent | `SKILL.md`、UI 元数据、确定性脚本、按需引用、输出模板 | README、Quickstart、Changelog、开发历史 |
-| 目标项目 | 项目 Agent、维护者、CI Backend | 轻量入口、工具索引、写边界、任务、影响与 Pipeline 配置 | Harness 开发仓库的测试、评测和设计历史 |
+| 目标项目 | 项目 Agent、维护者、CI Backend | 轻量入口、工具索引、写边界、任务、影响、Git Remote Push Adapter 与 Pipeline 配置 | Harness 开发仓库的测试、评测和设计历史 |
 
 开发仓库和 Skill 包是“产品源码与发布物”的关系；目标项目是 Skill 的输出，不是 Skill 本身。
 
@@ -57,7 +57,7 @@ harness/
 └── evals/
 ```
 
-P0–P4 的本地验收资产已经存在。P4 采用本地产品验收；真实 GitHub Evidence 在具体正式交付时作为运行时门禁。P5 已确认私有发布渠道和当前用户安装目标，正在准备安装与发布。
+P0–P4 的本地验收资产已经存在。P4 采用本地产品验收；真实 GitHub Evidence 在具体正式交付时作为运行时门禁。目标项目还会生成窄化的 Git Remote Adapter：例如确认 `origin + refs/heads/codex/demo + <commit>` 后只允许一次非强推 Push。P5 已确认私有发布渠道和当前用户安装目标，正在准备安装与发布。
 
 ## 3. 完整开发仓库结构
 
