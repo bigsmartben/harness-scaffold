@@ -3,6 +3,7 @@ tools:
     type: cli
     purpose: repository-text-search
     capability: repository-search
+    action_semantics: ordinary
     entrypoint: rg
     invocation_mode: direct
     version_source: rg-version
@@ -13,4 +14,3 @@ tools:
     outputs: {}
     constraints: []
     allowed_agents: [codex]
-

@@ -1,4 +1,4 @@
-<!-- ai-coding-harness -->
+<!-- ai-coding-harness:start -->
 # AI Coding Harness
 
 - Read project delivery configuration from `.harness/`.
@@ -8,3 +8,4 @@
 - Stop and request Handoff when the write scope expands.
 - Require current confirmation for every Push, Merge, Publish, Release, or Deploy, then rely on CI/CD platform gates for formal authority.
 - Do not claim Harness authorization or enforcement for ordinary tools, network access, or local file writes.
+<!-- ai-coding-harness:end -->

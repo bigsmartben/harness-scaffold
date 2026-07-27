@@ -15,7 +15,10 @@ def main() -> int:
     parser.add_argument("repository", type=Path)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    result = discover_repository(args.repository)
+    repository = args.repository.resolve()
+    if args.output and args.output.resolve().is_relative_to(repository):
+        parser.error("--output must be outside the target repository")
+    result = discover_repository(repository)
     payload = json.dumps(result, indent=2, sort_keys=True) + "\n"
     if args.output:
         args.output.write_text(payload, encoding="utf-8")
@@ -26,4 +29,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

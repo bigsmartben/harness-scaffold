@@ -1,6 +1,6 @@
 # Delivery model
 
-Map existing scripts and workflows into `tasks.yaml`; do not rewrite their implementation by default.
+Map only manifest-declared commands, explicitly referenced repository scripts, and existing Workflow jobs into `tasks.yaml`; do not rewrite their implementation.
 
 - Use Local for registered project commands.
 - Use GitHub Actions only for an existing referenced workflow or a separately selected Bootstrap backend.
@@ -13,11 +13,15 @@ The Registry indexes ordinary tools and does not authorize or proxy them. Extern
 
 ## Work and Verify
 
+Validate every received runtime Artifact against `runtime.schema.json` before using its digest or fields. A digest-correct but incomplete Artifact returns `EVIDENCE_BINDING_MISMATCH` and `HANDOFF_REQUIRED` with zero Adapter calls.
+
 Compare the Change Manifest with actual changed paths. Resolve every path through `impact.yaml`; unmatched paths return `IMPACT_UNRESOLVED`. Agent recommendations never determine the final set.
 
 Choose the maximum matched level in this order:
 
 `inspect → affected → contract → integration → full`
+
+After choosing the level, verify `supports_scope`. Contract needs a contract-capable Task; Integration and Full need a Task that covers that level. Return `IMPACT_UNRESOLVED` when coverage is insufficient. Never add Push, Merge, Publish, Release, or Deploy to Full.
 
 Only a DM-004 fact can select `full`: Harness/CI execution semantics, broad build/Lockfile changes, public foundation/architecture, an explicit user request, or Merge Policy.
 
@@ -32,6 +36,8 @@ Run an allowed registered command as an argument array with a timeout and declar
 
 ## Merge and Publish
 
-Merge requires passed Evidence for every required stage, bound to both the Change Manifest and final selection. Then create a critical Merge Request. Work approval and passed checks do not replace the current Merge confirmation. Required Checks and Branch Protection provide the authoritative result.
+Evaluate Merge or Publish in three states: readiness, dispatch, and finalize. Readiness makes no Adapter call and returns `ready-for-dispatch`; dispatch calls `prepare` then `dispatch`; finalization accepts `passed` only after `poll` and `normalize` yield complete Platform Evidence.
 
-Publish requires a separate confirmation matching the canonical digest of version, artifact, and target. Protected Environment approval and platform Run metadata are also required for formal Evidence. Without them, do not invoke the backend or report success.
+Merge requires passed Evidence for every required stage, bound to Grant, Change Manifest, actual Diff, final Selection, commit and Task Request. Work approval and passed checks do not replace current Merge confirmation. Required Checks and Branch Protection provide the authoritative result.
+
+Publish requires a separate confirmation matching the canonical digest of version, artifact, target, commit and execution bindings. Protected Environment approval, platform Run metadata and the observed artifact digest are required for formal Evidence. A Local backend cannot complete a critical delivery Task.

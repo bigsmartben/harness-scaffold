@@ -5,7 +5,7 @@ execution:
   trigger: workflow_dispatch
   ref: main
 authority:
-  delivery_credentials_visible_to_agent: true
+  delivery_credentials_visible_to_agent: false
   default_token_permissions: read-only
   required_checks_source: github-branch-protection
   protected_environments_source: github-environments
@@ -18,3 +18,7 @@ evidence:
     - request_digest
     - confirmation_status
     - approval_status
+    - required_checks
+    - protected_ref
+    - protected_environment
+    - artifact_digest

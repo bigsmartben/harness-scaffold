@@ -7,648 +7,1026 @@ import pytest
 
 from harness_core import (
     EVIDENCE_FIELDS,
+    attach_digest,
+    canonical_digest,
+    create_change_manifest,
+    create_confirmation,
+    create_confirmation_artifact,
     create_external_request,
-    create_task_request,
-    effective_automation,
-    evaluate_merge,
-    execute_publish,
-    request_digest,
+    create_platform_evidence_artifact,
+    create_selection_artifact,
+    create_task_request_artifact,
+    create_work_grant,
+    dispatch_pipeline,
+    evaluate_pipeline_readiness,
+    finalize_pipeline,
+    normalize_github_platform_evidence,
     resolve_action_policy,
+    route_intent,
     run_github_actions_task,
     run_local_task,
-    route_intent,
     select_validation,
+    tool_entry_blockers,
+    validate_runtime_artifact,
 )
 
 
-TASKS = {
-    "tasks": [
-        {
-            "id": "test:unit",
-            "category": "test",
-            "automation_level": "routine",
-            "auto_allowed": True,
-            "backend": "local",
-            "working_directory": "repository-root",
-            "supports_scope": "affected",
-            "timeout": "5s",
-            "outputs": {"report": ".harness/reports/unit.json"},
-        },
-        {
-            "id": "test:contract",
-            "category": "test",
-            "automation_level": "routine",
-            "auto_allowed": True,
-            "backend": "local",
-            "working_directory": "repository-root",
-            "supports_scope": "contract",
-            "timeout": "5s",
-            "outputs": {"report": ".harness/reports/contract.json"},
-        },
-        {
-            "id": "publish:package",
-            "category": "publish",
-            "automation_level": "critical",
-            "auto_allowed": False,
-            "backend": "local",
-            "working_directory": "repository-root",
-            "supports_scope": "publish",
-            "timeout": "5s",
-            "outputs": {"report": ".harness/reports/publish.json"},
-        },
-    ]
-}
-IMPACT = {
-    "rules": [
-        {
-            "id": "docs",
-            "paths": ["**/*.md"],
-            "validation_level": "inspect",
-            "tasks": [],
-        },
-        {
-            "id": "source",
-            "paths": ["src/**"],
-            "validation_level": "affected",
-            "tasks": ["test:unit"],
-        },
-        {
-            "id": "harness",
-            "paths": [".harness/**"],
-            "validation_level": "full",
-            "tasks": ["test:unit"],
-        },
-    ]
-}
+ROOT = Path(__file__).parents[2]
+SCHEMAS = (
+    ROOT
+    / "skills"
+    / "initialize-ai-coding-harness"
+    / "assets"
+    / "schemas"
+)
+DELIVERY = {"push", "merge", "publish", "release", "deploy"}
 
 
-def _select(
-    paths: list[str], facts: dict | None = None, recommended: list[str] | None = None
+def _task(
+    *,
+    task_id: str = "test:unit",
+    category: str = "test",
+    backend: str = "local",
+    automation_level: str = "routine",
+    auto_allowed: bool = True,
+    supports_scope: str = "contract",
+    command: list[str] | None = None,
 ) -> dict:
-    manifest = {"paths": paths, "recommended_tasks": recommended or []}
-    return select_validation(manifest, paths, IMPACT, TASKS, facts)
+    task = {
+        "id": task_id,
+        "category": category,
+        "automation_level": automation_level,
+        "auto_allowed": auto_allowed,
+        "backend": backend,
+        "working_directory": "repository-root",
+        "supports_scope": supports_scope,
+        "timeout": "5s",
+        "outputs": {"report": f".harness/reports/{task_id.replace(':', '-')}.json"},
+    }
+    if backend == "local":
+        task["command_source"] = "test-fixture"
+        task["command"] = command or [sys.executable, "-c", "print('ok')"]
+    else:
+        task["source"] = f".github/workflows/{category}.yml#jobs.main"
+    return task
 
 
-def test_document_change_selects_inspect() -> None:
-    result = _select(["README.md"])
+def _chain(
+    task: dict,
+    *,
+    level: str = "contract",
+    target: str | None = None,
+    environment: str | None = None,
+    artifact: str | None = None,
+) -> dict[str, dict]:
+    grant = create_work_grant(
+        grant_id="grant:test",
+        goal="verify 0.3 execution",
+        write_scope=["src/**"],
+        merge_target="main",
+        delivery_target=target,
+        risk_level="high" if task["category"] in DELIVERY else "low",
+    )
+    manifest = create_change_manifest(
+        grant,
+        manifest_id="manifest:test",
+        base_commit="base123",
+        changed_paths=["src/example.py"],
+        affected_modules=["example"],
+        public_contract_changed=level in {"contract", "integration", "full"},
+        recommended_tasks=[task["id"]],
+    )
+    selection = create_selection_artifact(
+        manifest,
+        ["src/example.py"],
+        {
+            "status": "selected",
+            "validation_level": level,
+            "selected_tasks": [
+                {
+                    "task_id": task["id"],
+                    "automation_level": task["automation_level"],
+                    "decision": (
+                        "automatic"
+                        if task["auto_allowed"]
+                        else "confirmation-required"
+                    ),
+                    "reason": f"selected for {level}",
+                }
+            ],
+            "skipped_tasks": [],
+            "reasons": [f"selected {task['id']}"],
+            "blocker_codes": [],
+        },
+        selection_id="selection:test",
+    )
+    request = create_task_request_artifact(
+        task,
+        grant,
+        manifest,
+        selection,
+        request_id=f"request:{task['id']}",
+        target=target,
+        commit_sha="commit123",
+        version=(
+            "1.2.3"
+            if task["category"] in {"publish", "release", "deploy"}
+            else None
+        ),
+        artifact_digest=(
+            artifact or canonical_digest({"artifact": task["category"]})
+            if task["category"] in {"publish", "release", "deploy"}
+            else artifact
+        ),
+        environment=environment,
+    )
+    return {
+        "grant": grant,
+        "manifest": manifest,
+        "selection": selection,
+        "request": request,
+    }
 
-    assert result["status"] == "selected"
-    assert result["validation_level"] == "inspect"
-    assert result["selected_tasks"] == []
+
+class FakeGitHubAdapter:
+    def __init__(self, run: dict) -> None:
+        self.run = run
+        self.calls = {"prepare": 0, "dispatch": 0, "poll": 0, "normalize": 0}
+
+    def prepare(self, task: dict, request: dict) -> dict:
+        self.calls["prepare"] += 1
+        return {"task_id": task["id"], "request_digest": request["request_digest"]}
+
+    def dispatch(self, prepared: dict) -> dict:
+        self.calls["dispatch"] += 1
+        return {"run_id": self.run.get("run_id", "missing")}
+
+    def poll(self, locator: dict) -> dict:
+        self.calls["poll"] += 1
+        return self.run
+
+    def normalize(
+        self, run: dict, request: dict, confirmation: dict | None
+    ) -> dict:
+        self.calls["normalize"] += 1
+        return normalize_github_platform_evidence(run, request, confirmation)
 
 
-def test_single_module_change_selects_affected() -> None:
-    result = _select(["src/orders/service.py"])
+def _complete_run(
+    *,
+    category: str = "test",
+    artifact: str | None = None,
+) -> dict:
+    protected = category in DELIVERY
+    return {
+        "workflow": f".github/workflows/{category}.yml",
+        "run_id": "123",
+        "commit_sha": "commit123",
+        "status": "passed",
+        "log": "ok\n",
+        "approval_status": "approved" if protected else "not-required",
+        "required_checks": "passed" if category == "merge" else "not-applicable",
+        "protected_ref": "main" if category in {"push", "merge"} else None,
+        "protected_environment": (
+            "production" if category in {"publish", "release", "deploy"} else None
+        ),
+        "artifact_digest": artifact,
+        "source_ref": "github://actions/runs/123",
+    }
 
-    assert result["validation_level"] == "affected"
-    assert [item["task_id"] for item in result["selected_tasks"]] == ["test:unit"]
+
+def test_missing_action_semantics_fails_closed() -> None:
+    policy = resolve_action_policy(
+        "unknown",
+        {"tools": [{"id": "unknown", "type": "cli", "invocation_mode": "direct"}]},
+        {"tasks": []},
+    )
+
+    assert policy["blocker_codes"] == [
+        "ACTION_CLASSIFICATION_UNRESOLVED",
+        "HANDOFF_REQUIRED",
+    ]
 
 
-def test_public_contract_fact_upgrades_to_contract() -> None:
-    result = _select(
-        ["src/api.py"], {"public_contract_paths": ["src/api.py"]}
+@pytest.mark.parametrize("semantics", sorted(DELIVERY | {"test", "build", "ci"}))
+def test_managed_semantics_cannot_be_registered_as_direct(semantics: str) -> None:
+    policy = resolve_action_policy(
+        f"direct:{semantics}",
+        {
+            "tools": [
+                {
+                    "id": f"direct:{semantics}",
+                    "type": "shell",
+                    "action_semantics": semantics,
+                    "invocation_mode": "direct",
+                }
+            ]
+        },
+        {"tasks": []},
+    )
+
+    assert policy["blocker_codes"] == [
+        "TASK_BYPASS_ATTEMPT",
+        "HANDOFF_REQUIRED",
+    ]
+
+
+def test_ordinary_action_is_direct_without_harness_confirmation() -> None:
+    policy = resolve_action_policy(
+        "read:file",
+        {
+            "tools": [
+                {
+                    "id": "read:file",
+                    "type": "mcp-tool",
+                    "action_semantics": "ordinary",
+                    "invocation_mode": "direct",
+                }
+            ]
+        },
+        {"tasks": []},
+    )
+
+    assert policy["status"] == "direct"
+    assert policy["blocker_codes"] == []
+
+
+def test_changed_tool_fact_returns_tool_entry_stale() -> None:
+    registered = {
+        "type": "cli",
+        "entrypoint": "rg",
+        "version_source": {"command": "rg", "arguments": ["--version"]},
+        "invocation_mode": "direct",
+        "action_semantics": "ordinary",
+    }
+    observed = {**registered, "entrypoint": "different-rg"}
+
+    assert tool_entry_blockers(registered, observed) == [
+        "TOOL_ENTRY_STALE",
+        "HANDOFF_REQUIRED",
+    ]
+
+
+def test_public_contract_change_adds_contract_capable_task() -> None:
+    affected = _task(supports_scope="affected")
+    contract = _task(task_id="test:contract", supports_scope="contract")
+    grant = create_work_grant(
+        grant_id="grant:selection",
+        goal="select contracts",
+        write_scope=["src/**"],
+        merge_target="main",
+        delivery_target=None,
+        risk_level="low",
+    )
+    manifest = create_change_manifest(
+        grant,
+        manifest_id="manifest:selection",
+        base_commit="base",
+        changed_paths=["src/api.py"],
+        public_contract_changed=True,
+    )
+    result = select_validation(
+        manifest,
+        ["src/api.py"],
+        {
+            "rules": [
+                {
+                    "id": "source",
+                    "paths": ["src/**"],
+                    "validation_level": "affected",
+                    "tasks": ["test:unit"],
+                }
+            ]
+        },
+        {"tasks": [affected, contract]},
     )
 
     assert result["validation_level"] == "contract"
-
-
-def test_full_requires_dm004_fact() -> None:
-    result = _select([".harness/tasks.yaml"])
-
-    assert result["status"] == "blocked"
-    assert result["blocker_codes"] == ["IMPACT_UNRESOLVED"]
-    assert result["validation_level"] == "inspect"
-
-
-def test_dm004_fact_selects_full_but_excludes_publish() -> None:
-    result = _select(
-        ["src/orders/service.py"],
-        {"merge_policy_requires_full": True},
-        recommended=["publish:package"],
-    )
-
-    assert result["validation_level"] == "full"
-    assert result["status"] == "confirmation-required"
-    assert result["backend_calls"] == 0
     assert {item["task_id"] for item in result["selected_tasks"]} == {
         "test:unit",
         "test:contract",
     }
-    assert {
-        item["automation_level"]
-        for item in result["confirmation_required_tasks"]
-    } == {"expensive"}
-    assert any("not selected" in reason for reason in result["reasons"])
+    assert validate_runtime_artifact(result, SCHEMAS) == []
 
 
-def test_manifest_mismatch_and_unknown_impact_block_without_full() -> None:
+def test_selection_rejects_schema_incomplete_manifest_even_with_valid_digest() -> None:
+    incomplete_manifest = attach_digest(
+        {
+            "artifact_type": "change-manifest",
+            "schema_version": "0.3.0",
+            "manifest_id": "manifest:incomplete",
+            "changed_paths": ["src/api.py"],
+            "public_contract_changed": False,
+        },
+        "manifest_digest",
+    )
+
     result = select_validation(
-        {"paths": ["src/a.py"]}, ["unmapped/file.xyz"], IMPACT, TASKS
+        incomplete_manifest,
+        ["src/api.py"],
+        {
+            "rules": [
+                {
+                    "id": "source",
+                    "paths": ["src/**"],
+                    "validation_level": "affected",
+                    "tasks": ["test:unit"],
+                }
+            ]
+        },
+        {"tasks": [_task(supports_scope="affected")]},
     )
 
     assert result["status"] == "blocked"
-    assert result["validation_level"] == "inspect"
-    assert result["blocker_codes"] == ["IMPACT_UNRESOLVED"]
+    assert {
+        "EVIDENCE_BINDING_MISMATCH",
+        "HANDOFF_REQUIRED",
+    } <= set(result["blocker_codes"])
 
 
-def _task(backend: str = "local") -> dict:
-    return {
-        "id": "test:unit",
-        "category": "test",
-        "automation_level": "routine",
-        "auto_allowed": True,
-        "backend": backend,
-        "working_directory": "repository-root",
-        "supports_scope": "affected",
-        "timeout": "5s",
-        "outputs": {"report": ".harness/reports/unit.json"},
-    }
+@pytest.mark.parametrize("level", ["integration", "full"])
+def test_insufficient_task_scope_blocks_selection(level: str) -> None:
+    task = _task(supports_scope="contract")
+    grant = create_work_grant(
+        grant_id="grant:scope",
+        goal="test insufficient scope",
+        write_scope=["src/**"],
+        merge_target="main",
+        delivery_target=None,
+        risk_level="low",
+    )
+    manifest = create_change_manifest(
+        grant,
+        manifest_id="manifest:scope",
+        base_commit="base",
+        changed_paths=["src/a.py"],
+    )
+    facts = {"merge_policy_requires_full": True} if level == "full" else {}
+    impact_level = "affected" if level == "full" else "integration"
+    result = select_validation(
+        manifest,
+        ["src/a.py"],
+        {
+            "rules": [
+                {
+                    "id": "source",
+                    "paths": ["src/**"],
+                    "validation_level": impact_level,
+                    "tasks": [task["id"]],
+                }
+            ]
+        },
+        {"tasks": [task]},
+        facts,
+    )
+
+    assert result["status"] == "blocked"
+    assert "IMPACT_UNRESOLVED" in result["blocker_codes"]
 
 
-def test_local_success_returns_complete_evidence(tmp_path: Path) -> None:
+def test_full_selection_never_adds_delivery_tasks() -> None:
+    tasks = [
+        _task(task_id="ci:full", category="ci", supports_scope="full"),
+        *[
+            _task(
+                task_id=f"{category}:target",
+                category=category,
+                automation_level="critical",
+                auto_allowed=False,
+                supports_scope="publish",
+            )
+            for category in DELIVERY
+        ],
+    ]
+    grant = create_work_grant(
+        grant_id="grant:full",
+        goal="select full",
+        write_scope=["src/**"],
+        merge_target="main",
+        delivery_target=None,
+        risk_level="low",
+    )
+    manifest = create_change_manifest(
+        grant,
+        manifest_id="manifest:full",
+        base_commit="base",
+        changed_paths=["src/a.py"],
+    )
+    result = select_validation(
+        manifest,
+        ["src/a.py"],
+        {
+            "rules": [
+                {
+                    "id": "source",
+                    "paths": ["src/**"],
+                    "validation_level": "affected",
+                    "tasks": [],
+                }
+            ]
+        },
+        {"tasks": tasks},
+        {"merge_policy_requires_full": True},
+    )
+
+    selected = {item["task_id"] for item in result["selected_tasks"]}
+    assert selected == {"ci:full"}
+    assert not any(task_id.split(":", 1)[0] in DELIVERY for task_id in selected)
+
+
+def test_local_routine_task_returns_valid_bound_evidence(tmp_path: Path) -> None:
+    task = _task()
+    chain = _chain(task)
     evidence = run_local_task(
-        _task(),
+        task,
         [sys.executable, "-c", "print('ok')"],
         tmp_path,
-        "affected",
-        change_manifest="sha256:manifest",
-        selection="sha256:selection",
+        "contract",
+        **chain,
     )
 
     assert set(evidence) == EVIDENCE_FIELDS
     assert evidence["status"] == "passed"
-    assert evidence["primary_error"] is None
-    assert (tmp_path / evidence["full_log"]).read_text("utf-8") == "ok\n"
+    assert evidence["backend_calls"] == 1
+    assert validate_runtime_artifact(evidence, SCHEMAS) == []
 
 
-def test_local_failure_summarizes_first_error_without_embedding_log(
+def test_local_runner_rejects_command_that_differs_from_registered_task(
     tmp_path: Path,
 ) -> None:
+    task = _task()
+    chain = _chain(task)
+
     evidence = run_local_task(
-        _task(),
-        [
-            sys.executable,
-            "-c",
-            "import sys; print('first error', file=sys.stderr); print('detail', file=sys.stderr); raise SystemExit(2)",
-        ],
+        task,
+        [sys.executable, "-c", "raise SystemExit(99)"],
         tmp_path,
-        "affected",
-    )
-
-    assert evidence["status"] == "failed"
-    assert evidence["primary_error"] == "first error"
-    assert "detail" not in evidence["summary"]
-    assert "detail" not in str({k: v for k, v in evidence.items() if k != "full_log"})
-
-
-def test_github_actions_uses_same_evidence_shape(tmp_path: Path) -> None:
-    evidence = run_github_actions_task(
-        _task("github-actions"),
-        lambda task: {
-            "run_id": "123",
-            "status": "passed",
-            "log": "ok\n",
-            "workflow": ".github/workflows/ci.yml",
-            "commit_sha": "abc123",
-        },
-        tmp_path,
-        "affected",
-        change_manifest="sha256:manifest",
-        selection="sha256:selection",
-    )
-
-    assert set(evidence) == EVIDENCE_FIELDS
-    assert evidence["backend"] == "github-actions"
-    assert evidence["status"] == "passed"
-
-
-def test_merge_without_bound_complete_evidence_stays_blocked() -> None:
-    pipeline = {
-        "stages": [
-            {"id": "test", "tasks": ["test:unit"], "requires_evidence": True}
-        ]
-    }
-
-    result = evaluate_merge(pipeline, [{"task_id": "test:unit", "status": "passed"}])
-
-    assert result["status"] == "blocked"
-    assert result["blocker_codes"] == ["EVIDENCE_INCOMPLETE"]
-
-
-def test_publish_without_current_confirmation_does_not_call_backend() -> None:
-    calls = 0
-
-    def backend() -> str:
-        nonlocal calls
-        calls += 1
-        return "published"
-
-    pipeline = {"requires_independent_confirmation": True}
-    request = {"version": "1.2.3", "artifact": "dist/a.whl", "target": "pypi"}
-
-    result = execute_publish(pipeline, request, None, backend)
-
-    assert result["status"] == "blocked"
-    assert result["backend_calls"] == 0
-    assert calls == 0
-
-
-def test_publish_current_confirmation_calls_backend_once() -> None:
-    calls = 0
-
-    def backend() -> str:
-        nonlocal calls
-        calls += 1
-        return "published"
-
-    pipeline = {"requires_independent_confirmation": True}
-    request = {"version": "1.2.3", "artifact": "dist/a.whl", "target": "pypi"}
-    confirmation = {
-        "confirmed": True,
-        "request_digest": request_digest(request),
-    }
-
-    platform = {
-        "workflow": ".github/workflows/publish.yml",
-        "commit_sha": "abc123",
-        "protected_environment": "production",
-        "approval_status": "approved",
-    }
-    result = execute_publish(pipeline, request, confirmation, backend, platform)
-
-    assert result["status"] == "passed"
-    assert result["backend_calls"] == 1
-    assert calls == 1
-
-
-@pytest.mark.parametrize(
-    ("task_id", "category", "scope"),
-    [
-        ("test:integration", "test", "integration"),
-        ("test:e2e", "test", "affected"),
-        ("ci:full", "ci", "full"),
-        ("build:large", "build", "affected"),
-    ],
-)
-def test_expensive_task_never_runs_without_current_confirmation(
-    tmp_path: Path, task_id: str, category: str, scope: str
-) -> None:
-    calls = 0
-    task = {
-        **_task("github-actions"),
-        "id": task_id,
-        "category": category,
-        "automation_level": "expensive",
-        "auto_allowed": False,
-        "supports_scope": scope,
-    }
-
-    def dispatch(_: dict) -> dict:
-        nonlocal calls
-        calls += 1
-        return {"run_id": "should-not-exist", "status": "passed"}
-
-    evidence = run_github_actions_task(
-        task, dispatch, tmp_path, scope
+        "contract",
+        **chain,
     )
 
     assert evidence["status"] == "blocked"
     assert evidence["backend_calls"] == 0
-    assert evidence["blocker_codes"] == ["HANDOFF_REQUIRED"]
-    assert calls == 0
+    assert {"TASK_BYPASS_ATTEMPT", "HANDOFF_REQUIRED"} <= set(
+        evidence["blocker_codes"]
+    )
 
 
-def test_expensive_task_runs_only_with_matching_request_and_confirmation(
+def test_local_runner_rejects_schema_incomplete_chain_before_dispatch(
     tmp_path: Path,
 ) -> None:
-    task = {
-        **_task("github-actions"),
-        "id": "test:integration",
-        "automation_level": "expensive",
-        "auto_allowed": False,
-        "supports_scope": "integration",
-    }
-    task_request = create_task_request(
-        task, "integration", {"commit_sha": "abc123", "target": "ci"}
+    sentinel = tmp_path / "dispatched.txt"
+    command = [
+        sys.executable,
+        "-c",
+        (
+            "from pathlib import Path; "
+            f"Path({sentinel.as_posix()!r}).write_text('called')"
+        ),
+    ]
+    task = _task(command=command)
+    chain = _chain(task)
+    selection = dict(chain["selection"])
+    selection.pop("reasons")
+    chain["selection"] = attach_digest(selection, "selection_digest")
+    request = dict(chain["request"])
+    request["selection_digest"] = chain["selection"]["selection_digest"]
+    chain["request"] = attach_digest(request, "request_digest")
+
+    evidence = run_local_task(
+        task,
+        command,
+        tmp_path,
+        "contract",
+        **chain,
     )
-    confirmation = {
-        "confirmed": True,
-        "request_digest": task_request["request_digest"],
-    }
+
+    assert evidence["status"] == "blocked"
+    assert evidence["backend_calls"] == 0
+    assert not sentinel.exists()
+    assert {
+        "EVIDENCE_BINDING_MISMATCH",
+        "HANDOFF_REQUIRED",
+    } <= set(evidence["blocker_codes"])
+
+
+@pytest.mark.parametrize("artifact_name", ["manifest", "selection"])
+def test_cross_chain_artifact_prevents_local_dispatch(
+    tmp_path: Path, artifact_name: str
+) -> None:
+    task = _task()
+    chain = _chain(task)
+    artifact = dict(chain[artifact_name])
+    digest_field = (
+        "manifest_digest"
+        if artifact_name == "manifest"
+        else "selection_digest"
+    )
+    artifact[
+        "base_commit" if artifact_name == "manifest" else "selection_id"
+    ] = "different"
+    chain[artifact_name] = attach_digest(artifact, digest_field)
+
+    evidence = run_local_task(
+        task,
+        task["command"],
+        tmp_path,
+        "contract",
+        **chain,
+    )
+
+    assert evidence["status"] == "blocked"
+    assert evidence["backend_calls"] == 0
+    assert "EVIDENCE_BINDING_MISMATCH" in evidence["blocker_codes"]
+
+
+@pytest.mark.parametrize("category", sorted(DELIVERY))
+def test_local_backend_refuses_critical_delivery(
+    tmp_path: Path, category: str
+) -> None:
+    task = _task(
+        task_id=f"{category}:target",
+        category=category,
+        automation_level="critical",
+        auto_allowed=False,
+        supports_scope="publish",
+    )
+    artifact = canonical_digest({"artifact": "wheel"}) if category == "publish" else None
+    chain = _chain(
+        task,
+        level="publish",
+        target="production",
+        environment="production",
+        artifact=artifact,
+    )
+    confirmation = create_confirmation(chain["request"], "2026-07-24T00:00:00Z")
+    evidence = run_local_task(
+        task,
+        [sys.executable, "-c", "raise SystemExit(99)"],
+        tmp_path,
+        "publish",
+        confirmation=confirmation,
+        **chain,
+    )
+
+    assert evidence["status"] == "blocked"
+    assert evidence["backend_calls"] == 0
+    assert "BACKEND_UNAVAILABLE" in evidence["blocker_codes"]
+
+
+def test_fake_adapter_is_not_called_without_matching_confirmation(
+    tmp_path: Path,
+) -> None:
+    task = _task(
+        task_id="ci:full",
+        category="ci",
+        backend="github-actions",
+        automation_level="expensive",
+        auto_allowed=False,
+        supports_scope="full",
+    )
+    chain = _chain(task, level="full")
+    adapter = FakeGitHubAdapter(_complete_run(category="ci"))
+
+    evidence = run_github_actions_task(
+        task, adapter, tmp_path, "full", **chain
+    )
+
+    assert evidence["status"] == "blocked"
+    assert evidence["backend_calls"] == 0
+    assert adapter.calls == {"prepare": 0, "dispatch": 0, "poll": 0, "normalize": 0}
+
+
+def test_fake_adapter_protocol_runs_once_and_passes_only_after_poll(
+    tmp_path: Path,
+) -> None:
+    task = _task(
+        task_id="ci:full",
+        category="ci",
+        backend="github-actions",
+        automation_level="expensive",
+        auto_allowed=False,
+        supports_scope="full",
+    )
+    chain = _chain(task, level="full")
+    confirmation = create_confirmation(chain["request"], "2026-07-24T00:00:00Z")
+    adapter = FakeGitHubAdapter(_complete_run(category="ci"))
+
     evidence = run_github_actions_task(
         task,
-        lambda _: {
-            "run_id": "456",
-            "status": "passed",
-            "log": "ok\n",
-            "workflow": ".github/workflows/ci.yml",
-            "commit_sha": "abc123",
-        },
+        adapter,
         tmp_path,
-        "integration",
-        request=task_request["request"],
+        "full",
         confirmation=confirmation,
+        **chain,
     )
 
     assert evidence["status"] == "passed"
     assert evidence["backend_calls"] == 1
-    assert evidence["automation_level"] == "expensive"
+    assert adapter.calls == {"prepare": 1, "dispatch": 1, "poll": 1, "normalize": 1}
+    assert validate_runtime_artifact(evidence, SCHEMAS) == []
 
 
-def test_critical_github_run_requires_complete_platform_evidence(
+def test_publish_poll_without_artifact_digest_stays_blocked(
     tmp_path: Path,
 ) -> None:
-    task = {
-        **_task("github-actions"),
-        "id": "publish:package",
-        "category": "publish",
-        "automation_level": "critical",
-        "auto_allowed": False,
-        "supports_scope": "publish",
-    }
-    task_request = create_task_request(
-        task, "publish", {"commit_sha": "abc123", "target": "production"}
+    task = _task(
+        task_id="publish:package",
+        category="publish",
+        backend="github-actions",
+        automation_level="critical",
+        auto_allowed=False,
+        supports_scope="publish",
     )
-    confirmation = {
-        "confirmed": True,
-        "request_digest": task_request["request_digest"],
-    }
-
-    incomplete = run_github_actions_task(
+    artifact = canonical_digest({"artifact": "wheel"})
+    chain = _chain(
         task,
-        lambda _: {
-            "run_id": "789",
-            "status": "passed",
-            "log": "published\n",
-            "workflow": ".github/workflows/publish.yml",
-            "commit_sha": "abc123",
-            "approval_status": "approved",
-            "protected_environment": "production",
-        },
-        tmp_path,
-        "publish",
-        request=task_request["request"],
-        confirmation=confirmation,
+        level="publish",
+        target="pypi",
+        environment="production",
+        artifact=artifact,
     )
-    complete = run_github_actions_task(
-        task,
-        lambda _: {
-            "run_id": "790",
-            "status": "passed",
-            "log": "published\n",
-            "workflow": ".github/workflows/publish.yml",
-            "commit_sha": "abc123",
-            "approval_status": "approved",
-            "approver": "maintainer",
-            "protected_environment": "production",
-            "artifact_digest": "sha256:artifact",
-        },
-        tmp_path,
-        "publish",
-        request=task_request["request"],
-        confirmation=confirmation,
-    )
-
-    assert incomplete["status"] == "blocked"
-    assert incomplete["formal_authority"] is False
-    assert incomplete["blocker_codes"] == ["EVIDENCE_INCOMPLETE"]
-    assert complete["status"] == "passed"
-    assert complete["formal_authority"] is True
-    assert complete["platform"]["run_id"] == "790"
-    assert (
-        complete["platform"]["request_digest"]
-        == task_request["request_digest"]
-    )
-
-
-def test_critical_semantics_override_incorrect_declared_level() -> None:
-    task = {
-        **_task(),
-        "id": "merge:main",
-        "category": "merge",
-        "automation_level": "routine",
-        "auto_allowed": True,
-    }
-
-    automation = effective_automation(task, "affected")
-
-    assert automation["automation_level"] == "critical"
-    assert automation["auto_allowed"] is False
-    assert automation["configuration_errors"]
-
-
-def test_same_semantic_task_has_same_gate_across_channels() -> None:
-    task = {
-        **_task(),
-        "id": "publish:release",
-        "category": "publish",
-        "automation_level": "critical",
-        "auto_allowed": False,
-    }
-    tools = {
-        "tools": [
-            {
-                "id": f"{channel}:publish",
-                "type": channel,
-                "invocation_mode": "managed",
-                "task_ref": "publish:release",
-            }
-            for channel in ("shell", "cli", "mcp-tool", "external-api")
-        ]
-    }
-    policies = [
-        resolve_action_policy(
-            item["id"], tools, {"tasks": [task]}, "publish"
-        )
-        for item in tools["tools"]
-    ]
-
-    assert {policy["automation_level"] for policy in policies} == {"critical"}
-    assert {policy["status"] for policy in policies} == {"confirmation-required"}
-    assert {policy["task_id"] for policy in policies} == {"publish:release"}
-
-
-def test_ordinary_actions_remain_direct_without_harness_confirmation() -> None:
-    tools = {
-        "tools": [
-            {
-                "id": "mcp:read-file",
-                "type": "mcp-tool",
-                "invocation_mode": "direct",
-            },
-            {
-                "id": "shell:inspect",
-                "type": "shell",
-                "invocation_mode": "direct",
-            },
-        ]
-    }
-
-    policies = [
-        resolve_action_policy(item["id"], tools, {"tasks": []})
-        for item in tools["tools"]
-    ]
-
-    assert {policy["status"] for policy in policies} == {"direct"}
-    assert all(policy["confirmation_required"] is False for policy in policies)
-
-
-@pytest.mark.parametrize(
-    ("task_id", "category"),
-    [
-        ("push:main", "push"),
-        ("merge:main", "merge"),
-        ("publish:package", "publish"),
-        ("release:github", "release"),
-        ("deploy:production", "deploy"),
-    ],
-)
-def test_each_critical_action_has_zero_backend_calls_without_confirmation(
-    tmp_path: Path, task_id: str, category: str
-) -> None:
-    calls = 0
-    task = {
-        **_task("github-actions"),
-        "id": task_id,
-        "category": category,
-        "automation_level": "critical",
-        "auto_allowed": False,
-    }
-
-    def dispatch(_: dict) -> dict:
-        nonlocal calls
-        calls += 1
-        return {"run_id": "should-not-exist", "status": "passed"}
+    confirmation = create_confirmation(chain["request"], "2026-07-24T00:00:00Z")
+    run = _complete_run(category="publish")
+    run["artifact_digest"] = None
+    adapter = FakeGitHubAdapter(run)
 
     evidence = run_github_actions_task(
-        task, dispatch, tmp_path, "publish" if category != "merge" else "affected"
+        task,
+        adapter,
+        tmp_path,
+        "publish",
+        confirmation=confirmation,
+        **chain,
+    )
+
+    assert evidence["status"] == "blocked"
+    assert evidence["formal_authority"] is False
+    assert "EVIDENCE_INCOMPLETE" in evidence["blocker_codes"]
+
+
+def test_incomplete_publish_request_never_calls_adapter(tmp_path: Path) -> None:
+    task = _task(
+        task_id="publish:package",
+        category="publish",
+        backend="github-actions",
+        automation_level="critical",
+        auto_allowed=False,
+        supports_scope="publish",
+    )
+    chain = _chain(
+        task,
+        level="publish",
+        target="pypi",
+        environment="production",
+        artifact=canonical_digest({"artifact": "wheel"}),
+    )
+    chain["request"]["artifact_digest"] = None
+    chain["request"] = attach_digest(chain["request"], "request_digest")
+    confirmation = create_confirmation(
+        chain["request"], "2026-07-24T00:00:00Z"
+    )
+    adapter = FakeGitHubAdapter(_complete_run(category="publish"))
+
+    evidence = run_github_actions_task(
+        task,
+        adapter,
+        tmp_path,
+        "publish",
+        confirmation=confirmation,
+        **chain,
     )
 
     assert evidence["status"] == "blocked"
     assert evidence["backend_calls"] == 0
-    assert calls == 0
+    assert "EVIDENCE_INCOMPLETE" in evidence["blocker_codes"]
+    assert adapter.calls == {"prepare": 0, "dispatch": 0, "poll": 0, "normalize": 0}
 
 
-@pytest.mark.parametrize("level", ["integration", "full"])
-def test_high_cost_validation_overrides_routine_task_and_requires_confirmation(
-    tmp_path: Path, level: str
-) -> None:
-    calls = 0
-
-    def dispatch(_: dict) -> dict:
-        nonlocal calls
-        calls += 1
-        return {"run_id": "should-not-exist", "status": "passed"}
+def test_different_platform_commit_is_binding_mismatch(tmp_path: Path) -> None:
+    task = _task(
+        task_id="merge:main",
+        category="merge",
+        backend="github-actions",
+        automation_level="critical",
+        auto_allowed=False,
+        supports_scope="publish",
+    )
+    chain = _chain(task, level="publish", target="main")
+    confirmation = create_confirmation(chain["request"], "2026-07-24T00:00:00Z")
+    run = _complete_run(category="merge")
+    run["commit_sha"] = "different"
+    adapter = FakeGitHubAdapter(run)
 
     evidence = run_github_actions_task(
-        _task("github-actions"), dispatch, tmp_path, level
+        task,
+        adapter,
+        tmp_path,
+        "publish",
+        confirmation=confirmation,
+        **chain,
     )
 
-    assert evidence["automation_level"] == "expensive"
-    assert evidence["backend_calls"] == 0
-    assert calls == 0
+    assert evidence["status"] == "blocked"
+    assert "EVIDENCE_BINDING_MISMATCH" in evidence["blocker_codes"]
 
 
-def test_merge_complete_evidence_still_requires_current_confirmation() -> None:
+def test_platform_workflow_source_mismatch_is_rejected(tmp_path: Path) -> None:
+    task = _task(
+        task_id="ci:full",
+        category="ci",
+        backend="github-actions",
+        automation_level="expensive",
+        auto_allowed=False,
+        supports_scope="full",
+    )
+    chain = _chain(task, level="full")
+    confirmation = create_confirmation(
+        chain["request"], "2026-07-24T00:00:00Z"
+    )
+    run = _complete_run(category="ci")
+    run["workflow"] = ".github/workflows/different.yml"
+    adapter = FakeGitHubAdapter(run)
+
+    evidence = run_github_actions_task(
+        task,
+        adapter,
+        tmp_path,
+        "full",
+        confirmation=confirmation,
+        **chain,
+    )
+
+    assert evidence["status"] == "blocked"
+    assert evidence["backend_calls"] == 1
+    assert "EVIDENCE_BINDING_MISMATCH" in evidence["blocker_codes"]
+
+
+def test_publish_platform_environment_mismatch_is_rejected(
+    tmp_path: Path,
+) -> None:
+    task = _task(
+        task_id="publish:package",
+        category="publish",
+        backend="github-actions",
+        automation_level="critical",
+        auto_allowed=False,
+        supports_scope="publish",
+    )
+    artifact = canonical_digest({"artifact": "wheel"})
+    chain = _chain(
+        task,
+        level="publish",
+        target="pypi",
+        environment="production",
+        artifact=artifact,
+    )
+    confirmation = create_confirmation(
+        chain["request"], "2026-07-24T00:00:00Z"
+    )
+    run = _complete_run(category="publish", artifact=artifact)
+    run["protected_environment"] = "staging"
+    adapter = FakeGitHubAdapter(run)
+
+    evidence = run_github_actions_task(
+        task,
+        adapter,
+        tmp_path,
+        "publish",
+        confirmation=confirmation,
+        **chain,
+    )
+
+    assert evidence["status"] == "blocked"
+    assert "EVIDENCE_BINDING_MISMATCH" in evidence["blocker_codes"]
+
+
+def test_pipeline_readiness_and_finalize_are_separate(tmp_path: Path) -> None:
+    validation_task = _task()
+    chain = _chain(validation_task)
+    validation_evidence = run_local_task(
+        validation_task,
+        [sys.executable, "-c", "print('ok')"],
+        tmp_path,
+        "contract",
+        **chain,
+    )
+    merge_task = _task(
+        task_id="merge:main",
+        category="merge",
+        backend="github-actions",
+        automation_level="critical",
+        auto_allowed=False,
+        supports_scope="publish",
+    )
+    merge_request = create_task_request_artifact(
+        merge_task,
+        chain["grant"],
+        chain["manifest"],
+        chain["selection"],
+        request_id="request:merge",
+        target="main",
+        commit_sha="commit123",
+    )
+    confirmation = create_confirmation_artifact(
+        merge_request, confirmed_at="2026-07-24T00:00:00Z"
+    )
     pipeline = {
+        "kind": "merge",
+        "requires_independent_confirmation": True,
         "stages": [
-            {"id": "test", "tasks": ["test:unit"], "requires_evidence": True}
-        ]
-    }
-    evidence = [
-        {
-            "task_id": "test:unit",
-            "status": "passed",
-            "change_manifest": "sha256:manifest",
-            "selection": "sha256:selection",
-        }
-    ]
-
-    result = evaluate_merge(pipeline, evidence)
-
-    assert result["status"] == "confirmation-required"
-    assert result["backend_calls"] == 0
-    assert result["blocker_codes"] == ["HANDOFF_REQUIRED"]
-
-
-def test_merge_requires_platform_required_checks_after_confirmation() -> None:
-    pipeline = {
-        "stages": [
-            {"id": "test", "tasks": ["test:unit"], "requires_evidence": True}
-        ]
-    }
-    evidence = [
-        {
-            "task_id": "test:unit",
-            "status": "passed",
-            "change_manifest": "sha256:manifest",
-            "selection": "sha256:selection",
-        }
-    ]
-    request = {"task_id": "merge:main", "target": "main", "commit_sha": "abc"}
-    confirmation = {
-        "confirmed": True,
-        "request_digest": request_digest(request),
+            {
+                "id": "validate",
+                "tasks": ["test:unit"],
+                "requires_evidence": True,
+            }
+        ],
     }
 
-    blocked = evaluate_merge(pipeline, evidence, request, confirmation)
-    passed = evaluate_merge(
+    readiness = evaluate_pipeline_readiness(
+        pipeline, [validation_evidence], merge_request, confirmation
+    )
+    without_platform = finalize_pipeline(
         pipeline,
-        evidence,
-        request,
+        [validation_evidence],
+        merge_request,
         confirmation,
-        {
-            "workflow": ".github/workflows/merge.yml",
-            "commit_sha": "abc",
-            "required_checks": "passed",
-        },
+        None,
+    )
+    platform = create_platform_evidence_artifact(
+        merge_request,
+        workflow=".github/workflows/merge.yml",
+        run_id="456",
+        commit_sha="commit123",
+        confirmation_status="confirmed",
+        approval_status="approved",
+        required_checks="passed",
+        protected_environment=None,
+        artifact_digest=None,
+        source_ref="github://actions/runs/456",
+        protected_ref="main",
+    )
+    finalized = finalize_pipeline(
+        pipeline,
+        [validation_evidence],
+        merge_request,
+        confirmation,
+        platform,
     )
 
-    assert blocked["status"] == "blocked"
-    assert blocked["backend_calls"] == 0
-    assert passed["status"] == "passed"
-    assert passed["backend_calls"] == 1
+    assert readiness["status"] == "ready-for-dispatch"
+    assert readiness["backend_calls"] == 0
+    assert without_platform["status"] == "blocked"
+    assert finalized["status"] == "passed"
 
 
-def test_publish_confirmation_without_platform_approval_does_not_dispatch() -> None:
-    calls = 0
+def test_pipeline_dispatch_has_its_own_state_and_one_dispatch_call() -> None:
+    task = _task(
+        task_id="publish:package",
+        category="publish",
+        backend="github-actions",
+        automation_level="critical",
+        auto_allowed=False,
+        supports_scope="publish",
+    )
+    artifact = canonical_digest({"artifact": "wheel"})
+    chain = _chain(
+        task,
+        level="publish",
+        target="pypi",
+        environment="production",
+        artifact=artifact,
+    )
+    confirmation = create_confirmation(
+        chain["request"], "2026-07-24T00:00:00Z"
+    )
+    pipeline = {
+        "kind": "publish",
+        "requires_independent_confirmation": True,
+        "stages": [
+            {
+                "id": "publish",
+                "tasks": ["publish:package"],
+                "requires_evidence": False,
+            }
+        ],
+    }
+    readiness = evaluate_pipeline_readiness(
+        pipeline, [], chain["request"], confirmation
+    )
+    adapter = FakeGitHubAdapter(
+        _complete_run(category="publish", artifact=artifact)
+    )
 
-    def backend() -> str:
-        nonlocal calls
-        calls += 1
-        return "published"
+    result = dispatch_pipeline(readiness, task, chain["request"], adapter)
 
-    pipeline = {"requires_independent_confirmation": True}
-    request = {"version": "1.2.3", "artifact": "dist/a.whl", "target": "pypi"}
-    confirmation = {
-        "confirmed": True,
-        "request_digest": request_digest(request),
+    assert result["status"] == "dispatched"
+    assert result["backend_calls"] == 1
+    assert adapter.calls == {"prepare": 1, "dispatch": 1, "poll": 0, "normalize": 0}
+
+
+def test_publish_readiness_requires_artifact_digest() -> None:
+    task = _task(
+        task_id="publish:package",
+        category="publish",
+        backend="github-actions",
+        automation_level="critical",
+        auto_allowed=False,
+        supports_scope="publish",
+    )
+    chain = _chain(
+        task,
+        level="publish",
+        target="pypi",
+        environment="production",
+        artifact=canonical_digest({"artifact": "wheel"}),
+    )
+    chain["request"]["artifact_digest"] = None
+    chain["request"] = attach_digest(chain["request"], "request_digest")
+    confirmation = create_confirmation(chain["request"], "2026-07-24T00:00:00Z")
+    pipeline = {
+        "kind": "publish",
+        "requires_independent_confirmation": True,
+        "stages": [
+            {"id": "publish", "tasks": ["publish:package"], "requires_evidence": False}
+        ],
     }
 
-    result = execute_publish(pipeline, request, confirmation, backend)
+    result = evaluate_pipeline_readiness(
+        pipeline, [], chain["request"], confirmation
+    )
+
+    assert result["status"] == "blocked"
+    assert result["blocker_codes"] == ["EVIDENCE_INCOMPLETE"]
+
+
+def test_pipeline_rejects_schema_incomplete_request_before_dispatch() -> None:
+    task = _task(
+        task_id="merge:default",
+        category="merge",
+        backend="github-actions",
+        automation_level="critical",
+        auto_allowed=False,
+        supports_scope="publish",
+    )
+    chain = _chain(task, level="publish", target="refs/heads/main")
+    request = dict(chain["request"])
+    request.pop("policy_version")
+    request = attach_digest(request, "request_digest")
+    confirmation = {
+        "artifact_type": "confirmation",
+        "schema_version": "0.3.0",
+        "request_digest": request["request_digest"],
+        "confirmation_status": "confirmed",
+        "confirmed_at": "2026-07-24T00:00:00Z",
+    }
+    pipeline = {
+        "kind": "merge",
+        "requires_independent_confirmation": True,
+        "stages": [
+            {"id": "merge", "tasks": [], "requires_evidence": False}
+        ],
+    }
+
+    result = evaluate_pipeline_readiness(
+        pipeline, [], request, confirmation
+    )
 
     assert result["status"] == "blocked"
     assert result["backend_calls"] == 0
-    assert result["blocker_codes"] == ["EVIDENCE_INCOMPLETE"]
-    assert calls == 0
+    assert result["blocker_codes"] == [
+        "EVIDENCE_BINDING_MISMATCH",
+        "HANDOFF_REQUIRED",
+    ]
 
 
-def test_work_verify_merge_publish_expressions_route_to_one_skill() -> None:
+def test_route_and_external_event_remain_non_authorizing() -> None:
     examples = {
+        "Adopt this repository with existing CI": "adopt",
+        "接管这个已有 CI 的项目": "adopt",
+        "Bootstrap a new Python repository": "bootstrap",
+        "初始化一个新的 Python 项目": "bootstrap",
+        "Audit the current Harness configuration": "audit",
+        "审查当前 Harness 配置": "audit",
+        "Repair Harness configuration drift": "update",
+        "修复 Harness 配置漂移": "update",
+        "Register this tool in the Tool Registry": "registry",
+        "把这个命令登记到工具注册表": "registry",
+        "Validate the GitHub platform evidence": "platform",
+        "检查 GitHub 平台门禁 Evidence": "platform",
+        "Implement the approved order change": "work",
         "请在已批准范围内实现订单状态修改": "work",
+        "Verify the affected Python module": "verify",
         "验证这次 Python 改动需要哪些测试": "verify",
+        "Is the current evidence merge ready?": "merge",
         "现有 Evidence 是否已经可以合并？": "merge",
+        "Prepare release 1.2.3 for publish": "publish",
         "为版本 1.2.3 准备发布计划": "publish",
     }
-
-    assert {text: route_intent(text) for text in examples} == examples
-
-
-def test_external_event_creates_request_without_backend_call() -> None:
-    result = create_external_request(
+    external = create_external_request(
         {"type": "push", "ref": "refs/heads/main"}, "merge:default"
     )
 
-    assert result["status"] == "blocked"
-    assert result["backend_calls"] == 0
-    assert result["blocker_codes"] == ["HANDOFF_REQUIRED"]
+    assert {text: route_intent(text) for text in examples} == examples
+    assert external["status"] == "blocked"
+    assert external["backend_calls"] == 0

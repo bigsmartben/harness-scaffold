@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 
 import yaml
@@ -7,6 +8,11 @@ import yaml
 
 ROOT = Path(__file__).parents[2]
 EVALS = ROOT / "evals"
+RUN = EVALS / "runs" / "p3-forward-eval-20260724.yaml"
+
+
+def _file_digest(path: Path) -> str:
+    return f"sha256:{hashlib.sha256(path.read_bytes()).hexdigest()}"
 
 
 def test_forward_eval_manifest_has_all_planned_cases() -> None:
@@ -68,3 +74,53 @@ def test_eval_result_contract_retains_required_raw_artifacts() -> None:
         if line
     ]
     assert ignored == ["*", "!.gitignore"]
+
+
+def test_recorded_forward_eval_run_covers_manifest_and_passes() -> None:
+    manifest = yaml.safe_load((EVALS / "manifest.yaml").read_text("utf-8"))
+    run = yaml.safe_load(RUN.read_text("utf-8"))
+
+    expected_cases = {item["id"] for item in manifest["cases"]}
+    recorded_cases = {item["id"] for item in run["cases"]}
+
+    assert recorded_cases == expected_cases
+    assert run["isolation"] == {
+        "independent_agent_per_case": True,
+        "fresh_context": True,
+        "evaluator_only_sections_withheld": True,
+    }
+    assert run["skill"]["digest"].startswith("sha256:")
+    assert run["summary"]["total_cases"] == 7
+    assert run["summary"]["passed_cases"] == 7
+    assert run["summary"]["failed_cases"] == 0
+    assert run["summary"]["mandatory_failures"] == 0
+    assert run["summary"]["minimum_score"] >= run["rubric"]["passing_score"]
+    assert run["summary"]["status"] == "passed"
+    assert run["does_not_advance"] == [
+        "P4 real GitHub platform acceptance",
+        "P5 installation or release",
+    ]
+    result_root = ROOT / run["results_root"]
+    case_paths = {
+        item["id"]: EVALS / item["path"] for item in manifest["cases"]
+    }
+    for case in run["cases"]:
+        assert case["passed"] is True
+        assert case["score"] >= run["rubric"]["passing_score"]
+        assert case["mandatory_failures"] == []
+        assert case["case_digest"] == _file_digest(case_paths[case["id"]])
+        assert case["fixture_digest"].startswith("sha256:")
+        assert set(case["artifact_digests"]) == {
+            "raw-output.md",
+            "workspace.diff",
+            "evidence.yaml",
+            "score.yaml",
+        }
+        assert all(
+            digest.startswith("sha256:")
+            for digest in case["artifact_digests"].values()
+        )
+        artifact_dir = result_root / case["artifact_path"]
+        if artifact_dir.is_dir():
+            for name, expected_digest in case["artifact_digests"].items():
+                assert _file_digest(artifact_dir / name) == expected_digest

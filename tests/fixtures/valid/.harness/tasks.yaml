@@ -4,6 +4,10 @@ tasks:
     automation_level: routine
     auto_allowed: true
     source: pyproject.toml#tool.pytest.ini_options
+    command:
+      - uv
+      - run
+      - pytest
     backend: local
     working_directory: repository-root
     supports_scope: affected
@@ -14,8 +18,8 @@ tasks:
     category: publish
     automation_level: critical
     auto_allowed: false
-    command_source: harness-generated
-    backend: local
+    source: .github/workflows/publish.yml#jobs.publish
+    backend: github-actions
     working_directory: repository-root
     supports_scope: publish
     timeout: 10m

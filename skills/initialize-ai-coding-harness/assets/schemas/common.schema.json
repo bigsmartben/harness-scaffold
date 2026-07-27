@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://ai-coding-harness.local/schemas/common.schema.json",
   "title": "AI Coding Harness shared contract",
+  "x-harness-schema-version": "0.3.0",
   "$defs": {
     "stableId": {
       "type": "string",
@@ -19,6 +20,26 @@
     "validationLevel": {
       "enum": ["inspect", "affected", "contract", "integration", "full", "publish"]
     },
+    "actionSemantics": {
+      "enum": [
+        "ordinary",
+        "lint",
+        "validation",
+        "test",
+        "build",
+        "ci",
+        "package",
+        "push",
+        "merge",
+        "publish",
+        "release",
+        "deploy"
+      ]
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
     "blockerCode": {
       "enum": [
         "WRITE_SCOPE_EXPANDED",
@@ -32,7 +53,10 @@
         "PROTECTED_TRIGGER_UNCONTROLLED",
         "CONFIG_INVALID",
         "BACKEND_UNAVAILABLE",
-        "EVIDENCE_INCOMPLETE"
+        "EVIDENCE_INCOMPLETE",
+        "PLAN_STALE",
+        "GRANT_STALE",
+        "EVIDENCE_BINDING_MISMATCH"
       ]
     }
   }

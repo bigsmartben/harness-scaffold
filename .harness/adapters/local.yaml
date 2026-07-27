@@ -1,5 +1,6 @@
 id: local
 type: local
-working_directory: repository-root
-command_source: pyproject.toml
-
+execution:
+  shell: false
+  command_format: argument-array
+  working_directory: repository-root

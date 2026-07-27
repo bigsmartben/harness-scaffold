@@ -1,12 +1,12 @@
 # AI Coding Harness 实施计划
 
-版本：`0.2.0`  
-最后更新：2026-07-24  
-总体状态：P0–P3 Available（`0.2` 权限模型）；P4 In Progress；P5 Planned
+版本：`0.3.0`
+最后更新：2026-07-24
+总体状态：P0–P4 Available（P4 采用本地产品验收）；P5 In Progress
 
 本文只记录实施阶段、依赖、交付物、状态和阶段验收。产品规则以 [`docs/specification.md`](docs/specification.md) 为准，用户可观察行为以 [`uc.md`](uc.md) 为准。
 
-`0.2` 权限模型只控制 Agent / Skill 自动调用 CI/CD 动作。Runtime、CLI、Shell、MCP、API 和普通仓库脚本由 Tool Registry 提供确定入口和使用指导，不由 Registry 承担身份授权或逐次审批。该范围变化必须先同步到规范与受影响用例，再完成 P3 重新验收。
+`0.3` 契约模型将 Plan 与 Approval 分离，并用摘要链绑定运行时产物；权限模型仍只控制 Agent / Skill 自动调用 CI/CD 动作。Runtime、CLI、Shell、MCP、API 和普通仓库脚本由 Tool Registry 提供确定入口和使用指导，不由 Registry 承担身份授权或逐次审批。
 
 ## 目录
 
@@ -16,7 +16,7 @@
 - [4. P1：配置契约与模板](#4-p1配置契约与模板)
 - [5. P2：Skill 与确定性脚本](#5-p2skill-与确定性脚本)
 - [6. P3：可运行交付管理](#6-p3可运行交付管理)
-- [7. P4：CI/CD 平台权限与门禁](#7-p4cicd-平台权限与门禁)
+- [7. P4：CI/CD 平台闭环接口](#7-p4cicd-平台闭环接口)
 - [8. P5：评测与发布](#8-p5评测与发布)
 - [9. 技术默认与变更门禁](#9-技术默认与变更门禁)
 - [10. 总体验收](#10-总体验收)
@@ -39,8 +39,8 @@ flowchart LR
     P0["P0 文档基线<br/>Available"] --> P1["P1 契约与模板<br/>Available"]
     P1 --> P2["P2 Skill 与脚本<br/>Available"]
     P2 --> P3["P3 CI/CD 调用管理<br/>Available"]
-    P3 --> P4["P4 平台权限与门禁<br/>In Progress"]
-    P4 --> P5["P5 评测与发布<br/>Planned"]
+    P3 --> P4["P4 平台闭环<br/>Available"]
+    P4 --> P5["P5 安装与发布<br/>In Progress"]
 ```
 
 阶段必须顺序推进。后续阶段可以在独立分支中预研，但不得在前置阶段验收前声明为 Available。
@@ -170,7 +170,7 @@ flowchart LR
 
 ## 6. P3：可运行交付管理
 
-**状态**：Available（`0.2` 权限模型）  
+**状态**：Available（`0.3` 契约模型）
 **依赖**：P2 Available
 
 ### 实施内容
@@ -246,20 +246,17 @@ flowchart LR
 - 通过官方 Harness 路径且 Publish 没有本次独立确认时，Backend 调用次数为零。
 - Work、Verify、Merge 和 Publish 的代表性表达均能触发同一 Skill 的正确路由。
 
-## 7. P4：CI/CD 平台权限与门禁
+## 7. P4：CI/CD 平台闭环接口
 
-**状态**：In Progress  
-**依赖**：P3 Available；所选 CI/CD 平台支持最小权限凭证、受保护分支或环境、运行记录和审批状态
+**状态**：Available
+**依赖**：P3 Available；本地正反平台事实 Fixture 与独立目录验证环境
 
-**当前进度（2026-07-24）**：
+**验收记录（2026-07-24）**：
 
-- 本地平台契约、GitHub Evidence 归一化、正反夹具和零 Backend 调用测试已通过。
-- 真实目标 [`bigsmartben/harness-scaffold`](https://github.com/bigsmartben/harness-scaffold) 已按用户选择从 Private 改为 Public；`main` 已推送 Commit `78e66e5`。expensive / critical Workflow 只允许 `workflow_dispatch`；routine Contract Check 使用独立 Workflow，可由 Pull Request 自动触发。
-- routine Contract Check Run [`30076965922`](https://github.com/bigsmartben/harness-scaffold/actions/runs/30076965922) 已绑定该 Commit 并通过 24 项测试；同次 Run 的 `full-ci` Job 为 `skipped`。
-- Actions 默认 Token 权限经 GitHub API 核验为 `read`，且不能批准 Pull Request Review。
-- `main` Branch Protection 已启用：`contracts` 为严格 Required Check，管理员同样受约束，禁止强推和删除，并要求线性历史与会话解决。
-- `production` Protected Environment 已启用：只允许受保护分支，Required Reviewer 为 `bigsmartben`。无副作用 Gate Evidence Workflow 正在准备，用于证明未审批 Job 不启动。
-- 当前 Codex 会话可调用已登录且带 `repo` scope 的 `gh`；若该凭证能执行正式交付动作，就不满足“交付凭证不暴露给 Agent / Skill”。P4 Available 前必须改为只读身份，或把写权限只放入受保护的 CI/CD Job。
+- 已实现 `prepare → dispatch → poll → normalize` Adapter Protocol、三级 Pipeline 状态和 Platform Evidence 绑定。
+- 已用本地 Fake GitHub Adapter 验证确认前零调用、确认后单次 Dispatch、轮询后才允许 `passed`，以及缺字段和跨链 Evidence 的阻断。
+- 已完成本地 Schema、Fixture、Plan/Approval/Apply 和幂等验收。
+- 本轮不创建真实 GitHub Run，也不执行 Merge、Publish、Release 或 Deploy。P4 的产品阶段按用户确认采用本地 Fixture、Fake Adapter、零调用断言和独立目录流程验收，现已 `Available`。
 
 ### 实施内容
 
@@ -291,21 +288,32 @@ flowchart LR
 
 若 CI/CD 凭证可被 Agent / Skill 直接读取，受保护 Workflow 可被未经确认的外部事件直接启动，或 Publish / Deploy 缺少平台级审批，则相关动作保持 `blocked`，并返回 `PROTECTED_TRIGGER_UNCONTROLLED`、`PUBLISH_CONFIRMATION_REQUIRED` 或 `HANDOFF_REQUIRED`。不得把 Skill 自律、仓库内确认文件或 Registry 条目描述为平台权限保证。
 
+本地正反 Fixture、Fake Adapter 和独立目录流程构成 P4 的产品阶段验收。真实 GitHub Workflow、Run ID、Required Checks、审批、受保护分支或环境及适用制品摘要仍是每次正式交付的运行时门禁；本地验收不授予正式动作权限。
+
 ### 阶段验收
 
-- Agent / Skill 没有可直接使用的 Push、Merge、Publish 或 Deploy 凭证。
-- 未确认的 Integration、E2E、Full CI 或大型 Build 不产生 CI/CD Run。
-- 未确认的 Push、Merge、Publish、Release 或 Deploy 不产生目标系统副作用。
-- 低成本 Task 只有显式标记为 `routine` 和自动允许时才能自动触发。
-- GitHub Required Checks 缺失时 Merge 保持 `blocked`。
-- Protected Environment 未批准时 Publish / Deploy Job 不启动。
-- CI/CD Evidence 可追溯到 Workflow、提交摘要、本次确认、审批状态和制品摘要。
+- 本地 `ready` 平台事实 Fixture 返回 `ready`。
+- 过宽凭证、缺失 Required Checks、未受控触发器或缺少环境审批的 Fixture 返回稳定 blocker codes。
+- 未确认或平台门禁失败的 Fixture Backend 调用次数为零。
+- CI/CD Evidence Fixture 可追溯到 Workflow、提交摘要、本次确认、审批状态和制品摘要。
+- 全新目录的 Local Bootstrap 只写入批准范围，Schema 与跨文件验证通过。
+- 对同一 Bootstrap Plan 重复应用时 `changed: []`。
 - 普通 MCP、CLI、Shell 和网络调用不经过 Harness 权限代理，且文档不声称对其进行强制控制。
+- P4 本地产品验收通过，状态为 `Available`；真实平台 Evidence 按具体项目和具体交付请求逐次采集。
 
 ## 8. P5：评测与发布
 
-**状态**：Planned  
-**依赖**：P4 Available；用户确认许可证和发布目标
+**状态**：In Progress
+**依赖**：P4 Available；正式安装与发布另需用户确认许可证、安装目标和发布渠道
+
+**当前边界（2026-07-27）**：
+
+- 已完成 7 项固定源码、隔离上下文的 P2/P3 前向回归评测，7/7 通过，每项 `15–16/16`，且没有 mandatory failure。
+- 本地回归为 114 项 `pytest` 测试通过；官方 Skill 结构校验与本仓库 Scaffold 校验均通过。
+- 评测摘要记录在 `evals/runs/p3-forward-eval-20260724.yaml`，绑定 Skill digest `sha256:093a474b91de43cd90d1c1ba4bc1922dd2c1232acefd5e29f6c27538e8787146`。
+- 用户已确认：不添加许可证并保持私有；安装到当前用户 Codex Skills 目录；通过 GitHub 私有仓库 `bigsmartben/harness-scaffold` 的 `v0.3.0` 标签发布。
+- P5 已进入安装与发布准备，状态为 `In Progress`。当前 Phase A 只同步文档和断言，不安装、不 Commit、不 Push、不 Merge、不 Release。
+- Phase A Contract Task `test:contracts` 已通过：Backend 调用 1 次，无需 Confirmation，无 blocker；Evidence digest 为 `sha256:e54013cd70eb0cba7a1d9a4b1ec3116eaf8d70574c22db876ede363352a52797`。
 
 ### 实施内容
 

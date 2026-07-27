@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://ai-coding-harness.local/schemas/tasks.schema.json",
   "title": "CI/CD task catalog",
+  "x-harness-schema-version": "0.3.0",
   "type": "object",
   "additionalProperties": false,
   "required": ["tasks"],
@@ -19,6 +20,11 @@
           "auto_allowed": { "type": "boolean" },
           "source": { "type": "string", "minLength": 1 },
           "command_source": { "type": "string", "minLength": 1 },
+          "command": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 }
+          },
           "backend": { "enum": ["local", "github-actions"] },
           "working_directory": { "type": "string", "minLength": 1 },
           "supports_scope": { "$ref": "common.schema.json#/$defs/validationLevel" },
@@ -45,6 +51,13 @@
                 "not": { "required": ["source"] }
               }
             ]
+          },
+          {
+            "if": {
+              "properties": { "backend": { "const": "local" } },
+              "required": ["backend"]
+            },
+            "then": { "required": ["command"] }
           },
           {
             "if": {

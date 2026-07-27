@@ -1,7 +1,7 @@
 # AI Coding Harness 仓库结构
 
-版本：`0.2.0`  
-状态：结构基线（P0 Available；P3 权限模型同步）  
+版本：`0.3.0`
+状态：P0–P4 Available；P5 In Progress
 最后更新：2026-07-24
 
 本文定义三个不同物理层的文件边界：
@@ -15,7 +15,7 @@
 ## 目录
 
 - [1. 三层结构](#1-三层结构)
-- [2. 当前 P0 结构](#2-当前-p0-结构)
+- [2. 当前 0.3 结构](#2-当前-03-结构)
 - [3. 完整开发仓库结构](#3-完整开发仓库结构)
 - [4. Skill 包结构](#4-skill-包结构)
 - [5. 目标项目结构](#5-目标项目结构)
@@ -40,29 +40,32 @@ flowchart LR
 
 开发仓库和 Skill 包是“产品源码与发布物”的关系；目标项目是 Skill 的输出，不是 Skill 本身。
 
-## 2. 当前 P0 结构
+## 2. 当前 0.3 结构
 
-本轮文档基线完成后的实际结构为：
+当前仓库已经完成规范、Schema、Validator、执行层和 Skill 的 0.3 重基线：
 
 ```text
 harness/
+├── AGENTS.md
 ├── README.md
 ├── uc.md
 ├── plan.md
-└── docs/
-    ├── specification.md
-    ├── repository-structure.md
-    └── quickstart.md
+├── .harness/
+├── docs/
+├── skills/initialize-ai-coding-harness/
+├── tests/
+└── evals/
 ```
 
-P0 不创建 `.harness/`、Skill、Python、Schema、模板、测试或 CI 文件。完整目标结构不代表这些能力当前已经可用。
+P0–P4 的本地验收资产已经存在。P4 采用本地产品验收；真实 GitHub Evidence 在具体正式交付时作为运行时门禁。P5 已确认私有发布渠道和当前用户安装目标，正在准备安装与发布。
 
 ## 3. 完整开发仓库结构
 
-以下结构按 [`plan.md`](../plan.md) 的 P1 至 P5 逐步产生：
+以下结构是 0.3 开发仓库的职责边界；阶段状态以 [`plan.md`](../plan.md) 为准：
 
 ```text
 harness/
+├── AGENTS.md
 ├── README.md
 ├── uc.md
 ├── plan.md
@@ -95,10 +98,12 @@ harness/
 │       ├── scripts/
 │       │   ├── discover_repository.py
 │       │   ├── build_plan.py
+│       │   ├── approve_plan.py
 │       │   ├── apply_scaffold.py
 │       │   ├── validate_scaffold.py
 │       │   ├── select_validation.py
 │       │   ├── run_task.py
+│       │   ├── evaluate_pipeline.py
 │       │   └── harness_core/
 │       ├── references/
 │       │   ├── core-model.md
@@ -141,8 +146,9 @@ harness/
 | `README.md` | 产品入口、能力概览、成熟度和文档导航 |
 | `uc.md` | 用户可观察行为与验收索引 |
 | `plan.md` | 实施阶段、依赖、状态和阶段验收 |
-| `pyproject.toml`、`uv.lock` | Python 3.12 开发和测试环境；P1 创建 |
-| `.harness/` | 本仓库自用配置，用于自举验证；P1 创建 |
+| `pyproject.toml`、`uv.lock` | Python 3.12 开发和测试环境 |
+| `.harness/` | 本仓库自用的 0.3 配置与影响规则 |
+| `AGENTS.md` | 当前仓库的轻量 Harness 入口 |
 
 ### 3.2 测试与评测
 
@@ -197,11 +203,13 @@ Python 3.12 是内部确定性执行层，首版不作为独立公共 CLI 发布
 | 脚本 | 单一职责 |
 |---|---|
 | `discover_repository.py` | 只读发现项目事实并输出来源 |
-| `build_plan.py` | 将发现结果转换为 Adopt、Bootstrap 或 Update Plan |
+| `build_plan.py` | 将发现结果转换为 Adopt、Bootstrap、Audit 或 Update Plan |
+| `approve_plan.py` | 创建只绑定当前 Plan digest 的独立 Approval |
 | `apply_scaffold.py` | 只应用已确认计划中的文件变更 |
 | `validate_scaffold.py` | 执行 Schema 和跨文件校验 |
 | `select_validation.py` | 根据 Diff 与 Impact Rules 选择最低充分验证集 |
 | `run_task.py` | 调度已选择 Task 并生成 Evidence |
+| `evaluate_pipeline.py` | 只执行 readiness 或使用既有 Platform Evidence finalize |
 | `validate_platform.py` | 检查 GitHub 凭证隔离、Required Checks、Protected Environment 与受控触发事实 |
 | `harness_core/` | 共享模型、解析、错误码和跨平台执行代码 |
 
@@ -339,4 +347,4 @@ flowchart LR
 - 在 Adapter 中复制已有 Workflow 的实现并把副本作为新事实源。
 - 同时维护两套 Schema、模板或 blocker code 定义。
 - 将运行日志和缓存提交到 Git。
-- 在 P0 文档阶段创建未获批准的 Skill、Python、模板或 CI 文件。
+- 把 Planned 或 In Progress 阶段描述成已经通过真实平台或发布验收。

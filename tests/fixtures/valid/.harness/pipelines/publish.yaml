@@ -4,5 +4,4 @@ requires_independent_confirmation: true
 stages:
   - id: publish
     tasks: [publish:package]
-    requires_evidence: true
-
+    requires_evidence: false

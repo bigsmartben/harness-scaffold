@@ -11,6 +11,8 @@ import yaml
 from jsonschema import Draft202012Validator
 from referencing import Registry, Resource
 
+from .artifacts import verify_digest
+
 
 CONFIG_SCHEMAS = {
     "harness.yaml": "harness.schema.json",
@@ -20,6 +22,9 @@ CONFIG_SCHEMAS = {
     "impact.yaml": "impact.schema.json",
 }
 REQUIRED_PIPELINES = ("merge.yaml", "publish.yaml")
+DEFAULT_SCHEMA_DIR = (
+    Path(__file__).resolve().parents[2] / "assets" / "schemas"
+)
 
 
 @dataclass(frozen=True)
@@ -74,6 +79,59 @@ def _validate_document(
     return result
 
 
+def _schema_registry(schema_dir: Path) -> Registry:
+    registry = Registry()
+    for schema_path in schema_dir.glob("*.schema.json"):
+        schema = _load_json(schema_path)
+        if schema_id := schema.get("$id"):
+            registry = registry.with_resource(
+                schema_id, Resource.from_contents(schema)
+            )
+    return registry
+
+
+def validate_runtime_artifact(
+    document: Any, schema_dir: Path
+) -> list[ValidationIssue]:
+    """Validate one 0.3 runtime artifact, including its canonical digest."""
+
+    registry = _schema_registry(schema_dir)
+    issues = _validate_document(
+        document,
+        "runtime",
+        schema_dir / "runtime.schema.json",
+        registry,
+    )
+    if issues or not isinstance(document, dict):
+        return issues
+
+    digest_fields = {
+        "plan": "plan_digest",
+        "work-grant": "grant_digest",
+        "change-manifest": "manifest_digest",
+        "selection": "selection_digest",
+        "task-request": "request_digest",
+        "platform-evidence": "platform_evidence_digest",
+        "evidence": "evidence_digest",
+    }
+    digest_field = digest_fields.get(document.get("artifact_type"))
+    if digest_field and not verify_digest(document, digest_field):
+        issues.append(
+            ValidationIssue(
+                "DIGEST_INVALID",
+                f"runtime#{digest_field}",
+                f"{digest_field} does not match canonical artifact content",
+            )
+        )
+    return issues
+
+
+def runtime_artifact_is_valid(document: Any) -> bool:
+    """Validate a runtime artifact against the Skill's bundled 0.3 schema."""
+
+    return not validate_runtime_artifact(document, DEFAULT_SCHEMA_DIR)
+
+
 def validate_config(
     config_dir: Path, schema_dir: Path
 ) -> list[ValidationIssue]:
@@ -81,14 +139,12 @@ def validate_config(
 
     issues: list[ValidationIssue] = []
     documents: dict[str, Any] = {}
-    registry = Registry()
-
-    for schema_path in schema_dir.glob("*.schema.json"):
-        schema = _load_json(schema_path)
-        if schema_id := schema.get("$id"):
-            registry = registry.with_resource(
-                schema_id, Resource.from_contents(schema)
-            )
+    registry = _schema_registry(schema_dir)
+    action_semantics = set(
+        _load_json(schema_dir / "common.schema.json")["$defs"]["actionSemantics"][
+            "enum"
+        ]
+    )
 
     for filename, schema_name in CONFIG_SCHEMAS.items():
         path = config_dir / filename
@@ -134,6 +190,11 @@ def validate_config(
         for item in task_items
         if isinstance(item, dict) and isinstance(item.get("id"), str)
     }
+    tasks_by_id = {
+        item["id"]: item
+        for item in task_items
+        if isinstance(item, dict) and isinstance(item.get("id"), str)
+    }
     tools = documents.get("tools.yaml")
     tool_items = tools.get("tools", []) if isinstance(tools, dict) else []
     tool_ids = {
@@ -166,8 +227,61 @@ def validate_config(
         )
 
     for index, tool in enumerate(tool_items):
+        if not isinstance(tool, dict):
+            continue
+        semantics = tool.get("action_semantics")
+        invocation_mode = tool.get("invocation_mode")
+        task_ref = tool.get("task_ref")
+        if semantics not in action_semantics:
+            issues.extend(
+                [
+                    ValidationIssue(
+                        "ACTION_CLASSIFICATION_UNRESOLVED",
+                        f"tools.yaml#tools/{index}/action_semantics",
+                        "action_semantics is missing or unsupported",
+                    ),
+                    ValidationIssue(
+                        "HANDOFF_REQUIRED",
+                        f"tools.yaml#tools/{index}/action_semantics",
+                        "classify the action before execution",
+                    ),
+                ]
+            )
+        elif semantics == "ordinary":
+            if invocation_mode != "direct" or task_ref is not None:
+                issues.append(
+                    ValidationIssue(
+                        "CONFIG_INVALID",
+                        f"tools.yaml#tools/{index}",
+                        "ordinary actions must be direct and must not declare task_ref",
+                    )
+                )
+        elif isinstance(semantics, str):
+            if invocation_mode == "direct":
+                issues.extend(
+                    [
+                        ValidationIssue(
+                            "TASK_BYPASS_ATTEMPT",
+                            f"tools.yaml#tools/{index}/invocation_mode",
+                            f"{semantics} actions must use a managed Task",
+                        ),
+                        ValidationIssue(
+                            "HANDOFF_REQUIRED",
+                            f"tools.yaml#tools/{index}/invocation_mode",
+                            "register and select the managed Task before execution",
+                        ),
+                    ]
+                )
+            task = tasks_by_id.get(task_ref)
+            if task is not None and task.get("category") != semantics:
+                issues.append(
+                    ValidationIssue(
+                        "CONFIG_INVALID",
+                        f"tools.yaml#tools/{index}/action_semantics",
+                        "action_semantics must match the referenced Task category",
+                    )
+                )
         if isinstance(tool, dict) and tool.get("invocation_mode") == "managed":
-            task_ref = tool.get("task_ref")
             if task_ref not in tasks:
                 issues.append(
                     ValidationIssue(
@@ -176,7 +290,7 @@ def validate_config(
                         f"task_ref {task_ref!r} does not exist in tasks.yaml",
                     )
                 )
-        if isinstance(tool, dict) and tool.get("type") == "mcp-tool":
+        if tool.get("type") == "mcp-tool":
             server_ref = tool.get("server_ref")
             if server_ref not in server_ids:
                 issues.append(

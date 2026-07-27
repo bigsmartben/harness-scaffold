@@ -9,7 +9,7 @@ from pathlib import Path
 
 import yaml
 
-from harness_core import evaluate_merge, execute_publish
+from harness_core import evaluate_pipeline_readiness, finalize_pipeline
 
 
 def main() -> int:
@@ -32,23 +32,18 @@ def main() -> int:
         if args.platform
         else None
     )
-    if pipeline["kind"] == "merge":
-        evidence = json.loads(args.evidence.read_text("utf-8")) if args.evidence else []
-        result = evaluate_merge(
+    evidence = json.loads(args.evidence.read_text("utf-8")) if args.evidence else []
+    result = (
+        finalize_pipeline(
             pipeline, evidence, request, confirmation, platform
         )
-    else:
-        if request is None:
-            raise SystemExit("--request is required for publish")
-        result = execute_publish(
-            pipeline,
-            request,
-            confirmation,
-            lambda: {"dispatch": "approved"},
-            platform,
+        if platform is not None
+        else evaluate_pipeline_readiness(
+            pipeline, evidence, request, confirmation
         )
+    )
     print(json.dumps(result, indent=2, sort_keys=True))
-    return 0 if result["status"] == "passed" else 1
+    return 0 if result["status"] in {"ready-for-dispatch", "passed"} else 1
 
 
 if __name__ == "__main__":

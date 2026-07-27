@@ -7,22 +7,39 @@ rules:
 
   - id: contract-code
     paths:
-      - contracts/**
-      - templates/**
-      - src/**
+      - skills/initialize-ai-coding-harness/assets/schemas/**
+      - skills/initialize-ai-coding-harness/assets/scaffold/**
       - tests/**
       - pyproject.toml
       - uv.lock
-    validation_level: affected
+    validation_level: contract
     tasks:
       - test:contracts
-    reason: contract implementation or tests changed
+    reason: machine contracts, templates, or tests require contract validation
+
+  - id: harness-semantics
+    paths:
+      - AGENTS.md
+      - .harness/*.yaml
+      - .harness/pipelines/**
+      - .harness/adapters/**
+      - skills/initialize-ai-coding-harness/SKILL.md
+      - skills/initialize-ai-coding-harness/agents/**
+      - skills/initialize-ai-coding-harness/references/**
+      - skills/initialize-ai-coding-harness/scripts/**
+      - evals/**
+    validation_level: full
+    tasks:
+      - test:contracts
+      - ci:full
+    reason: Skill routing, execution semantics, or eval behavior requires a Full fact and full validation
 
   - id: ci-platform
     paths:
       - .github/**
       - .harness/adapters/github-actions.yaml
-    validation_level: contract
+    validation_level: full
     tasks:
       - test:contracts-ci
-    reason: CI/CD platform configuration requires the routine GitHub contract check
+      - ci:full
+    reason: CI/CD platform behavior requires a Full fact and platform checks

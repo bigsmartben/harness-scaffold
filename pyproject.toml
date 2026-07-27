@@ -1,6 +1,6 @@
 [project]
 name = "ai-coding-harness"
-version = "0.2.0"
+version = "0.3.0"
 description = "Deterministic contracts and execution layer for AI Coding Harness"
 requires-python = ">=3.12,<3.13"
 dependencies = [
