@@ -1,8 +1,8 @@
 # AI Coding Harness Quickstart
 
-版本：`0.2.0`  
-文档与初始化状态：P0–P2 Available  
-产品流程状态：P3 Available（`0.2` 权限模型）；P4 In Progress；P5 Planned  
+版本：`0.3.0`
+文档与初始化状态：P0–P2 Available
+产品流程状态：P3–P4 Available（P4 本地产品验收）；P5 In Progress
 最后更新：2026-07-24
 
 本文按最终产品体验串联四条用户路径：
@@ -33,11 +33,14 @@
 | YAML Schema 和目标模板 | Available | P1 |
 | Adopt、Bootstrap、Audit、Update Skill 流程 | Available | P2 |
 | Work、Verify、Merge、Publish 路由；三级自动化策略 | Available | P3 |
-| CI/CD 凭证、Required Checks、Protected Environment 与平台审批 | In Progress | P4 |
+| CI/CD 平台闭环 | Available | P4 |
+| 安装与正式发布 | In Progress | P5 |
 
 阶段进度以 [`plan.md`](../plan.md) 为准。
 
-### 0.2 用户入口
+P4 已通过本地 Fixture、Fake Adapter、零调用断言和独立目录产品验收。真实 GitHub Run、Required Checks、Protected Environment 与审批 Evidence 仍在具体正式交付时逐次校验。P5 已确认私有发布和当前用户安装目标，尚未 Push、Release 或安装。
+
+### 0.3 用户入口
 
 最终用户通过 `initialize-ai-coding-harness` Skill 触发流程，不需要记忆独立 CLI。
 
@@ -101,82 +104,51 @@ Harness 的第一步只能读取，不能修改 `package.json` 或 `ci.yml`。
 目标发现摘要：
 
 ```yaml
-mode: adopt
+repository_root: C:/work/shop-api
 project_types:
   - node
-
-facts:
-  node_version:
-    source: package.json#engines.node
-  package_manager:
-    value: npm
-    source: package-lock.json
-  scripts:
-    lint:
-      source: package.json#scripts.lint
-    test:
-      source: package.json#scripts.test
-    build:
-      source: package.json#scripts.build
-  repository_instructions:
-    path: AGENTS.md
-    exists: false
-  workflows:
-    - path: .github/workflows/ci.yml
-      triggers:
-        - workflow_dispatch
-      jobs:
-        - lint
-        - test
-        - build
-
+fact_sources:
+  node: package.json
+project_units:
+  - id: node-root
+    type: node
+    root: .
+    manifest: package.json
+    commands:
+      - name: test
+        category: test
+        source: package.json#scripts.test
+workflows:
+  - path: .github/workflows/ci.yml
+    triggers: [workflow_dispatch]
+    controlled_entry: true
+    protected_trigger_uncontrolled: false
+    jobs:
+      - id: test
+        category: test
+        source: .github/workflows/ci.yml#jobs.test
+referenced_scripts: []
 gaps: []
-write_performed: false
 ```
 
 如果版本来源冲突、脚本不存在或 Workflow 无法解析，Harness 必须在此阶段报告缺口，不得选择一个“看起来正确”的值。
 
 ### 1.4 查看 Adopt Plan
 
-目标计划摘要：
+保存的 Plan 是 `artifact_type: plan`、`schema_version: 0.3.0` 的机器对象。用户界面至少展示：
 
-```yaml
-plan_id: adopt-shop-api-001
-plan_digest: sha256:example-adopt-plan
-plan_type: adopt
+| 字段 | 本例内容 |
+|---|---|
+| `plan_type` | `adopt` |
+| `repository_root` | `C:/work/shop-api` |
+| `source_facts_digest` / `source_state` | 发现摘要，以及 `package.json`、Workflow 等事实源的修改前 SHA-256 |
+| `write_scope` | `AGENTS.md` 与每个将创建的 `.harness/...` 精确文件路径 |
+| `actions` | 每个目标的 `action`、`path`、`template`、`merge`、`before_digest`、`after_digest` |
+| `preserve` | `package.json`、`package-lock.json`、`.github/workflows/ci.yml` |
+| `blocker_codes` / `drift` | 当前阻塞码与字段级决策 |
+| `plan_digest` | 排除自身字段后计算的规范 JSON SHA-256 |
 
-proposed_grant:
-  goal: adopt-existing-node-and-github-actions
-  write_scope:
-    - AGENTS.md
-    - .harness/**
-  merge_target: current-branch
-  validation_policy: inspect
-  delivery_target: null
-  risk_level: low
-
-create:
-  - AGENTS.md
-  - .harness/harness.yaml
-  - .harness/boundaries.yaml
-  - .harness/tools.yaml
-  - .harness/tasks.yaml
-  - .harness/impact.yaml
-  - .harness/pipelines/merge.yaml
-  - .harness/pipelines/publish.yaml
-  - .harness/adapters/github-actions.yaml
-  - .harness/.gitignore
-
-preserve:
-  - package.json
-  - package-lock.json
-  - .github/workflows/ci.yml
-
-backend_references:
-  - .github/workflows/ci.yml
-```
-
-计划必须明确 `preserve`，防止“接管”被解释成“重写”。本例的只读发现确认 `AGENTS.md` 不存在，因此它被列入 `create`。
+Plan 不包含可手改的 `approved` 布尔值。`write_scope` 必须与 `actions[].path` 精确相等；`preserve` 防止“接管”被解释成“重写”。本例的只读发现确认 `AGENTS.md` 不存在，因此对应 Action 是 `create`。
 
 如果项目已有 `AGENTS.md`，计划必须改为：
 
@@ -199,13 +171,21 @@ update:
 用户输入：
 
 ```text
-确认 adopt-shop-api-001（sha256:example-adopt-plan）。
-目标是接管现有 Node 与 GitHub Actions，Merge 目标为当前分支，
-验证策略为 inspect；交付目标不适用，风险等级为 low。
-只允许写 AGENTS.md 和 .harness/**；不要修改 package.json、package-lock.json 或现有 Workflow。
+确认当前 Adopt Plan（plan_digest 如下）。
+只允许执行 Plan 中列出的精确路径；不要修改 package.json、package-lock.json 或现有 Workflow。
 ```
 
-这次确认形成 Work Grant。若应用阶段发现必须改写 `.github/workflows/ci.yml`，旧 Grant 失效并进入 [`UC-011`](../uc.md)。
+这次确认形成独立 Plan Approval，而不是 Work Grant：
+
+```yaml
+artifact_type: plan-approval
+schema_version: 0.3.0
+plan_digest: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+confirmation_status: confirmed
+confirmed_at: 2026-07-24T09:00:00+08:00
+```
+
+Apply 必须同时读取未变化的 Plan 与 Approval。若发现必须改写 `.github/workflows/ci.yml`，必须重新生成 Plan 并再次确认。
 
 ### 1.6 预期结果
 
@@ -236,6 +216,8 @@ tools:
   - id: repository-search
     type: cli
     purpose: repository-text-search
+    capability: repository-search
+    action_semantics: ordinary
     entrypoint: rg
     invocation_mode: direct
     version_source:
@@ -247,10 +229,15 @@ tools:
       - search source, tests, or configuration
     do_not_use_when:
       - execute project validation
+    inputs: {}
+    outputs: {}
+    constraints: [read-only]
 
-  - id: node-read-analysis
+  - id: runtime-node-root
     type: runtime
-    purpose: execute-read-only-node-analysis
+    purpose: run-read-only-node-analysis-for-node-root
+    capability: node-analysis
+    action_semantics: ordinary
     entrypoint: node
     invocation_mode: direct
     version_source: package.json#engines.node
@@ -259,13 +246,30 @@ tools:
       - run a registered read-only Node analysis script
     do_not_use_when:
       - lint, test, build, package, merge, or publish
+    inputs:
+      script: read-only
+    outputs:
+      result: text-or-json
+    constraints: [ordinary-analysis-only]
 
-  - id: node-tests
+  - id: run-test-node-root
     type: project-action
     purpose: validate-node-project
+    capability: project-test
+    action_semantics: test
     invocation_mode: managed
-    task_ref: test:node
+    task_ref: test:node-root
     working_directory: repository-root
+    use_when:
+      - run the registered Node test
+    do_not_use_when:
+      - perform ordinary repository inspection
+    inputs:
+      scope: validation-level
+    outputs:
+      evidence: Harness Evidence
+    constraints:
+      - invoke only through Harness
 ```
 
 示例没有 `allowed_agents`、`denied_agents` 或逐次授权字段。
@@ -274,48 +278,46 @@ tools:
 
 ```yaml
 tasks:
-  - id: test:node
+  - id: test:node-root
     category: test
     automation_level: routine
     auto_allowed: true
-    source: package.json#scripts.test
+    command_source: package.json#scripts.test
+    command: [npm, run, test]
     backend: local
-    supports_scope: affected
+    working_directory: repository-root
+    supports_scope: contract
     timeout: 5m
     outputs:
       report: .harness/reports/node-tests.json
 
-  - id: ci:existing
-    category: validation
-    automation_level: expensive
-    auto_allowed: false
-    source: .github/workflows/ci.yml
+  - id: test:github-ci-test
+    category: test
+    automation_level: routine
+    auto_allowed: true
+    source: .github/workflows/ci.yml#jobs.test
     backend: github-actions
+    working_directory: repository-root
+    supports_scope: contract
     timeout: 15m
     outputs:
       report: .harness/reports/github-actions-ci.json
 ```
 
-### 1.7 Adopt Evidence
+### 1.7 Apply 结果
 
 ```yaml
-run_id: adopt-20260724-001
-task_id: harness:adopt
-status: passed
-validation_level: inspect
-duration: 3.2s
-summary: Existing Node and GitHub Actions assets were indexed.
-artifacts:
+status: applied
+plan_digest: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+changed:
+  - AGENTS.md
   - .harness/tools.yaml
   - .harness/tasks.yaml
   - .harness/adapters/github-actions.yaml
-full_log: .harness/runs/adopt-20260724-001/full.log
-blocker_codes: []
-preserved:
-  - package.json
-  - package-lock.json
-  - .github/workflows/ci.yml
+unchanged: []
 ```
+
+`preserve` 仍从 Plan 报告；Apply 结果不伪装成 Task Evidence。
 
 ### 1.8 失败与恢复
 
@@ -360,77 +362,41 @@ invoice-service/
 ### 2.3 查看发现结果
 
 ```yaml
-mode: bootstrap
+repository_root: C:/work/invoice-service
 project_types:
   - python
-
-facts:
-  python:
-    version_source: pyproject.toml#project.requires-python
-  package_manager:
-    value: uv
-    source: uv.lock
-  source_roots:
-    - src/invoice_service
-  test_roots:
-    - tests
-  ci_backends: []
-
-gaps:
-  - code: NO_CI_BACKEND
-    severity: informational
+fact_sources:
+  python: pyproject.toml
+project_units:
+  - id: python-root
+    type: python
+    root: .
+    manifest: pyproject.toml
+    commands:
+      - name: test
+        category: test
+        argv: [uv, run, pytest]
+        source: pyproject.toml#pytest-dependency
+source_roots: [src]
+test_roots: [tests]
+workflows: []
+gaps: []
 ```
 
-`NO_CI_BACKEND` 是 Bootstrap 输入事实，不代表错误。
+没有 CI Workflow 不是错误；默认 Plan 只选择 Local Adapter。
 
 ### 2.4 查看 Bootstrap Plan
 
-```yaml
-plan_id: bootstrap-invoice-service-001
-plan_digest: sha256:example-bootstrap-plan
-plan_type: bootstrap
-selected_backend:
-  - local
-optional_backends:
-  - github-actions
-
-proposed_grant:
-  goal: bootstrap-minimal-python-local-harness
-  write_scope:
-    - AGENTS.md
-    - .harness/**
-  merge_target: current-branch
-  validation_policy: inspect
-  delivery_target: null
-  risk_level: low
-
-create:
-  - AGENTS.md
-  - .harness/harness.yaml
-  - .harness/boundaries.yaml
-  - .harness/tools.yaml
-  - .harness/tasks.yaml
-  - .harness/impact.yaml
-  - .harness/pipelines/merge.yaml
-  - .harness/pipelines/publish.yaml
-  - .harness/adapters/local.yaml
-  - .harness/.gitignore
-
-not_selected:
-  - .github/workflows/merge.yml
-  - .github/workflows/publish.yml
-```
+Plan 使用与 Adopt 相同的 0.3 机器契约，`plan_type` 为 `bootstrap`。本例的 `actions` 与精确 `write_scope` 包含 `AGENTS.md`、所需 `.harness/` 文件和 `.harness/adapters/local.yaml`；不包含 `.github/**`。`source_state` 绑定 `pyproject.toml`，每个 Action 绑定修改前与渲染后摘要。
 
 ### 2.5 用户确认
 
 ```text
-确认 bootstrap-invoice-service-001（sha256:example-bootstrap-plan）。
-目标是为当前 Python 项目建立最小 Local Harness，
-Merge 目标为当前分支，验证策略为 inspect；交付目标不适用，风险等级为 low。
-只允许写 AGENTS.md 和 .harness/**；本次不创建 GitHub Actions。
+确认当前 Bootstrap Plan 的 plan_digest。
+只允许执行 Plan 中列出的精确路径；本次不创建 GitHub Actions。
 ```
 
-Harness 不能因为未来可能需要云端 CI 而创建未选择的 Workflow。
+Harness 创建独立 Plan Approval 后才能 Apply，不能因为未来可能需要云端 CI 而创建未选择的 Workflow。
 
 ### 2.6 预期配置
 
@@ -438,37 +404,32 @@ Harness 不能因为未来可能需要云端 CI 而创建未选择的 Workflow�
 
 ```yaml
 tools:
-  - id: python-read-analysis
+  - id: runtime-python-root
     type: runtime
-    purpose: execute-read-only-project-analysis
-    entrypoint: uv
+    purpose: run-read-only-python-analysis-for-python-root
+    capability: python-analysis
+    action_semantics: ordinary
+    entrypoint: python
     invocation_mode: direct
-    arguments:
-      - run
-      - python
-    version_source: pyproject.toml#project.requires-python
+    version_source:
+      command: python
+      arguments: [--version]
     working_directory: repository-root
     use_when:
       - run a registered read-only Python analysis script
     do_not_use_when:
       - lint, test, build, package, merge, or publish
-
-  - id: uv-version
-    type: package-manager
-    purpose: inspect-package-manager-version
-    entrypoint: uv
-    invocation_mode: direct
-    arguments:
-      - --version
-    version_source:
-      command: uv
-      arguments:
-        - --version
-    working_directory: repository-root
+    inputs:
+      script: read-only
+    outputs:
+      result: text-or-json
+    constraints: [ordinary-analysis-only]
 
   - id: repository-search
     type: cli
     purpose: repository-text-search
+    capability: repository-search
+    action_semantics: ordinary
     entrypoint: rg
     invocation_mode: direct
     version_source:
@@ -476,26 +437,42 @@ tools:
       arguments:
         - --version
     working_directory: repository-root
+    use_when: [search source, tests, or configuration]
+    do_not_use_when: [execute project validation]
+    inputs: {}
+    outputs: {}
+    constraints: [read-only]
 
-  - id: python-tests
+  - id: run-test-python-root
     type: project-action
     purpose: validate-python-project
+    capability: project-test
+    action_semantics: test
     invocation_mode: managed
-    task_ref: test:python
+    task_ref: test:python-root
     working_directory: repository-root
+    use_when: [run the registered Python test]
+    do_not_use_when: [perform ordinary repository inspection]
+    inputs:
+      scope: validation-level
+    outputs:
+      evidence: Harness Evidence
+    constraints: [invoke-only-through-Harness]
 ```
 
 `tasks.yaml` 示例：
 
 ```yaml
 tasks:
-  - id: test:python
+  - id: test:python-root
     category: test
     automation_level: routine
     auto_allowed: true
     backend: local
-    command_source: harness-generated
-    supports_scope: affected
+    working_directory: repository-root
+    command_source: pyproject.toml#pytest-dependency
+    command: [uv, run, pytest]
+    supports_scope: contract
     timeout: 5m
     outputs:
       report: .harness/reports/python-tests.json
@@ -516,29 +493,21 @@ rules:
       - tests/**
     validation_level: affected
     tasks:
-      - test:python
+      - test:python-root
 ```
 
-### 2.7 Bootstrap Evidence
+### 2.7 Apply 结果
 
 ```yaml
-run_id: bootstrap-20260724-001
-task_id: harness:bootstrap
-status: passed
-validation_level: inspect
-duration: 2.6s
-summary: Minimal Local Harness created for a Python project.
-artifacts:
+status: applied
+plan_digest: sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+changed:
   - AGENTS.md
   - .harness/harness.yaml
   - .harness/tools.yaml
   - .harness/tasks.yaml
   - .harness/impact.yaml
-full_log: .harness/runs/bootstrap-20260724-001/full.log
-blocker_codes: []
-not_created:
-  - .github/workflows/merge.yml
-  - .github/workflows/publish.yml
+unchanged: []
 ```
 
 ### 2.8 失败与恢复
@@ -546,13 +515,13 @@ not_created:
 | 失败 | Harness 结果 | 用户恢复方式 |
 |---|---|---|
 | 找不到 Python 版本事实源 | `CONFIG_INVALID` | 在现有项目配置中声明 Runtime 版本 |
-| 同时存在冲突的 Python 与 Node 交付单元 | `IMPACT_UNRESOLVED` | 指定主模块或批准 Monorepo 计划 |
+| Workspace 单元缺少可分类命令 | `ACTION_CLASSIFICATION_UNRESOLVED` | 在 Manifest 中声明命令后重新 Discover |
 | 用户未选择 Backend | `HANDOFF_REQUIRED` | 选择 Local 或 GitHub Actions |
 | 生成配置无法通过 Schema | `CONFIG_INVALID` | 不报告成功；修复生成器后重新执行 |
 
 ## 3. 局部修改、受影响验证与 Merge
 
-**状态**：P3 Available（三级自动化与 Merge 每次确认）；P4 平台门禁 In Progress  
+**状态**：P3 Available（三级自动化与 Merge 每次确认）；P4 平台契约 Available
 **对应用户用例**：[`UC-003`](../uc.md)、[`UC-004`](../uc.md)、[`UC-005`](../uc.md)、[`UC-006`](../uc.md)、[`UC-008`](../uc.md)、[`UC-011`](../uc.md)  
 **核心规则**：`WB-001` 至 `WB-005`、`TR-004` 至 `TR-006`、`DM-002` 至 `DM-005`、`HF-003`、`EV-001` 至 `EV-006`
 
@@ -573,6 +542,8 @@ not_created:
 目标 Grant：
 
 ```yaml
+artifact_type: work-grant
+schema_version: 0.3.0
 grant_id: work-invoice-001
 goal: fix-invoice-total-rounding
 write_scope:
@@ -583,6 +554,7 @@ validation_policy: minimum-sufficient
 delivery_target: current-branch
 risk_level: low
 status: active
+grant_digest: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 ```
 
 ### 3.2 查询普通工具
@@ -608,6 +580,11 @@ Agent 直接调用 `rg`，不需要普通工具授权。
 ### 3.3 修改并提交 Change Manifest
 
 ```yaml
+artifact_type: change-manifest
+schema_version: 0.3.0
+manifest_id: change-invoice-001
+grant_digest: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+base_commit: example-sha
 changed_paths:
   - src/invoice_service/calculation.py
   - tests/test_calculation.py
@@ -616,8 +593,9 @@ affected_modules:
 public_contract_changed: false
 dependency_changed: false
 build_config_changed: false
-recommended_checks:
-  - invoice-unit-tests
+recommended_tasks:
+  - test:invoice
+manifest_digest: sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 ```
 
 Harness 必须用实际 Diff 校验该声明，不能完全信任 Agent 自报。
@@ -627,27 +605,31 @@ Harness 必须用实际 Diff 校验该声明，不能完全信任 Agent 自报�
 目标选择结果：
 
 ```yaml
+artifact_type: selection
+schema_version: 0.3.0
+selection_id: selection-invoice-001
+manifest_digest: sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+diff_digest: sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+status: selected
 validation_level: affected
 selected_tasks:
-  - id: lint:invoice
+  - task_id: lint:invoice
     automation_level: routine
-    auto_allowed: true
-  - id: test:invoice
+    decision: automatic
+    reason: invoice module changed
+  - task_id: test:invoice
     automation_level: routine
-    auto_allowed: true
+    decision: automatic
+    reason: invoice behavior changed
 skipped_tasks:
-  - id: test:all
-    automation_level: expensive
+  - task_id: test:all
     reason: not required by current impact
-  - id: integration:all
-    automation_level: expensive
+  - task_id: integration:all
     reason: not required by current impact
-selection_reasons:
-  - rule: invoice-module
-    paths:
-      - src/invoice_service/calculation.py
-      - tests/test_calculation.py
-full_ci_triggered: false
+reasons:
+  - invoice-module matched the actual Diff
+blocker_codes: []
+selection_digest: sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
 ```
 
 Agent 即使建议 `full`，只要没有 [`DM-004`](specification.md#dm-004全量验证升级条件) 的事实，Harness 也不能升级。即使存在升级事实，Full CI 仍属于 `expensive`；没有本次确认时只能生成 Request，Backend 调用次数为零。
@@ -657,40 +639,63 @@ Agent 即使建议 `full`，只要没有 [`DM-004`](specification.md#dm-004全�
 成功示例：
 
 ```yaml
+artifact_type: evidence
+schema_version: 0.3.0
 run_id: verify-invoice-001
 task_id: validation:affected
 status: passed
 validation_level: affected
-automation_level: routine
-confirmation_status: not-required-by-explicit-policy
 duration: 38s
 summary: Invoice lint and unit tests passed.
+primary_error: null
 artifacts:
   - .harness/reports/invoice-tests.json
 full_log: .harness/runs/verify-invoice-001/full.log
 blocker_codes: []
+backend: local
+grant_digest: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+manifest_digest: sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+diff_digest: sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+selection_digest: sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+request_digest: sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+commit_sha: example-sha
+confirmation_status: not-required-by-explicit-policy
+automation_level: routine
+backend_calls: 1
+formal_authority: false
+platform: null
+evidence_digest: sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 ```
 
 失败示例：
 
 ```yaml
+artifact_type: evidence
+schema_version: 0.3.0
 run_id: verify-invoice-002
 task_id: test:invoice
 status: failed
 validation_level: affected
-automation_level: routine
-confirmation_status: not-required-by-explicit-policy
 duration: 31s
 summary: One invoice calculation test failed.
-primary_error:
-  test: tests/test_calculation.py::test_total_rounding
-  file: tests/test_calculation.py
-  line: 74
-  message: Expected 10.01, received 10.00
+primary_error: "tests/test_calculation.py:74: expected 10.01, received 10.00"
 artifacts:
   - .harness/reports/invoice-tests.json
 full_log: .harness/runs/verify-invoice-002/full.log
 blocker_codes: []
+backend: local
+grant_digest: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+manifest_digest: sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+diff_digest: sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+selection_digest: sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+request_digest: sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+commit_sha: example-sha
+confirmation_status: not-required-by-explicit-policy
+automation_level: routine
+backend_calls: 1
+formal_authority: false
+platform: null
+evidence_digest: sha256:9999999999999999999999999999999999999999999999999999999999999999
 ```
 
 Agent 默认只读取摘要。只有摘要不足时，才请求 `full_log` 的相关片段。
@@ -708,15 +713,26 @@ Agent 默认只读取摘要。只有摘要不足时，才请求 `full_log` 的�
 满足这些条件只表示可以生成 Merge Request。Merge 是 `critical`，Harness 必须展示目标分支、提交摘要和验证 Evidence，并等待本次明确确认；确认后仍由 Branch Protection 和 Required Checks 决定是否合并。
 
 ```yaml
-merge_request_id: merge-invoice-001
-automation_level: critical
-target_branch: main
+artifact_type: task-request
+schema_version: 0.3.0
+request_id: merge-invoice-001
+task_id: merge:pull-request
+action_semantics: merge
+validation_level: affected
+target: main
 commit_sha: example-sha
-required_checks:
-  - invoice-unit-tests
-confirmation_status: required
-backend_invocations: 0
+version: null
+artifact_digest: null
+environment: null
+automation_level: critical
+policy_version: 0.3.0
+grant_digest: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+manifest_digest: sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+selection_digest: sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+request_digest: sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
 ```
+
+此时 Pipeline Readiness（就绪检查）只能是 `confirmation-required`；确认匹配后可变为 `ready-for-dispatch`，真实 Adapter 调用后才是 `dispatched`，平台 Evidence 完整后才能是 `passed`。
 
 ### 3.7 失败与恢复
 
@@ -732,7 +748,7 @@ backend_invocations: 0
 
 ## 4. 用户确认后 Publish
 
-**状态**：P3 Publish Request Available；P4 Protected Environment 与平台审批 In Progress  
+**状态**：P3 Publish Request Available；P4 平台契约 Available；具体目标的平台审批按运行时事实判定
 **对应用户用例**：[`UC-007`](../uc.md)、[`UC-009`](../uc.md)、[`UC-012`](../uc.md)  
 **核心规则**：`DM-008`、`HF-002`、`HF-004` 至 `HF-006`、`EV-004`、`EV-006`
 
@@ -750,25 +766,23 @@ backend_invocations: 0
 目标计划：
 
 ```yaml
-publish_request_id: publish-20260724-001
-automation_level: critical
+artifact_type: task-request
+schema_version: 0.3.0
+request_id: publish-20260724-001
+task_id: publish:registry
+action_semantics: publish
+validation_level: publish
+target: package-registry
+commit_sha: example-sha
 version: 1.0.0
-artifacts:
-  - dist/invoice-service-1.0.0.whl
-target:
-  type: package-registry
-  environment: production
-tasks:
-  - verify:publish
-  - package:python
-  - publish:registry
-merge_evidence:
-  run_id: merge-20260724-004
-confirmation_status: required
-platform_gates:
-  protected_environment: production
-  approval_status: pending
-backend_invocations: 0
+artifact_digest: sha256:7777777777777777777777777777777777777777777777777777777777777777
+environment: production
+automation_level: critical
+policy_version: 0.3.0
+grant_digest: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+manifest_digest: sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+selection_digest: sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+request_digest: sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
 ```
 
 ### 4.2 独立确认
@@ -779,6 +793,16 @@ backend_invocations: 0
 确认执行 publish-20260724-001：
 版本 1.0.0，制品 dist/invoice-service-1.0.0.whl，
 目标为 production package registry。
+```
+
+Harness 将确认保存为独立对象，只绑定当前 Request：
+
+```yaml
+artifact_type: confirmation
+schema_version: 0.3.0
+request_digest: sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+confirmation_status: confirmed
+confirmed_at: 2026-07-24T10:00:00+08:00
 ```
 
 以下内容都不能替代该确认：
@@ -793,27 +817,48 @@ backend_invocations: 0
 用户确认后，GitHub Protected Environment 仍必须批准 production Job。发布 Secret、OIDC 身份或高权限 Token 只能由 CI/CD 平台交给受保护 Job，不能暴露给 Agent / Skill。
 
 ```yaml
+artifact_type: evidence
+schema_version: 0.3.0
 run_id: publish-20260724-001
-task_id: pipeline:publish
+task_id: publish:registry
 status: passed
 validation_level: publish
-automation_level: critical
 duration: 74s
 summary: Version 1.0.0 published to the production package registry.
+primary_error: null
 artifacts:
   - dist/invoice-service-1.0.0.whl
   - registry://invoice-service/1.0.0
-confirmation:
-  request_id: publish-20260724-001
-  request_digest: sha256:example
-platform:
-  workflow: .github/workflows/publish.yml
-  run_id: 123456
-  commit_sha: example-sha
-  protected_environment: production
-  approval_status: approved
 full_log: .harness/runs/publish-20260724-001/full.log
 blocker_codes: []
+backend: github-actions
+grant_digest: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+manifest_digest: sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+diff_digest: sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+selection_digest: sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+request_digest: sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+commit_sha: example-sha
+confirmation_status: confirmed
+automation_level: critical
+backend_calls: 1
+formal_authority: true
+platform:
+  artifact_type: platform-evidence
+  schema_version: 0.3.0
+  platform: github-actions
+  workflow: .github/workflows/publish.yml
+  run_id: "123456"
+  commit_sha: example-sha
+  request_digest: sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+  confirmation_status: confirmed
+  approval_status: approved
+  required_checks: passed
+  protected_ref: null
+  protected_environment: production
+  artifact_digest: sha256:7777777777777777777777777777777777777777777777777777777777777777
+  source_ref: refs/tags/v1.0.0
+  platform_evidence_digest: sha256:8888888888888888888888888888888888888888888888888888888888888888
+evidence_digest: sha256:9999999999999999999999999999999999999999999999999999999999999999
 ```
 
 仓库内 Request 和确认记录只描述 Harness 流程，不能替代平台权限。正式 Publish / Deploy 是否获准，必须以 CI/CD 平台的 Protected Environment、审批状态、最小权限凭证和实际 Run 为准。本地执行结果只能用于调试，不能生成正式发布 Evidence。

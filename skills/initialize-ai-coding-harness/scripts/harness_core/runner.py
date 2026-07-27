@@ -1,21 +1,25 @@
-"""Run Local or GitHub Actions tasks and normalize Evidence."""
+"""Run Local or Adapter-backed Tasks and emit digest-bound Evidence."""
 
 from __future__ import annotations
 
+import re
 import subprocess
 import time
 import uuid
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Protocol
 
-from .automation import authorize_task
-from .platform import (
-    normalize_github_platform_evidence,
-    platform_evidence_complete,
-)
+from .artifacts import SCHEMA_VERSION, attach_digest, canonical_digest
+from .automation import CRITICAL_CATEGORIES, authorize_task
+from .bindings import execution_binding_blockers
+from .platform import platform_evidence_complete
 
 
+DIGEST = re.compile(r"^sha256:[a-f0-9]{64}$")
+MISSING_DIGEST = canonical_digest({"binding": "missing"})
 EVIDENCE_FIELDS = {
+    "artifact_type",
+    "schema_version",
     "run_id",
     "task_id",
     "status",
@@ -27,31 +31,63 @@ EVIDENCE_FIELDS = {
     "full_log",
     "blocker_codes",
     "backend",
-    "change_manifest",
-    "selection",
-    "confirmation",
-    "automation_level",
+    "grant_digest",
+    "manifest_digest",
+    "diff_digest",
+    "selection_digest",
+    "request_digest",
+    "commit_sha",
     "confirmation_status",
+    "automation_level",
     "backend_calls",
     "formal_authority",
     "platform",
+    "evidence_digest",
 }
+
+
+class PlatformAdapter(Protocol):
+    """The only supported platform execution protocol."""
+
+    def prepare(
+        self, task: dict[str, Any], request: dict[str, Any]
+    ) -> dict[str, Any]: ...
+
+    def dispatch(self, prepared: dict[str, Any]) -> dict[str, Any]: ...
+
+    def poll(self, locator: dict[str, Any]) -> dict[str, Any]: ...
+
+    def normalize(
+        self,
+        run: dict[str, Any],
+        request: dict[str, Any],
+        confirmation: dict[str, Any] | None,
+    ) -> dict[str, Any]: ...
 
 
 def _timeout_seconds(value: str) -> float:
     if value.endswith("ms"):
         return int(value[:-2]) / 1000
-    unit = value[-1]
-    amount = int(value[:-1])
-    return amount * {"s": 1, "m": 60, "h": 3600}[unit]
+    return int(value[:-1]) * {"s": 1, "m": 60, "h": 3600}[value[-1]]
 
 
 def _primary_error(output: str) -> str | None:
     for line in output.splitlines():
-        stripped = line.strip()
-        if stripped:
+        if stripped := line.strip():
             return stripped[:500]
     return None
+
+
+def _digest(document: dict[str, Any] | None, field: str) -> str:
+    value = document.get(field) if isinstance(document, dict) else None
+    return value if isinstance(value, str) and DIGEST.match(value) else MISSING_DIGEST
+
+
+def _write_log(repository: Path, run_id: str, output: str) -> str:
+    log_path = repository / ".harness" / "runs" / run_id / "full.log"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    log_path.write_text(output, encoding="utf-8", newline="\n")
+    return log_path.relative_to(repository).as_posix()
 
 
 def _evidence(
@@ -63,11 +99,12 @@ def _evidence(
     duration: float,
     output: str,
     full_log: str,
-    change_manifest: str | None,
-    selection: str | None,
-    confirmation: dict[str, Any] | None,
-    automation_level: str,
+    grant: dict[str, Any] | None,
+    manifest: dict[str, Any] | None,
+    selection: dict[str, Any] | None,
+    request: dict[str, Any] | None,
     confirmation_status: str,
+    automation_level: str,
     backend_calls: int,
     formal_authority: bool,
     platform: dict[str, Any] | None,
@@ -75,7 +112,9 @@ def _evidence(
     run_id: str | None = None,
 ) -> dict[str, Any]:
     failed = status in {"failed", "blocked"}
-    return {
+    evidence = {
+        "artifact_type": "evidence",
+        "schema_version": SCHEMA_VERSION,
         "run_id": run_id or f"run-{uuid.uuid4().hex}",
         "task_id": task["id"],
         "status": status,
@@ -84,22 +123,59 @@ def _evidence(
         "summary": (
             f"{task['id']} passed via {backend}"
             if status == "passed"
-            else f"{task['id']} {status} via {backend}: {_primary_error(output) or 'no error output'}"
+            else f"{task['id']} {status} via {backend}: "
+            f"{_primary_error(output) or 'no error output'}"
         ),
         "primary_error": _primary_error(output) if failed else None,
         "artifacts": task.get("outputs", {}).get("artifacts", []),
         "full_log": full_log,
-        "blocker_codes": blocker_codes or [],
+        "blocker_codes": sorted(set(blocker_codes or [])),
         "backend": backend,
-        "change_manifest": change_manifest,
-        "selection": selection,
-        "confirmation": confirmation,
-        "automation_level": automation_level,
+        "grant_digest": _digest(grant, "grant_digest"),
+        "manifest_digest": _digest(manifest, "manifest_digest"),
+        "diff_digest": _digest(selection, "diff_digest"),
+        "selection_digest": _digest(selection, "selection_digest"),
+        "request_digest": _digest(request, "request_digest"),
+        "commit_sha": (
+            str(request.get("commit_sha"))
+            if isinstance(request, dict) and request.get("commit_sha")
+            else "missing"
+        ),
         "confirmation_status": confirmation_status,
+        "automation_level": automation_level,
         "backend_calls": backend_calls,
         "formal_authority": formal_authority,
         "platform": platform,
     }
+    return attach_digest(evidence, "evidence_digest")
+
+
+def _preflight(
+    task: dict[str, Any],
+    validation_level: str,
+    grant: dict[str, Any] | None,
+    manifest: dict[str, Any] | None,
+    selection: dict[str, Any] | None,
+    request: dict[str, Any] | None,
+    confirmation: dict[str, Any] | None,
+) -> tuple[dict[str, Any], list[str]]:
+    authorization = authorize_task(
+        task,
+        validation_level,
+        request=request,
+        confirmation=confirmation,
+    )
+    bindings = execution_binding_blockers(
+        grant,
+        manifest,
+        selection,
+        request,
+        confirmation if authorization["confirmation_required"] else None,
+    )
+    blockers = sorted(
+        set(authorization["blocker_codes"]) | set(bindings)
+    )
+    return authorization, blockers
 
 
 def run_local_task(
@@ -108,26 +184,51 @@ def run_local_task(
     repository: Path,
     validation_level: str,
     *,
-    change_manifest: str | None = None,
-    selection: str | None = None,
+    grant: dict[str, Any] | None = None,
+    manifest: dict[str, Any] | None = None,
+    selection: dict[str, Any] | None = None,
     request: dict[str, Any] | None = None,
     confirmation: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Run a registered command array without a shell and save its full log."""
+    """Run a registered non-critical command array without a shell."""
 
     started = time.monotonic()
-    run_id = uuid.uuid4().hex
-    log_path = repository / ".harness" / "runs" / run_id / "full.log"
-    log_path.parent.mkdir(parents=True, exist_ok=True)
-    authorization = authorize_task(
-        task, validation_level, request=request, confirmation=confirmation
+    run_id = f"run-{uuid.uuid4().hex}"
+    authorization, blockers = _preflight(
+        task,
+        validation_level,
+        grant,
+        manifest,
+        selection,
+        request,
+        confirmation,
     )
-    if not authorization["allowed"]:
-        output = (
-            f"{task['id']} was not dispatched: "
-            f"{authorization['confirmation_status']}"
+    registered_command = task.get("command")
+    if (
+        not isinstance(registered_command, list)
+        or not registered_command
+        or not all(isinstance(item, str) and item for item in registered_command)
+    ):
+        blockers = sorted(set(blockers) | {"CONFIG_INVALID", "HANDOFF_REQUIRED"})
+    elif command != registered_command:
+        blockers = sorted(
+            set(blockers) | {"TASK_BYPASS_ATTEMPT", "HANDOFF_REQUIRED"}
         )
-        log_path.write_text(output, encoding="utf-8")
+    if task.get("category") in CRITICAL_CATEGORIES:
+        blockers = sorted(set(blockers) | {"BACKEND_UNAVAILABLE", "HANDOFF_REQUIRED"})
+    if task.get("backend") != "local":
+        blockers = sorted(set(blockers) | {"BACKEND_UNAVAILABLE"})
+    repository = repository.resolve()
+    working_directory = repository
+    if task.get("working_directory") not in {None, "repository-root"}:
+        working_directory = (repository / task["working_directory"]).resolve()
+        if not working_directory.is_relative_to(repository):
+            blockers = sorted(
+                set(blockers) | {"CONFIG_INVALID", "HANDOFF_REQUIRED"}
+            )
+    if blockers or not authorization["allowed"]:
+        output = f"{task['id']} was not dispatched: {', '.join(blockers)}"
+        full_log = _write_log(repository, run_id, output)
         return _evidence(
             task=task,
             validation_level=validation_level,
@@ -135,21 +236,20 @@ def run_local_task(
             status="blocked",
             duration=time.monotonic() - started,
             output=output,
-            full_log=log_path.relative_to(repository).as_posix(),
-            change_manifest=change_manifest,
+            full_log=full_log,
+            grant=grant,
+            manifest=manifest,
             selection=selection,
-            confirmation=confirmation,
-            automation_level=authorization["automation_level"],
+            request=request,
             confirmation_status=authorization["confirmation_status"],
+            automation_level=authorization["automation_level"],
             backend_calls=0,
             formal_authority=False,
             platform=None,
-            blocker_codes=authorization["blocker_codes"],
-            run_id=f"run-{run_id}",
+            blocker_codes=blockers,
+            run_id=run_id,
         )
-    working_directory = repository
-    if task.get("working_directory") not in {None, "repository-root"}:
-        working_directory = repository / task["working_directory"]
+
     try:
         completed = subprocess.run(
             command,
@@ -162,16 +262,19 @@ def run_local_task(
         )
         output = completed.stdout + completed.stderr
         status = "passed" if completed.returncode == 0 else "failed"
-        blockers: list[str] = []
+        blockers = []
     except subprocess.TimeoutExpired as exc:
-        output = f"Task timed out after {task['timeout']}\n{exc.stdout or ''}{exc.stderr or ''}"
+        output = (
+            f"Task timed out after {task['timeout']}\n"
+            f"{exc.stdout or ''}{exc.stderr or ''}"
+        )
         status = "failed"
         blockers = []
     except (FileNotFoundError, OSError) as exc:
         output = str(exc)
         status = "blocked"
         blockers = ["BACKEND_UNAVAILABLE"]
-    log_path.write_text(output, encoding="utf-8")
+    full_log = _write_log(repository, run_id, output)
     return _evidence(
         task=task,
         validation_level=validation_level,
@@ -179,82 +282,176 @@ def run_local_task(
         status=status,
         duration=time.monotonic() - started,
         output=output,
-        full_log=log_path.relative_to(repository).as_posix(),
-        change_manifest=change_manifest,
+        full_log=full_log,
+        grant=grant,
+        manifest=manifest,
         selection=selection,
-        confirmation=confirmation,
-        automation_level=authorization["automation_level"],
+        request=request,
         confirmation_status=authorization["confirmation_status"],
+        automation_level=authorization["automation_level"],
         backend_calls=1,
         formal_authority=False,
         platform=None,
         blocker_codes=blockers,
-        run_id=f"run-{run_id}",
+        run_id=run_id,
     )
 
 
 def run_github_actions_task(
     task: dict[str, Any],
-    dispatch: Callable[[dict[str, Any]], dict[str, Any]],
+    adapter: PlatformAdapter,
     repository: Path,
     validation_level: str,
     *,
-    change_manifest: str | None = None,
-    selection: str | None = None,
+    grant: dict[str, Any] | None = None,
+    manifest: dict[str, Any] | None = None,
+    selection: dict[str, Any] | None = None,
     request: dict[str, Any] | None = None,
     confirmation: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Normalize an injected GitHub Actions dispatcher result."""
+    """Execute prepare → dispatch → poll → normalize exactly once."""
 
     started = time.monotonic()
-    authorization = authorize_task(
-        task, validation_level, request=request, confirmation=confirmation
+    authorization, blockers = _preflight(
+        task,
+        validation_level,
+        grant,
+        manifest,
+        selection,
+        request,
+        confirmation,
     )
-    if not authorization["allowed"]:
+    if task.get("backend") != "github-actions":
+        blockers = sorted(set(blockers) | {"BACKEND_UNAVAILABLE"})
+    source = task.get("source")
+    if not isinstance(source, str) or not source:
+        blockers = sorted(set(blockers) | {"CONFIG_INVALID", "HANDOFF_REQUIRED"})
+    if blockers or not authorization["allowed"] or request is None:
+        output = f"{task['id']} was not dispatched: {', '.join(blockers)}"
         return _evidence(
             task=task,
             validation_level=validation_level,
             backend="github-actions",
             status="blocked",
             duration=time.monotonic() - started,
-            output=f"{task['id']} was not dispatched",
+            output=output,
             full_log="",
-            change_manifest=change_manifest,
+            grant=grant,
+            manifest=manifest,
             selection=selection,
-            confirmation=confirmation,
-            automation_level=authorization["automation_level"],
+            request=request,
             confirmation_status=authorization["confirmation_status"],
+            automation_level=authorization["automation_level"],
             backend_calls=0,
             formal_authority=False,
             platform=None,
-            blocker_codes=authorization["blocker_codes"],
+            blocker_codes=blockers,
         )
-    result = dispatch(task)
-    output = str(result.get("log", ""))
-    run_id = str(result.get("run_id", uuid.uuid4().hex))
-    log_path = repository / ".harness" / "runs" / run_id / "full.log"
-    log_path.parent.mkdir(parents=True, exist_ok=True)
-    log_path.write_text(output, encoding="utf-8")
-    status = result.get("status", "blocked")
-    blockers = [] if status in {"passed", "failed", "cancelled"} else ["BACKEND_UNAVAILABLE"]
-    platform_request = request or {
-        "task_id": task["id"],
-        "category": task.get("category"),
-        "validation_level": validation_level,
-        "automation_level": authorization["automation_level"],
-    }
-    platform = normalize_github_platform_evidence(
-        result,
-        platform_request,
-        confirmation or {},
+
+    backend_calls = 0
+    try:
+        prepared = adapter.prepare(task, request)
+        locator = adapter.dispatch(prepared)
+        backend_calls = 1
+        run = adapter.poll(locator)
+        platform = adapter.normalize(run, request, confirmation)
+    except Exception as exc:  # Adapter boundary normalizes external failures.
+        output = str(exc)
+        return _evidence(
+            task=task,
+            validation_level=validation_level,
+            backend="github-actions",
+            status="blocked",
+            duration=time.monotonic() - started,
+            output=output,
+            full_log="",
+            grant=grant,
+            manifest=manifest,
+            selection=selection,
+            request=request,
+            confirmation_status=authorization["confirmation_status"],
+            automation_level=authorization["automation_level"],
+            backend_calls=backend_calls,
+            formal_authority=False,
+            platform=None,
+            blocker_codes=["BACKEND_UNAVAILABLE"],
+        )
+
+    if not isinstance(platform, dict):
+        platform = {}
+    output = str(run.get("log", ""))
+    platform_complete = platform_evidence_complete(
+        platform, task.get("category", ""), request
     )
-    formal_authority = (
-        authorization["automation_level"] == "critical"
-        and platform_evidence_complete(platform, task.get("category", ""))
+    binding_blockers = execution_binding_blockers(
+        grant,
+        manifest,
+        selection,
+        request,
+        confirmation if authorization["confirmation_required"] else None,
+        platform,
     )
-    if authorization["automation_level"] == "critical" and not formal_authority:
+    expected_workflow = source.split("#", 1)[0]
+    if platform.get("workflow") != expected_workflow:
+        binding_blockers = sorted(
+            set(binding_blockers)
+            | {"EVIDENCE_BINDING_MISMATCH", "HANDOFF_REQUIRED"}
+        )
+    status = run.get("status", "blocked")
+    blockers = list(binding_blockers)
+    if status == "passed" and not platform_complete:
         status = "blocked"
-        blockers = ["EVIDENCE_INCOMPLETE"]
+        blockers.append("EVIDENCE_INCOMPLETE")
+    elif status not in {"passed", "failed", "cancelled"}:
+        status = "blocked"
+        blockers.append("BACKEND_UNAVAILABLE")
+    if binding_blockers:
+        status = "blocked"
+    platform_required_keys = {
+        "artifact_type",
+        "schema_version",
+        "platform",
+        "workflow",
+        "run_id",
+        "commit_sha",
+        "request_digest",
+        "confirmation_status",
+        "approval_status",
+        "required_checks",
+        "protected_ref",
+        "protected_environment",
+        "artifact_digest",
+        "source_ref",
+        "platform_evidence_digest",
+    }
+    platform_required_values = {
+        "artifact_type",
+        "schema_version",
+        "platform",
+        "workflow",
+        "run_id",
+        "commit_sha",
+        "request_digest",
+        "confirmation_status",
+        "approval_status",
+        "required_checks",
+        "source_ref",
+        "platform_evidence_digest",
+    }
+    platform_shape_valid = platform_required_keys.issubset(platform) and all(
+        platform.get(field)
+        for field in platform_required_values
+    )
+    evidence_platform = platform if platform_shape_valid else None
+    run_id = str(run.get("run_id") or uuid.uuid4().hex)
+    evidence_run_id = run_id if run_id.startswith("run-") else f"run-{run_id}"
+    full_log = _write_log(repository, evidence_run_id, output)
+    formal_authority = (
+        task.get("category") in CRITICAL_CATEGORIES
+        and status == "passed"
+        and platform_complete
+        and not binding_blockers
+    )
     return _evidence(
         task=task,
         validation_level=validation_level,
@@ -262,15 +459,16 @@ def run_github_actions_task(
         status=status,
         duration=time.monotonic() - started,
         output=output,
-        full_log=log_path.relative_to(repository).as_posix(),
-        change_manifest=change_manifest,
+        full_log=full_log,
+        grant=grant,
+        manifest=manifest,
         selection=selection,
-        confirmation=confirmation,
-        automation_level=authorization["automation_level"],
+        request=request,
         confirmation_status=authorization["confirmation_status"],
-        backend_calls=1,
+        automation_level=authorization["automation_level"],
+        backend_calls=backend_calls,
         formal_authority=formal_authority,
-        platform=platform,
+        platform=evidence_platform,
         blocker_codes=blockers,
-        run_id=run_id if run_id.startswith("run-") else f"run-{run_id}",
+        run_id=evidence_run_id,
     )

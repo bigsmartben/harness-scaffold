@@ -4,9 +4,13 @@ tasks:
     automation_level: routine
     auto_allowed: true
     command_source: pyproject.toml#tool.pytest.ini_options
+    command:
+      - uv
+      - run
+      - pytest
     backend: local
     working_directory: repository-root
-    supports_scope: affected
+    supports_scope: contract
     timeout: 5m
     outputs:
       report: .harness/reports/contracts.json

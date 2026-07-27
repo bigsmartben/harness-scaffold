@@ -1,7 +1,7 @@
 # AI Coding Harness 规范
 
-版本：`0.2.0`  
-状态：P3 Available（`0.2` 权限模型）  
+版本：`0.3.0`
+状态：P3–P4 Available（P4 本地产品验收）；P5 In Progress
 最后更新：2026-07-24
 
 本文是 AI Coding Harness 的唯一规范来源（Normative Specification）。其他文档负责解释、演示或规划，不得改变本文定义的职责边界与行为规则。
@@ -192,7 +192,14 @@ Registry 条目代表一个可调用能力或动作，不代表整个 executable
 - 输入、输出和项目特定约束。
 - 对应的能力名称，例如 `repository-search`。
 - `invocation_mode`：`direct` 或 `managed`。
+- `action_semantics`：`ordinary` 或一个 CI/CD Task category。
 - 当 `invocation_mode` 为 `managed` 时，必须提供 `task_ref`。
+
+`action_semantics: ordinary` MUST 与 `invocation_mode: direct` 同时出现，且 MUST NOT
+包含 `task_ref`。其他 `action_semantics` MUST 与 `invocation_mode: managed` 同时出现，
+必须引用 category 相同的 Task。缺失或未知语义返回
+`ACTION_CLASSIFICATION_UNRESOLVED` 与 `HANDOFF_REQUIRED`；CI/CD 语义被登记为
+`direct` 时返回 `TASK_BYPASS_ATTEMPT` 与 `HANDOFF_REQUIRED`。
 
 示例：`repository-search` 映射到 `rg`，并给出项目根目录下的典型调用，而不是只记录“rg 已安装”。
 
@@ -218,7 +225,9 @@ Agent / Skill 在条目的 `invocation_mode` 为 `direct`，且具体动作不�
 
 ### TR-007：避免重复事实源
 
-Registry SHOULD 引用项目已有的版本或任务事实源，例如 `.python-version`、`pyproject.toml`、`.nvmrc`、`package.json` 或 Gradle Wrapper。Registry 不应复制一个会独立漂移的版本值。
+Registry SHOULD 引用 0.3 支持集内已有的版本或任务事实源，例如 `.python-version`、
+`pyproject.toml`、`.nvmrc`、`package.json`、workspace Manifest 或 GitHub Workflow。
+Registry 不应复制一个会独立漂移的版本值；支持集外的事实按 DM-006 记录 gap。
 
 ### TR-008：Task 内部工具链
 
@@ -251,6 +260,11 @@ Agent / Skill MAY 提交 Change Manifest 和推荐检查，但 MUST NOT 自行�
 
 验证级别描述“需要验证到哪里”，自动化等级描述“是否可以自动启动”，两者 MUST 分开计算。例如规则可以推荐 `full`，但对应 Task 是 `expensive`，因此未确认时只能生成 Request。
 
+最终验证级别确定后，Harness MUST 校验所选 Task 的 `supports_scope`。`contract` 必须由
+contract-capable Task 覆盖；`integration` 与 `full` 必须有足以覆盖该级别的 Task，否则
+返回 `IMPACT_UNRESOLVED`。选择 `full` 只扩大验证覆盖，MUST NOT 自动加入 Push、
+Merge、Publish、Release 或 Deploy 等交付 Task。
+
 ### DM-004：全量验证升级条件
 
 只有以下事实之一成立时，Harness MAY 选择 `full`：
@@ -271,7 +285,15 @@ Agent 的“更安全”偏好本身不是升级条件。
 
 ### DM-006：Adopt 不重建
 
-Adopt MUST 优先识别和引用已有 Workflow、包脚本、Makefile、Gradle/Maven Task、Fastlane 或仓库脚本。Harness MUST NOT 在没有用户确认的情况下重写已存在的交付实现。
+Adopt 的 0.3 确定性支持集限定为 Python、Node、由 workspace Manifest 声明的
+Monorepo 单元、GitHub Actions，以及 Manifest 或 Workflow 明确引用的仓库脚本。
+Harness MUST 为每个技术单元分别生成 Tool、Task 与 Impact Rule，不得只选择第一个
+项目类型。已有 Workflow Task MUST 保留 Workflow/job 来源并使用 GitHub Actions
+Backend。Harness MUST NOT 在没有用户确认的情况下重写已存在的交付实现。
+
+检测到 MCP、Make、Gradle/Maven、Fastlane 或无法分类的仓库脚本时，Adopt 只记录
+source-backed gap，并返回 `TOOL_NOT_REGISTERED` 或
+`ACTION_CLASSIFICATION_UNRESOLVED`；在 0.3 支持集之外不得猜测 Tool、Task 或 Adapter。
 
 若受保护 Workflow 仍能绕过本项目所需确认或平台门禁，由 Push、PR、Webhook 或 Schedule 直接启动，Harness MUST 返回 `PROTECTED_TRIGGER_UNCONTROLLED`，并把触发器或平台规则改造列为独立 Handoff。用户未批准改造前，Harness 可以完成索引，但 MUST NOT 报告交付权限已接管。
 
@@ -283,7 +305,7 @@ Harness 只能保证自身不在确认前发起 Dispatch。若其他主体仍可
 
 ### DM-007：Bootstrap 最小化
 
-Bootstrap MUST 只创建当前技术栈所需的最小工具索引、Task Catalog、影响规则、Merge Pipeline 和 Publish Pipeline。首批范围为 Local、GitHub Actions、Python 和 Node。
+Bootstrap MUST 只创建当前技术栈所需的最小工具索引、Task Catalog、影响规则、Merge Pipeline 和 Publish Pipeline。首批范围为 Local、GitHub Actions、Python、Node 和由 workspace Manifest 声明的 Monorepo 单元；未声明的技术单元不得猜测注册。
 
 ### DM-008：统一 CI/CD 入口
 
@@ -317,6 +339,16 @@ Local Runner、GitHub Actions、pytest、npm 等是 Harness 的执行后端。Ha
 
 用户批准一次工作计划时，Grant MUST 至少绑定工作目标、写入范围、Merge 目标和验证策略。任何用于判断 Grant 是否失效的交付目标与风险级别也 MUST 绑定；不适用时 MUST 明确记录为 `null` 或 `not-applicable`。Grant 内的普通执行不需要逐次询问用户。
 
+Plan 与 Plan Approval MUST 是两个独立 Artifact。Plan MUST 绑定发现事实摘要、目标
+路径修改前摘要、精确 Action、写入范围和 `plan_digest`，不得包含可由调用方直接切换
+的批准布尔值。Approval MUST 绑定当前 `plan_digest`。Apply 前任一绑定发生变化时，
+MUST 返回 `PLAN_STALE` 与 `HANDOFF_REQUIRED`，且写入次数为零。
+
+Discover 与 Plan 默认输出到 stdout。调用方需要保存文件时 MUST 使用目标仓库外的
+临时路径；`--output` 位于目标仓库内时 MUST 在写入前拒绝。Apply MUST 重新验证
+Plan 与 Approval 的运行期 Schema、规范摘要、发现事实、每个目标的修改前状态、精确
+Action 和写入路径，任一不匹配都必须零写入停止。
+
 ### HF-002：外部触发
 
 Push、PR、Webhook 和 Schedule 等外部事件 MAY 创建 Harness Request，但不得绕过该 Task 的自动化等级和平台门禁。事件命中 `expensive` 或 `critical` 动作时，Harness MUST 返回 `HANDOFF_REQUIRED` 并等待本次确认。
@@ -338,6 +370,12 @@ HF-001 所绑定的写入范围、Merge 目标、交付目标或风险级别发�
 Harness Request 和确认记录 MUST 绑定 Task、动作语义、目标、提交摘要、自动化等级和策略版本；不适用的版本、制品摘要或环境必须显式为 `null` 或 `not-applicable`。任一绑定事实变化后，确认 MUST 失效。
 
 对 `critical` 动作，正式权限和结果 MUST 来自 CI/CD 平台：Agent / Skill 不得读取高权限 Push、Merge、Publish 或 Deploy 凭证，不得把仓库内确认文件描述为平台批准。平台 Evidence MUST 能追溯审批状态、受保护分支或环境以及实际 Run。
+
+所有运行期 Artifact MUST 使用 UTF-8 JSON、递归键排序、无额外空白的规范化表示计算
+SHA-256；计算时只排除当前 Artifact 自身的 digest 字段。Grant 绑定变化返回
+`GRANT_STALE` 与 `HANDOFF_REQUIRED`。Manifest、Diff、Selection、Request、commit
+或平台 Evidence 不能形成同一摘要链时返回 `EVIDENCE_BINDING_MISMATCH` 与
+`HANDOFF_REQUIRED`；必要证据本身缺失时返回 `EVIDENCE_INCOMPLETE`。
 
 ## 9. Evidence 与失败规则
 
@@ -386,6 +424,9 @@ Evidence MUST 能追溯到 Change Manifest、最终验证选择、自动化等�
 | `CONFIG_INVALID` | Harness 配置结构或跨文件关系无效 |
 | `BACKEND_UNAVAILABLE` | 执行后端不可用 |
 | `EVIDENCE_INCOMPLETE` | 执行结论缺少必要证据 |
+| `PLAN_STALE` | Plan、发现事实或目标文件在 Apply 前变化 |
+| `GRANT_STALE` | Work Grant 的目标、范围、交付或风险绑定变化 |
+| `EVIDENCE_BINDING_MISMATCH` | 运行期 Artifact 不属于同一摘要链 |
 
 ### EV-006：失败不可伪装为成功
 
@@ -459,6 +500,17 @@ Merge 完成
 
 对应 [`UC-007`](../uc.md) 和 [`UC-009`](../uc.md)。
 
+### 10.5 Audit 与 Update
+
+Audit MUST 只读解析现有 `.harness/`、事实源和引用关系，并报告 Schema、分类、来源与
+漂移问题，不得创建 Approval 或写文件。
+
+Update MUST 先解析有效的 0.3 配置并生成字段级 Drift Plan。它 MUST 保留自定义
+Tools、Tasks、Adapters 和项目 `mode`，只修改无效字段或 Plan 明确列出的迁移字段。
+`AGENTS.md` 必须使用成对 Harness 标记，只替换标记内区块并保留其他项目指令。
+
+对应 [`UC-010`](../uc.md)。
+
 ## 11. 目标项目配置契约
 
 目标项目最终使用以下结构：
@@ -491,7 +543,33 @@ Merge 完成
 | `adapters/` | 对现有或新建 Backend 的引用配置 | 是 |
 | `runs/`、`reports/`、`cache/` | 运行日志、报告和缓存 | 否 |
 
-具体目录边界见 [`repository-structure.md`](repository-structure.md)。结构约束将在 P1 由 JSON Schema 和跨文件验证器实现。
+具体目录边界见 [`repository-structure.md`](repository-structure.md)。结构约束由 0.3 JSON Schema 和跨文件验证器实现。
+
+0.3 只接受 `schema_version: 0.3.0`。现有配置为 0.2 或其他旧版本时 MUST 返回
+`CONFIG_INVALID`，要求重新 Adopt 或 Bootstrap；Update MUST NOT 提供兼容层或通用
+迁移器。
+
+### 11.1 运行期 Artifact 契约
+
+运行期 Artifact 不提交到目标项目配置，但 MUST 通过 Skill
+`assets/schemas/runtime.schema.json` 校验：
+
+Selection、Task Runner 与 Pipeline 的入口 MUST 在作出选择或调用 Adapter 前重新校验所接收的运行期 Artifact。摘要正确但缺少必填绑定字段的对象同样无效，必须以 `EVIDENCE_BINDING_MISMATCH` 与 `HANDOFF_REQUIRED` 零调用停止。
+
+| Artifact | 必要绑定 |
+|---|---|
+| Plan | 发现事实、修改前摘要、Action、写入范围、Plan digest |
+| Plan Approval | 当前 Plan digest 与本次确认 |
+| Work Grant | 目标、写范围、Merge/交付目标、验证策略、风险 |
+| Change Manifest | Grant digest、base commit、声明路径与影响事实 |
+| Selection | Manifest digest、实际 Diff digest、验证级别与 Task 集 |
+| Task Request / Confirmation | Task、动作语义、目标、commit、策略版本与 Request digest |
+| Evidence | Grant、Manifest、实际 Diff、Selection、Request、commit、Backend 与确认状态 |
+| Platform Evidence | Workflow、Run ID、commit、Request、审批、受保护分支或环境与适用制品摘要 |
+
+Pipeline readiness 使用 `blocked`、`confirmation-required` 或
+`ready-for-dispatch`；实际 Adapter 调用后使用 `dispatched`；只有完整平台 Evidence
+通过绑定校验后才能使用 `passed`。准备 Dispatch 不得伪装成 Backend 调用或正式成功。
 
 ## 12. 自动化等级与平台门禁
 
@@ -504,7 +582,22 @@ Merge 完成
 | `critical` | 每次生成 Request；确认后提交平台门禁 | CI/CD 凭证、Required Checks、Protected Environment、平台审批 |
 | 本地调试执行 | 可以产生诊断 Evidence | 不能推动正式 Merge、Publish、Release 或 Deploy 状态 |
 
+平台 Adapter MUST 实现 `prepare → dispatch → poll → normalize` 协议，并分别记录
+readiness、dispatch 与 finalize 状态。没有实际 Adapter 调用时最多只能返回
+`ready-for-dispatch`；轮询未获得完整且同链的 Platform Evidence 时不得返回
+`passed`。生产凭证不得进入 Skill 或 Registry。
+
+Local Backend MUST 拒绝 Push、Merge、Publish、Release 和 Deploy 等 critical
+交付 Task。0.3 不提供 Publish 假后端；本地 Fake GitHub Adapter 只用于验证调用次数、
+状态迁移和 Evidence 绑定，不能产生正式交付 Evidence。
+
 P4 的不可绕过保证只覆盖 CI/CD 平台能够保护的正式交付动作。它不覆盖普通 MCP、网络、Shell、Runtime、CLI、本地工具或文件写入，也不建设通用宿主强制根。
+
+P4 的本地接口验收与真实平台验收必须分开：
+
+- 本地验收使用正反平台事实 Fixture、零 Backend 调用断言、Evidence 归一化测试，以及全新目录中的 Bootstrap、Schema / 跨文件验证和重复应用幂等性。
+- 具体项目准备执行正式 Merge、Publish、Release 或 Deploy 时，仍必须采集该项目当时的 CI/CD 平台事实；本地 Fixture 不能替代 Required Checks、Protected Environment、审批或凭证隔离。
+- 本地 Fixture、Fake Adapter、零调用断言和独立目录流程构成 P4 产品阶段验收，P4 可标记为 `Available`。具体正式交付仍必须取得同链的真实 GitHub Workflow、Run ID、Required Checks、平台审批、受保护分支或环境及适用制品摘要。
 
 ## 13. 验收基线
 
@@ -528,5 +621,8 @@ P4 的不可绕过保证只覆盖 CI/CD 平台能够保护的正式交付动作�
 16. 正式交付 Evidence 来自 CI/CD 平台并可追溯 Required Checks、Protected Environment 或审批状态。
 17. 文档不声称 Harness 强制控制普通 MCP、网络、Shell、Runtime、CLI 或本地文件写入。
 18. 每条核心规则都能追溯到 [`uc.md`](../uc.md) 中至少一个用户用例。
+19. P4 正反平台事实 Fixture 能分别得到 `ready` 和稳定 blocker codes，且失败场景 Backend 调用次数为零。
+20. 全新本地目录可以完成最小 Local Bootstrap、Schema / 跨文件验证，并在第二次应用时产生空 Diff。
+21. P4 本地产品验收通过后可标记为 `Available`；具体正式交付动作仍必须取得完整且同链的真实 GitHub 平台 Evidence，本地 Fixture 不能替代该运行时门禁。
 
 若第 1 项中的已有 Workflow 存在直接外部触发，则“可以 Adopt”表示 Harness 必须先返回 `PROTECTED_TRIGGER_UNCONTROLLED`；只有用户批准改造，或有来源事实证明该 Workflow 只是非 CI/CD 的信息自动化后，接管才能完成。

@@ -2,7 +2,7 @@
 
 AI Coding Harness 是项目工作区、工具发现与 CI/CD 交付执行的统一控制层：它让 Agent / Skill 在明确写边界内工作，通过 Tool Registry 找到 Runtime、CLI、Shell、MCP、API 和脚本的正确入口，并按动作语义管理验证与正式交付。
 
-> 当前状态：**P0–P3 Available；P4 In Progress；P5 Planned**。`0.2` 已完成三级 CI/CD 自动化策略重新验收；GitHub 平台权限与门禁正在接入。
+> 当前状态：**P0–P4 Available；P5 In Progress**。`0.3` 已完成 Plan / Approval 分离、摘要链、能力校验和 P4 本地产品验收；真实平台 Evidence 仍按每个正式交付请求逐次校验。
 
 ## 为什么需要 Harness
 
@@ -128,23 +128,26 @@ Merge、Publish、Release 和 Deploy 都属于 `critical`，每次必须获得�
 
 ## 安装状态
 
-本仓库已提供 `skills/initialize-ai-coding-harness/` 源 Skill，但 P3 正按 `0.2` 权限模型重新验收，尚未执行正式安装或发布。P5 只会在许可证、安装目标和发布渠道获得用户确认后提供正式安装产物。
+本仓库已提供 `skills/initialize-ai-coding-harness/` 源 Skill。P0–P4 Available；P5 已进入安装与发布准备：不添加许可证并保持私有，计划从私有仓库 `bigsmartben/harness-scaffold` 的 `v0.3.0` 标签安装到当前用户 Codex Skills 目录。
 
 ## 首批支持范围
 
 | 维度 | 首批支持 | 后续扩展 |
 |---|---|---|
 | 项目模式 | Adopt、Bootstrap、Audit、Update、Work、Verify、Merge、Publish | 组织级策略同步 |
-| Runtime | Python、Node | Java、移动端及其他 Runtime |
+| Runtime / 项目单元 | Python、Node、workspace Manifest 声明的 Monorepo 单元 | Java、移动端及其他 Runtime |
 | Backend | Local、GitHub Actions | GitLab CI、Jenkins、其他平台 |
 | 验证 | Inspect、Affected、Contract、Integration、Full | 基于历史数据的动态优化 |
 | 自动化 | `routine`、`expensive`、`critical` | 基于历史数据的成本优化 |
 | 权限门禁 | GitHub Required Checks、Protected Environment、平台审批 | 其他 CI/CD 平台 |
 | 范围边界 | 普通工具只注册引导；不做通用宿主强控 | 组织级策略服务 |
 
+MCP、Make、Gradle/Maven、Fastlane 和未被 Manifest / Workflow 引用的仓库脚本在
+0.3 中只形成 source-backed gap；Harness 不猜测其 Tool、Task 或 Adapter。
+
 ## 能力状态
 
-`Available` 表示仓库中已有可验证产物；`Planned` 表示接口已经由规范和用例定义，但尚未实现。
+`Available` 表示阶段交付物和阶段验收都已完成；`In Progress` 表示已有实现但阶段验收尚未闭合；`Planned` 表示范围已确定但尚未开始。
 
 | 能力 | 状态 | 阶段 | 证据 |
 |---|---|---|---|
@@ -156,8 +159,8 @@ Merge、Publish、Release 和 Deploy 都属于 `critical`，每次必须获得�
 | Work、Verify、Merge、Publish Skill 路由 | Available | P3 | 四类中英文路由及三级自动化语义测试 |
 | 最低充分验证与 Task Runner | Available | P3 | 验证级别、自动化等级、零 Backend 调用与摘要测试 |
 | Local 与 GitHub Actions Adapter | Available | P3 | 同形 Evidence、确认门禁和平台来源字段测试 |
-| CI/CD 平台权限与门禁 | In Progress | P4 | Public 仓库、Required Check 与 Protected Environment 已配置；等待 Gate Run 与凭证隔离 Evidence |
-| Skill 评测、安装与发布 | Planned | P5 | 未来前向评测与发布记录 |
+| CI/CD 平台闭环 | Available | P4 | 本地 Fixture、Fake Adapter、零调用断言和独立目录流程验收通过 |
+| Skill 安装与正式发布 | In Progress | P5 | 私有发布与当前用户安装目标已确认；尚未 Push、Release 或安装 |
 
 详细依赖和验收条件见 [`plan.md`](plan.md)。
 

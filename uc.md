@@ -1,7 +1,7 @@
 # AI Coding Harness 用户用例
 
-版本：`0.2.0`  
-状态：P3 Available（`0.2` 权限模型）  
+版本：`0.3.0`
+状态：P3–P4 Available（P4 本地产品验收）；P5 In Progress
 最后更新：2026-07-24
 
 本文把 [`docs/specification.md`](docs/specification.md) 中的规范规则投影为用户可观察、可验收的行为。本文不重新定义政策；出现冲突时，以规范为准。
@@ -513,13 +513,14 @@ Harness 开始只读比较配置与当前仓库事实。
 1. Harness 校验 YAML 结构和跨文件引用。
 2. Harness 比较工具版本事实源、任务入口、Workflow 和模块影响规则。
 3. Harness 报告有效项、漂移项、缺失项和已失效项。
-4. 对需要写入的修复生成 Update Plan。
+4. 对需要写入的修复生成字段级 Drift Plan，并标出保留与修改的字段。
 5. 用户批准写入范围。
-6. Harness 应用最小变更并重新校验。
+6. Harness 保留自定义 Tools、Tasks、Adapters、项目 `mode` 和 `AGENTS.md` 标记外指令，只应用明确批准的最小变更并重新校验。
 
 ### 替代与失败流程
 
 - 只请求 Audit 时不得写文件。
+- 配置不是 `0.3.0` 时返回 `CONFIG_INVALID`，要求重新 Adopt 或 Bootstrap，不自动迁移。
 - 配置与事实冲突但无法自动决定时，返回 `CONFIG_INVALID`，保留差异。
 - Update Plan 扩大写入范围时转入 `UC-011`。
 
@@ -532,6 +533,7 @@ Harness 开始只读比较配置与当前仓库事实。
 
 - Audit 模式文件校验和全部不变。
 - 入口失效时报告 `TOOL_ENTRY_STALE`。
+- 自定义配置与 Harness 标记外的项目指令保持不变。
 - 幂等 Update 的第二次执行 Diff 为空。
 
 ## UC-011：写入范围扩大后重新 Handoff
@@ -627,6 +629,15 @@ Agent / Skill 请求执行 `critical` 动作，或未经确认尝试推动正式
 - Agent / Skill 没有可直接使用的高权限交付凭证。
 - 普通 MCP、CLI、Shell 和网络调用不经过 Harness 权限代理。
 - 本地执行结果不能伪造正式 CI/CD Evidence。
+
+### P4 平台闭环验收
+
+- 使用本地 `ready` 平台事实 Fixture 验证完整配置返回 `ready`。
+- 使用本地 `blocked` Fixture 分别验证过宽凭证、缺失 Required Checks、未受控触发器和缺失环境审批返回稳定 blocker codes。
+- 未确认或门禁失败的 Fixture 断言 Backend 调用次数为零。
+- 在全新本地目录完成最小 Local Bootstrap、Schema / 跨文件验证，并重复应用确认 Diff 为空。
+- 上述本地验收只验证 Adapter 接口、状态迁移和 Evidence 绑定，不授予正式交付权限。
+- P4 的本地产品验收已通过并标记为 `Available`。具体正式交付动作仍必须取得真实 GitHub Run、Required Checks、平台审批、受保护分支或环境及适用制品摘要；本地验收不授予该次交付权限。
 
 ## 规则覆盖索引
 

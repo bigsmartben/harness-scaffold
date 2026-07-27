@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from typing import Any
 
+from .artifacts import SCHEMA_VERSION, attach_digest, digest_matches
+from .contracts import runtime_artifact_is_valid
+
 
 PROTECTED_CATEGORIES = {"push", "merge", "publish", "release", "deploy"}
 EXTERNAL_TRIGGERS = {"push", "pull_request", "schedule", "repository_dispatch"}
@@ -75,52 +78,139 @@ def assess_github_platform(
 def normalize_github_platform_evidence(
     run: dict[str, Any],
     request: dict[str, Any],
-    confirmation: dict[str, Any],
+    confirmation: dict[str, Any] | None,
 ) -> dict[str, Any]:
-    """Return the platform fields required for formal delivery Evidence."""
+    """Normalize a polled GitHub run into the 0.3 Platform Evidence contract."""
 
-    return {
+    confirmation_matches = (
+        isinstance(confirmation, dict)
+        and runtime_artifact_is_valid(confirmation)
+        and confirmation.get("artifact_type") == "confirmation"
+        and confirmation.get("schema_version") == SCHEMA_VERSION
+        and confirmation.get("confirmation_status") == "confirmed"
+        and confirmation.get("request_digest") == request.get("request_digest")
+    )
+    workflow = run.get("workflow")
+    run_id = run.get("run_id")
+    evidence = {
+        "artifact_type": "platform-evidence",
+        "schema_version": SCHEMA_VERSION,
         "platform": "github-actions",
-        "workflow": run.get("workflow"),
-        "run_id": run.get("run_id"),
-        "commit_sha": run.get("commit_sha"),
-        "request_digest": confirmation.get("request_digest"),
+        "workflow": str(workflow or ""),
+        "run_id": str(run_id or ""),
+        "commit_sha": str(run.get("commit_sha") or ""),
+        "request_digest": request.get("request_digest"),
         "confirmation_status": (
-            "confirmed" if confirmation.get("confirmed") is True else "missing"
+            "confirmed"
+            if confirmation_matches
+            else "not-required"
         ),
-        "approval_status": run.get("approval_status"),
-        "approver": run.get("approver"),
-        "required_checks": run.get("required_checks"),
+        "approval_status": run.get("approval_status", "not-required"),
+        "required_checks": run.get("required_checks", "not-applicable"),
+        "protected_ref": run.get("protected_ref"),
         "protected_environment": run.get("protected_environment"),
+        # Platform Evidence must report the artifact it actually observed.
+        # The requested digest is a binding expectation, not proof of delivery.
         "artifact_digest": run.get("artifact_digest"),
-        "target": request.get("target") or request.get("context", {}).get("target"),
-        "automation_level": request.get("automation_level"),
+        "source_ref": str(
+            run.get("source_ref") or f"{workflow or 'missing'}#{run_id or 'missing'}"
+        ),
     }
+    return attach_digest(evidence, "platform_evidence_digest")
 
 
 def platform_evidence_complete(
-    evidence: dict[str, Any], category: str
+    evidence: dict[str, Any],
+    category: str,
+    request: dict[str, Any] | None = None,
 ) -> bool:
-    required = {
+    """Return whether Platform Evidence is complete and belongs to the Request."""
+
+    required_keys = {
+        "artifact_type",
+        "schema_version",
         "platform",
         "workflow",
         "run_id",
         "commit_sha",
         "request_digest",
         "confirmation_status",
-        "automation_level",
+        "approval_status",
+        "required_checks",
+        "protected_ref",
+        "protected_environment",
+        "artifact_digest",
+        "source_ref",
+        "platform_evidence_digest",
     }
-    if not all(evidence.get(field) for field in required):
+    required_values = {
+        "artifact_type",
+        "schema_version",
+        "platform",
+        "workflow",
+        "run_id",
+        "commit_sha",
+        "request_digest",
+        "confirmation_status",
+        "approval_status",
+        "required_checks",
+        "source_ref",
+        "platform_evidence_digest",
+    }
+    if not required_keys.issubset(evidence) or not all(
+        evidence.get(field) for field in required_values
+    ):
         return False
-    if evidence.get("confirmation_status") != "confirmed":
+    if (
+        not runtime_artifact_is_valid(evidence)
+        or evidence.get("artifact_type") != "platform-evidence"
+        or evidence.get("schema_version") != SCHEMA_VERSION
+        or evidence.get("platform") != "github-actions"
+        or not digest_matches(evidence, "platform_evidence_digest")
+    ):
+        return False
+    if request is not None:
+        if (
+            not runtime_artifact_is_valid(request)
+            or request.get("artifact_type") != "task-request"
+            or request.get("schema_version") != SCHEMA_VERSION
+            or not digest_matches(request, "request_digest")
+            or request.get("action_semantics") != category
+            or evidence.get("request_digest") != request.get("request_digest")
+            or evidence.get("commit_sha") != request.get("commit_sha")
+            or (
+                request.get("artifact_digest") is not None
+                and evidence.get("artifact_digest")
+                != request.get("artifact_digest")
+            )
+        ):
+            return False
+    if (
+        request is not None
+        and request.get("automation_level") != "routine"
+        and evidence.get("confirmation_status") != "confirmed"
+    ):
         return False
     if category in PROTECTED_CATEGORIES and evidence.get("approval_status") != "approved":
         return False
-    if category == "merge" and evidence.get("required_checks") != "passed":
-        return False
+    if category in {"push", "merge"}:
+        if (
+            not request
+            or not request.get("target")
+            or evidence.get("protected_ref") != request.get("target")
+        ):
+            return False
+        if category == "merge" and evidence.get("required_checks") != "passed":
+            return False
     if category in {"publish", "release", "deploy"}:
         return bool(
-            evidence.get("protected_environment")
+            request
+            and request.get("target")
+            and request.get("version")
+            and request.get("environment")
+            and evidence.get("protected_environment")
+            == request.get("environment")
             and evidence.get("artifact_digest")
+            == request.get("artifact_digest")
         )
     return True

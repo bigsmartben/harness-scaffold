@@ -18,3 +18,7 @@ evidence:
     - request_digest
     - confirmation_status
     - approval_status
+    - required_checks
+    - protected_ref
+    - protected_environment
+    - artifact_digest

@@ -3,6 +3,7 @@ tools:
     type: runtime
     purpose: execute-read-only-python-analysis
     capability: python-runtime
+    action_semantics: ordinary
     entrypoint: python
     invocation_mode: direct
     version_source: pyproject.toml#project.requires-python
@@ -16,6 +17,7 @@ tools:
     type: cli
     purpose: repository-text-search
     capability: repository-search
+    action_semantics: ordinary
     entrypoint: rg
     invocation_mode: direct
     version_source:
@@ -31,6 +33,7 @@ tools:
     type: shell
     purpose: run-registered-read-helper
     capability: shell-read
+    action_semantics: ordinary
     entrypoint: powershell
     invocation_mode: direct
     version_source:
@@ -46,6 +49,7 @@ tools:
     type: mcp-server
     purpose: access-github
     capability: github-server
+    action_semantics: ordinary
     entrypoint: github-mcp
     invocation_mode: direct
     version_source: mcp.json#github
@@ -59,6 +63,7 @@ tools:
     type: mcp-tool
     purpose: read-pull-request
     capability: pull-request-read
+    action_semantics: ordinary
     server_ref: github
     method: get_pull_request
     invocation_mode: direct
@@ -73,6 +78,7 @@ tools:
     type: project-action
     purpose: validate-python-project
     capability: project-tests
+    action_semantics: test
     invocation_mode: managed
     task_ref: test:python
     working_directory: repository-root
@@ -85,6 +91,7 @@ tools:
     type: project-action
     purpose: publish-project
     capability: package-publish
+    action_semantics: publish
     invocation_mode: managed
     task_ref: publish:package
     working_directory: repository-root

@@ -1,15 +1,1 @@
-write_scope:
-  include:
-    - "{{ source_scope }}"
-    - "{{ test_scope }}"
-  exclude:
-    - .git/**
-    - .harness/runs/**
-    - .harness/reports/**
-    - .harness/cache/**
-expansion:
-  action: stop-and-handoff
-  blocker_codes:
-    - WRITE_SCOPE_EXPANDED
-    - HANDOFF_REQUIRED
-
+{{ boundaries_yaml }}

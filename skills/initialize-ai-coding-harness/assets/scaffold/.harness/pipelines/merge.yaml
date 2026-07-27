@@ -1,7 +1,1 @@
-id: merge:default
-kind: merge
-requires_independent_confirmation: true
-stages:
-  - id: validate
-    tasks: ["{{ task_id }}"]
-    requires_evidence: true
+{{ merge_pipeline_yaml }}

@@ -27,6 +27,9 @@ EXPECTED_BLOCKER_CODES = {
     "CONFIG_INVALID",
     "BACKEND_UNAVAILABLE",
     "EVIDENCE_INCOMPLETE",
+    "PLAN_STALE",
+    "GRANT_STALE",
+    "EVIDENCE_BINDING_MISMATCH",
 }
 
 
@@ -50,6 +53,7 @@ def test_all_committed_schemas_are_valid_draft_2020_12() -> None:
     for schema_path in SCHEMAS.glob("*.schema.json"):
         schema = yaml.safe_load(schema_path.read_text("utf-8"))
         Draft202012Validator.check_schema(schema)
+        assert schema["x-harness-schema-version"] == "0.3.0"
 
 
 def test_repository_self_configuration_uses_same_contracts() -> None:
@@ -110,6 +114,74 @@ def test_managed_tool_requires_task_ref(tmp_path: Path) -> None:
     assert any(
         issue.code == "SCHEMA_INVALID"
         and "'task_ref' is a required property" in issue.message
+        for issue in issues
+    )
+
+
+def test_every_tool_requires_action_semantics(tmp_path: Path) -> None:
+    config = _configured_fixture(tmp_path)
+    tools_path = config / "tools.yaml"
+    document = yaml.safe_load(tools_path.read_text("utf-8"))
+    del document["tools"][0]["action_semantics"]
+    tools_path.write_text(
+        yaml.safe_dump(document, sort_keys=False), encoding="utf-8"
+    )
+
+    issues = validate_config(config, SCHEMAS)
+
+    assert any(
+        issue.code == "SCHEMA_INVALID"
+        and "'action_semantics' is a required property" in issue.message
+        for issue in issues
+    )
+    assert {
+        "ACTION_CLASSIFICATION_UNRESOLVED",
+        "HANDOFF_REQUIRED",
+    }.issubset({issue.code for issue in issues})
+
+
+def test_direct_publish_entry_is_rejected_as_task_bypass(
+    tmp_path: Path,
+) -> None:
+    config = _configured_fixture(tmp_path)
+    tools_path = config / "tools.yaml"
+    document = yaml.safe_load(tools_path.read_text("utf-8"))
+    publish = next(
+        tool
+        for tool in document["tools"]
+        if tool["action_semantics"] == "publish"
+    )
+    publish["invocation_mode"] = "direct"
+    publish["entrypoint"] = "publish-now"
+    publish.pop("task_ref")
+    tools_path.write_text(
+        yaml.safe_dump(document, sort_keys=False), encoding="utf-8"
+    )
+
+    issues = validate_config(config, SCHEMAS)
+
+    assert {"TASK_BYPASS_ATTEMPT", "HANDOFF_REQUIRED"}.issubset(
+        {issue.code for issue in issues}
+    )
+
+
+def test_action_semantics_must_match_task_category(tmp_path: Path) -> None:
+    config = _configured_fixture(tmp_path)
+    tools_path = config / "tools.yaml"
+    document = yaml.safe_load(tools_path.read_text("utf-8"))
+    managed = next(
+        tool for tool in document["tools"] if tool["invocation_mode"] == "managed"
+    )
+    managed["action_semantics"] = "build"
+    tools_path.write_text(
+        yaml.safe_dump(document, sort_keys=False), encoding="utf-8"
+    )
+
+    issues = validate_config(config, SCHEMAS)
+
+    assert any(
+        issue.code == "CONFIG_INVALID"
+        and "must match the referenced Task category" in issue.message
         for issue in issues
     )
 

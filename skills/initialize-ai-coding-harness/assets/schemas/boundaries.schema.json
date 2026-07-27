@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://ai-coding-harness.local/schemas/boundaries.schema.json",
   "title": "Workspace write boundaries",
+  "x-harness-schema-version": "0.3.0",
   "type": "object",
   "additionalProperties": false,
   "required": ["write_scope", "expansion"],
@@ -38,4 +39,3 @@
     }
   }
 }
-

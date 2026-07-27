@@ -1,5 +1,1 @@
-schema_version: 0.2.0
-mode: "{{ project_mode }}"
-delivery_authority: ci-platform
-fact_sources:
-  project_manifest: "{{ project_manifest }}"
+{{ harness_yaml }}

@@ -6,12 +6,44 @@ import yaml
 
 from harness_core import (
     assess_github_platform,
+    attach_digest,
+    create_confirmation_artifact,
     normalize_github_platform_evidence,
     platform_evidence_complete,
 )
 
 FIXTURES = Path(__file__).parents[1] / "fixtures" / "github-platform"
 ROOT = Path(__file__).parents[2]
+
+
+def _request(
+    category: str,
+    *,
+    target: str,
+    artifact_digest: str | None = None,
+    environment: str | None = None,
+) -> dict:
+    return attach_digest(
+        {
+            "artifact_type": "task-request",
+            "schema_version": "0.3.0",
+            "request_id": f"request:{category}",
+            "task_id": f"{category}:default",
+            "action_semantics": category,
+            "validation_level": "affected",
+            "target": target,
+            "commit_sha": "abc123",
+            "version": "1.2.3" if category == "publish" else None,
+            "artifact_digest": artifact_digest,
+            "environment": environment,
+            "automation_level": "critical",
+            "policy_version": "0.3.0",
+            "grant_digest": "sha256:" + "1" * 64,
+            "manifest_digest": "sha256:" + "2" * 64,
+            "selection_digest": "sha256:" + "3" * 64,
+        },
+        "request_digest",
+    )
 
 
 def _ready_facts() -> dict:
@@ -123,15 +155,16 @@ def test_missing_protected_environment_approval_blocks_publish() -> None:
 
 
 def test_formal_publish_evidence_contains_platform_trace() -> None:
-    request = {
-        "task_id": "publish:package",
-        "automation_level": "critical",
-        "target": "production",
-    }
-    confirmation = {
-        "confirmed": True,
-        "request_digest": "sha256:request",
-    }
+    artifact_digest = "sha256:" + "a" * 64
+    request = _request(
+        "publish",
+        target="production",
+        artifact_digest=artifact_digest,
+        environment="production",
+    )
+    confirmation = create_confirmation_artifact(
+        request, confirmed_at="2026-07-24T11:00:00Z"
+    )
     run = {
         "workflow": ".github/workflows/publish.yml",
         "run_id": "12345",
@@ -139,16 +172,16 @@ def test_formal_publish_evidence_contains_platform_trace() -> None:
         "approval_status": "approved",
         "approver": "maintainer",
         "protected_environment": "production",
-        "artifact_digest": "sha256:artifact",
+        "artifact_digest": artifact_digest,
     }
 
     evidence = normalize_github_platform_evidence(
         run, request, confirmation
     )
 
-    assert platform_evidence_complete(evidence, "publish") is True
+    assert platform_evidence_complete(evidence, "publish", request) is True
     assert evidence["run_id"] == "12345"
-    assert evidence["approver"] == "maintainer"
+    assert evidence["source_ref"].endswith("#12345")
 
 
 def test_local_or_partial_evidence_cannot_claim_formal_delivery() -> None:
@@ -168,20 +201,50 @@ def test_local_or_partial_evidence_cannot_claim_formal_delivery() -> None:
 
 
 def test_merge_evidence_requires_required_checks() -> None:
-    evidence = {
-        "platform": "github-actions",
+    request = _request("merge", target="main")
+    confirmation = create_confirmation_artifact(
+        request, confirmed_at="2026-07-24T11:00:00Z"
+    )
+    run = {
         "workflow": ".github/workflows/merge.yml",
         "run_id": "12345",
         "commit_sha": "abc123",
-        "request_digest": "sha256:request",
-        "confirmation_status": "confirmed",
-        "automation_level": "critical",
         "approval_status": "approved",
+        "protected_ref": "main",
     }
+    evidence = normalize_github_platform_evidence(run, request, confirmation)
 
-    assert platform_evidence_complete(evidence, "merge") is False
-    evidence["required_checks"] = "passed"
-    assert platform_evidence_complete(evidence, "merge") is True
+    assert platform_evidence_complete(evidence, "merge", request) is False
+    run["required_checks"] = "passed"
+    evidence = normalize_github_platform_evidence(run, request, confirmation)
+    assert platform_evidence_complete(evidence, "merge", request) is True
+
+
+def test_publish_platform_environment_must_match_request() -> None:
+    artifact_digest = "sha256:" + "a" * 64
+    request = _request(
+        "publish",
+        target="registry",
+        artifact_digest=artifact_digest,
+        environment="production",
+    )
+    confirmation = create_confirmation_artifact(
+        request, confirmed_at="2026-07-24T11:00:00Z"
+    )
+    evidence = normalize_github_platform_evidence(
+        {
+            "workflow": ".github/workflows/publish.yml",
+            "run_id": "12345",
+            "commit_sha": "abc123",
+            "approval_status": "approved",
+            "protected_environment": "staging",
+            "artifact_digest": artifact_digest,
+        },
+        request,
+        confirmation,
+    )
+
+    assert platform_evidence_complete(evidence, "publish", request) is False
 
 
 def test_repository_workflow_has_controlled_triggers_and_read_only_token() -> None:

@@ -3,6 +3,7 @@ tools:
     type: cli
     purpose: repository-text-search
     capability: repository-search
+    action_semantics: ordinary
     entrypoint: rg
     invocation_mode: direct
     version_source:
@@ -25,6 +26,7 @@ tools:
     type: runtime
     purpose: execute-read-only-project-analysis
     capability: python-analysis
+    action_semantics: ordinary
     entrypoint: uv
     arguments:
       - run
@@ -47,6 +49,7 @@ tools:
     type: mcp-server
     purpose: index-github-capabilities
     capability: github
+    action_semantics: ordinary
     entrypoint: github-connector
     invocation_mode: direct
     version_source: connector-manifest
@@ -65,6 +68,7 @@ tools:
     type: mcp-tool
     purpose: read-github-file
     capability: github-file-read
+    action_semantics: ordinary
     entrypoint: github.get_file_contents
     server_ref: github-server
     method: get_file_contents
@@ -87,6 +91,7 @@ tools:
     type: project-action
     purpose: validate-harness-contracts
     capability: project-test
+    action_semantics: test
     invocation_mode: managed
     task_ref: test:contracts
     working_directory: repository-root
@@ -105,6 +110,7 @@ tools:
     type: project-action
     purpose: validate-harness-contracts-on-github
     capability: project-test
+    action_semantics: test
     invocation_mode: managed
     task_ref: test:contracts-ci
     working_directory: repository-root
@@ -123,6 +129,7 @@ tools:
     type: project-action
     purpose: run-confirmed-full-ci
     capability: project-ci
+    action_semantics: ci
     invocation_mode: managed
     task_ref: ci:full
     working_directory: repository-root
@@ -142,6 +149,7 @@ tools:
     type: project-action
     purpose: validate-protected-environment-approval
     capability: platform-validation
+    action_semantics: validation
     invocation_mode: managed
     task_ref: platform:gate-evidence
     working_directory: repository-root

@@ -18,9 +18,10 @@ def main() -> int:
     parser.add_argument("task_id")
     parser.add_argument("--level", required=True)
     parser.add_argument("--adapter", type=Path, required=True)
-    parser.add_argument("--change-manifest")
-    parser.add_argument("--selection")
-    parser.add_argument("--request", type=Path)
+    parser.add_argument("--grant", type=Path, required=True)
+    parser.add_argument("--manifest", type=Path, required=True)
+    parser.add_argument("--selection", type=Path, required=True)
+    parser.add_argument("--request", type=Path, required=True)
     parser.add_argument("--confirmation", type=Path)
     args = parser.parse_args()
     catalog = yaml.safe_load(
@@ -30,21 +31,18 @@ def main() -> int:
     adapter = yaml.safe_load(args.adapter.read_text("utf-8"))
     if adapter.get("type") != "local" or task.get("backend") != "local":
         raise SystemExit("run_task.py currently requires a registered Local adapter")
-    command = adapter.get("execution", {}).get("command")
+    command = task.get("command")
     if not isinstance(command, list) or not all(isinstance(item, str) for item in command):
-        raise SystemExit("Local adapter must define execution.command as an argument array")
+        raise SystemExit("Local Task must define command as an argument array")
     evidence = run_local_task(
         task,
         command,
         args.repository,
         args.level,
-        change_manifest=args.change_manifest,
-        selection=args.selection,
-        request=(
-            json.loads(args.request.read_text("utf-8"))
-            if args.request
-            else None
-        ),
+        grant=json.loads(args.grant.read_text("utf-8")),
+        manifest=json.loads(args.manifest.read_text("utf-8")),
+        selection=json.loads(args.selection.read_text("utf-8")),
+        request=json.loads(args.request.read_text("utf-8")),
         confirmation=(
             json.loads(args.confirmation.read_text("utf-8"))
             if args.confirmation

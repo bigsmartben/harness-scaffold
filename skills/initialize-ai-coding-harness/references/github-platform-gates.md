@@ -14,4 +14,6 @@ Collect platform facts from GitHub settings or API responses. Configuration file
 
 Formal Evidence must include Workflow, Run ID, commit SHA, current confirmation, approval status, protected environment when applicable, and artifact digest for Publish, Release, or Deploy.
 
+Use the Adapter Protocol in this order: `prepare → dispatch → poll → normalize`. Keep production credentials outside the Skill and Registry. Use a local Fake Adapter for repository acceptance; do not treat it as live GitHub authority.
+
 Use `scripts/validate_platform.py FACTS --required-check CHECK --protected-environment ENVIRONMENT` to validate a captured fact set. A `ready` result proves only that the supplied facts satisfy the contract; the fact source must still be recorded as GitHub settings or API Evidence before P4 can be marked Available.
