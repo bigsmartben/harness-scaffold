@@ -18,6 +18,10 @@ from harness_core import (
     discover_repository,
     validate_config,
     validate_runtime_artifact,
+    build_action_graph,
+    compile_governance_projection,
+    create_repository_snapshot,
+    extract_source_facts,
 )
 
 
@@ -58,6 +62,49 @@ def test_discovery_reports_project_facts(
     facts = discover_repository(FIXTURES / fixture)
 
     assert facts["project_types"] == project_types
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    [
+        "empty-project",
+        "python-project",
+        "node-project",
+        "monorepo",
+        "tool-intensive",
+    ],
+)
+def test_repository_fixture_snapshots_are_stable(fixture: str) -> None:
+    first = create_repository_snapshot(FIXTURES / fixture)
+    second = create_repository_snapshot(FIXTURES / fixture)
+    assert first == second
+
+
+def test_tool_intensive_fixture_compiles_actions_not_dependency_rules() -> None:
+    repository = FIXTURES / "tool-intensive"
+    snapshot = create_repository_snapshot(repository)
+    facts = extract_source_facts(discover_repository(repository), snapshot)
+    graph = build_action_graph(facts)
+    bundle = compile_governance_projection(snapshot, facts, graph)
+
+    semantics = {action["semantics"] for action in graph["actions"]}
+    assert {"test", "lint", "codegen", "publish"} <= semantics
+    assert len(graph["actions"]) == 4
+    serialized_rules = json.dumps(bundle["rules"], sort_keys=True)
+    assert "typescript" not in serialized_rules
+    assert "@prisma/client" not in serialized_rules
+
+
+def test_multi_level_agents_are_source_backed_and_preserved(tmp_path: Path) -> None:
+    repository = _copy_fixture(tmp_path, "multi-level-agents")
+    before_nested = (repository / "packages" / "web" / "AGENTS.md").read_bytes()
+    plan = build_plan(discover_repository(repository), "adopt")
+    approval = create_plan_approval(plan, "2026-07-27T00:00:00Z")
+    result = apply_plan(plan, ASSETS, approval)
+
+    assert "AGENTS.md" in result["changed"]
+    assert (repository / "packages" / "web" / "AGENTS.md").read_bytes() == before_nested
+    assert "packages/web/AGENTS.md" in plan["preserve"]
 
 
 def test_python_test_command_uses_only_a_source_backed_runner() -> None:

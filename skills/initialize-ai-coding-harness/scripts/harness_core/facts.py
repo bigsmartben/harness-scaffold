@@ -91,6 +91,11 @@ def extract_source_facts(
                         "argv": list(command["argv"]),
                         "cwd": unit["root"],
                         "environment": {},
+                        **(
+                            {"required_reports": list(command["required_reports"])}
+                            if command.get("required_reports")
+                            else {}
+                        ),
                     },
                 )
             )

@@ -19,6 +19,8 @@ SCRIPT_CATEGORIES = {
     "check": "validation",
     "test": "test",
     "build": "build",
+    "codegen": "codegen",
+    "generate": "codegen",
     "ci": "ci",
     "package": "package",
     "pack": "package",
@@ -101,6 +103,7 @@ def _classify_action(name: str, command: str = "") -> str | None:
         "validation": 1,
         "test": 1,
         "build": 2,
+        "codegen": 2,
         "package": 2,
         "ci": 3,
         "push": 4,
@@ -184,30 +187,40 @@ def _python_unit(
     )
     if isinstance(declared_tasks, dict):
         for name, command in sorted(declared_tasks.items()):
+            task_options = command if isinstance(command, dict) else {}
+            declared_argv = (
+                task_options.get("argv")
+                if isinstance(task_options.get("argv"), list)
+                else command
+            )
             command_text = (
-                " ".join(str(item) for item in command)
-                if isinstance(command, list)
-                else str(command)
+                " ".join(str(item) for item in declared_argv)
+                if isinstance(declared_argv, list)
+                else str(declared_argv)
             )
             category = _classify_action(name, command_text)
             if category:
-                commands.append(
-                    {
-                        "name": name,
-                        "category": category,
-                        "command": command_text,
-                        "argv": (
-                            [str(item) for item in command]
-                            if isinstance(command, list)
-                            else shlex.split(command_text)
-                        ),
-                        "raw_command": command_text,
-                        "source": (
-                            f"{relative_manifest}"
-                            f"#tool.ai-coding-harness.tasks.{name}"
-                        ),
-                    }
-                )
+                item = {
+                    "name": name,
+                    "category": category,
+                    "command": command_text,
+                    "argv": (
+                        [str(value) for value in declared_argv]
+                        if isinstance(declared_argv, list)
+                        else shlex.split(command_text)
+                    ),
+                    "raw_command": command_text,
+                    "source": (
+                        f"{relative_manifest}"
+                        f"#tool.ai-coding-harness.tasks.{name}"
+                    ),
+                }
+                reports = task_options.get("required_reports")
+                if isinstance(reports, list) and all(
+                    isinstance(value, str) and value for value in reports
+                ):
+                    item["required_reports"] = reports
+                commands.append(item)
     dependency_values: list[str] = []
     if isinstance(document, dict):
         project = document.get("project", {})

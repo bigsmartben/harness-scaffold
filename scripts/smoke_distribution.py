@@ -19,6 +19,7 @@ def _run(
     *,
     cwd: Path,
     env: dict[str, str],
+    input_text: str | None = None,
 ) -> subprocess.CompletedProcess[str]:
     result = subprocess.run(
         command,
@@ -28,6 +29,7 @@ def _run(
         encoding="utf-8",
         errors="replace",
         capture_output=True,
+        input=input_text,
     )
     if result.returncode != 0:
         raise RuntimeError(
@@ -53,6 +55,18 @@ def main() -> int:
         binaries = workspace / "bin"
         fixture = workspace / "fixture"
         fixture.mkdir()
+        (fixture / "pyproject.toml").write_text(
+            """
+[project]
+name = "distribution-smoke-fixture"
+version = "0.1.0"
+
+[tool.ai-coding-harness.tasks]
+test = ["python", "-c", "print('passed')"]
+""".strip()
+            + "\n",
+            encoding="utf-8",
+        )
 
         environment = os.environ.copy()
         environment.update(
@@ -121,6 +135,61 @@ def main() -> int:
         if after_first != after_second:
             raise RuntimeError("repository bytes changed during idempotent init")
 
+        session_start = json.loads(
+            _run(
+                [str(executable), "hook"],
+                cwd=fixture,
+                env=environment,
+                input_text=json.dumps(
+                    {
+                        "hook_event_name": "SessionStart",
+                        "cwd": str(fixture),
+                    }
+                ),
+            ).stdout
+        )
+        bypass = json.loads(
+            _run(
+                [str(executable), "hook"],
+                cwd=fixture,
+                env=environment,
+                input_text=json.dumps(
+                    {
+                        "hook_event_name": "PreToolUse",
+                        "tool_name": "shell_command",
+                        "tool_input": {
+                            "command": "python -m pytest"
+                        },
+                        "cwd": str(fixture),
+                    }
+                ),
+            ).stdout
+        )
+        missing_evidence = json.loads(
+            _run(
+                [str(executable), "hook"],
+                cwd=fixture,
+                env=environment,
+                input_text=json.dumps(
+                    {
+                        "hook_event_name": "Stop",
+                        "cwd": str(fixture),
+                    }
+                ),
+            ).stdout
+        )
+        if "is active" not in session_start.get("systemMessage", ""):
+            raise RuntimeError(f"Codex adapter did not load projection: {session_start}")
+        if (
+            bypass.get("hookSpecificOutput", {}).get("permissionDecision")
+            != "deny"
+        ):
+            raise RuntimeError(f"raw Action bypass was not denied: {bypass}")
+        if missing_evidence.get("stopReason") != "GOVERNANCE_EVIDENCE_INCOMPLETE":
+            raise RuntimeError(
+                f"missing Evidence did not fail closed: {missing_evidence}"
+            )
+
         print(
             json.dumps(
                 {
@@ -129,6 +198,9 @@ def main() -> int:
                     "version": version,
                     "projection_id": first["projection_id"],
                     "second_init_changed_paths": second["changed_paths"],
+                    "codex_adapter": "active",
+                    "raw_action_bypass": "denied",
+                    "missing_evidence": "blocked",
                     "tree_digest": after_second,
                 },
                 indent=2,

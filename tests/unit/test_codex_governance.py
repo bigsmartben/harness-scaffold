@@ -191,7 +191,96 @@ def test_plugin_declares_only_narrow_mcp_tools_and_valid_hook_events() -> None:
         "PermissionRequest",
         "PostToolUse",
         "Stop",
+        "SessionEnd",
     }
+
+
+def test_all_hook_events_have_deterministic_outputs_and_bypasses_fail_closed(
+    tmp_path: Path,
+) -> None:
+    repository = _initialized_repository(tmp_path)
+    events = {
+        "SessionStart": {},
+        "PreToolUse": {"tool_name": "Read", "tool_input": {"path": "README.md"}},
+        "PermissionRequest": {},
+        "PostToolUse": {},
+        "Stop": {},
+        "SessionEnd": {},
+    }
+    outputs = {
+        event: handle_hook(
+            {"hook_event_name": event, "cwd": str(repository), **payload},
+            repository,
+        )
+        for event, payload in events.items()
+    }
+    assert set(outputs) == set(events)
+    assert outputs["SessionStart"]["continue"] is True
+    assert outputs["SessionEnd"]["continue"] is True
+    assert outputs["Stop"]["stopReason"] == "GOVERNANCE_EVIDENCE_INCOMPLETE"
+
+    outside = repository.parent / "outside.txt"
+    patch_bypass = handle_hook(
+        {
+            "hook_event_name": "PreToolUse",
+            "tool_name": "apply_patch",
+            "tool_input": {
+                "patch": f"*** Add File: {outside}\n+not allowed\n"
+            },
+        },
+        repository,
+    )
+    assert (
+        patch_bypass["hookSpecificOutput"]["permissionDecisionReason"]
+        == "INVOCATION_BYPASS_ATTEMPT: use Harness action_id unresolved-governed-action."
+    )
+
+    mcp_bypass = handle_hook(
+        {
+            "hook_event_name": "PreToolUse",
+            "tool_name": "mcp__arbitrary__execute",
+            "tool_input": {"command": "publish"},
+        },
+        repository,
+    )
+    assert "INVOCATION_BYPASS_ATTEMPT" in mcp_bypass["systemMessage"]
+
+
+def test_disabled_or_untrusted_hook_configuration_fails_closed(
+    tmp_path: Path,
+) -> None:
+    repository = _initialized_repository(tmp_path)
+    hooks_path = repository / ".codex" / "hooks.json"
+    hooks = json.loads(hooks_path.read_text(encoding="utf-8"))
+    hooks["hooks"].pop("PreToolUse")
+    hooks_path.write_text(json.dumps(hooks), encoding="utf-8")
+
+    state = runtime_state(repository)
+    assert state["mode"] == "bootstrap-only"
+    assert {
+        "AGENT_CONFIGURATION_UNTRUSTED",
+        "HANDOFF_REQUIRED",
+    } <= set(state["blocker_codes"])
+
+
+def test_missing_or_incompatible_plugin_handshake_fails_closed(
+    tmp_path: Path,
+) -> None:
+    repository = _initialized_repository(tmp_path)
+    compatibility = repository / ".harness" / "governance" / "compatibility.json"
+    compatibility.unlink()
+    missing = runtime_state(repository)
+    assert missing["mode"] == "bootstrap-only"
+    assert "CONFIG_INVALID" in missing["blocker_codes"]
+
+    plan = build_initialization_plan(repository)
+    assert apply_initialization_plan(repository, plan)["status"] == "applied"
+    handshake = json.loads(compatibility.read_text(encoding="utf-8"))
+    handshake["core_version"] = "999.0.0"
+    compatibility.write_text(json.dumps(handshake), encoding="utf-8")
+    incompatible = runtime_state(repository)
+    assert incompatible["mode"] == "bootstrap-only"
+    assert "CONFIG_INVALID" in incompatible["blocker_codes"]
 
 
 def test_mcp_get_projection_is_read_only(tmp_path: Path) -> None:

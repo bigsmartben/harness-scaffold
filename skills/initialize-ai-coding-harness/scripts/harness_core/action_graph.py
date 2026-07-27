@@ -14,6 +14,7 @@ _SUBDOMAINS = {
     "validation": ["engineering-runtime", "test-code"],
     "test": ["engineering-runtime", "test-code"],
     "build": ["engineering-runtime", "source-code"],
+    "codegen": ["engineering-runtime", "source-code"],
     "ci": ["engineering-runtime", "test-code"],
     "package": ["engineering-runtime", "source-code"],
     "push": ["engineering-runtime", "source-code"],
@@ -26,6 +27,7 @@ _SUBDOMAINS = {
 _MUTATING = {
     "lint",
     "build",
+    "codegen",
     "package",
     "push",
     "pull-request",
@@ -74,7 +76,16 @@ def build_action_graph(source_facts: dict[str, Any]) -> dict[str, Any]:
             continue
         invocation = {
             key: value[key]
-            for key in ("argv", "cwd", "environment", "adapter", "workflow", "job")
+            for key in (
+                "argv",
+                "cwd",
+                "environment",
+                "adapter",
+                "workflow",
+                "job",
+                "required_reports",
+                "expected_files",
+            )
             if key in value
         }
         actions.append(

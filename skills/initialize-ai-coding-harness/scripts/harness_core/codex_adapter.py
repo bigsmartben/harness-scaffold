@@ -12,6 +12,15 @@ from .artifacts import CORE_VERSION, GOVERNANCE_SCHEMA_VERSION
 from .contracts import validate_governance_bundle
 from .snapshot import create_repository_snapshot
 
+_REQUIRED_HOOK_EVENTS = {
+    "SessionStart",
+    "PreToolUse",
+    "PermissionRequest",
+    "PostToolUse",
+    "Stop",
+    "SessionEnd",
+}
+
 
 def _load_json(path: Path) -> dict[str, Any] | None:
     try:
@@ -31,6 +40,21 @@ def load_projection_bundle(repository: Path) -> dict[str, Any] | None:
     }
     bundle = {key: _load_json(root / filename) for key, filename in mapping.items()}
     return bundle if all(isinstance(value, dict) for value in bundle.values()) else None
+
+
+def _hook_configuration_is_trusted(repository: Path) -> bool:
+    document = _load_json(repository / ".codex" / "hooks.json")
+    hooks = document.get("hooks") if document else None
+    if not isinstance(hooks, dict) or set(hooks) < _REQUIRED_HOOK_EVENTS:
+        return False
+    for event in _REQUIRED_HOOK_EVENTS:
+        groups = hooks.get(event)
+        if not isinstance(groups, list) or not groups:
+            return False
+        serialized = json.dumps(groups, sort_keys=True)
+        if "sdd-harness hook" not in serialized:
+            return False
+    return True
 
 
 def runtime_state(repository: Path) -> dict[str, Any]:
@@ -54,6 +78,8 @@ def runtime_state(repository: Path) -> dict[str, Any]:
             blockers.append("CONFIG_INVALID")
         for issue in validate_agent_directory(repository / ".codex" / "agents"):
             blockers.extend(issue["blocker_codes"])
+        if not _hook_configuration_is_trusted(repository):
+            blockers.extend(["AGENT_CONFIGURATION_UNTRUSTED", "HANDOFF_REQUIRED"])
     return {
         "mode": "bootstrap-only" if blockers else "active",
         "blocker_codes": sorted(set(blockers)),
@@ -72,7 +98,9 @@ def _tool_input(payload: dict[str, Any]) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
 
 
-def _bypass_action(payload: dict[str, Any], graph: dict[str, Any]) -> str | None:
+def _bypass_action(
+    payload: dict[str, Any], graph: dict[str, Any], repository: Path
+) -> str | None:
     name = _tool_name(payload)
     arguments = _tool_input(payload)
     if name in {"Bash", "shell_command", "exec_command"}:
@@ -85,11 +113,42 @@ def _bypass_action(payload: dict[str, Any], graph: dict[str, Any]) -> str | None
         if re.search(r"\b(push|publish|release|deploy|pytest|npm test|pnpm test)\b", normalized):
             return "unresolved-governed-action"
     if name in {"apply_patch", "Edit", "Write"}:
+        candidate_paths = [
+            arguments.get(key)
+            for key in ("path", "file_path", "target", "filename")
+            if arguments.get(key)
+        ]
+        patch_text = str(arguments.get("patch") or arguments.get("input") or "")
+        candidate_paths.extend(
+            match.strip()
+            for match in re.findall(
+                r"^\*\*\* (?:Add|Update|Delete) File: (.+)$",
+                patch_text,
+                flags=re.MULTILINE,
+            )
+        )
+        for candidate in candidate_paths:
+            path = Path(str(candidate))
+            resolved = path.resolve() if path.is_absolute() else (repository / path).resolve()
+            if not resolved.is_relative_to(repository):
+                return "unresolved-governed-action"
+        if any(
+            (repository / str(candidate)).resolve().is_relative_to(
+                repository / ".harness"
+            )
+            or (repository / str(candidate)).resolve().is_relative_to(
+                repository / ".codex"
+            )
+            for candidate in candidate_paths
+        ):
+            return "governance-control-plane-write"
         return None
     if name.startswith("mcp__") and not name.startswith("mcp__harness__"):
         for action in graph.get("actions", []):
             if action.get("invocation", {}).get("adapter") == "mcp":
                 return action["action_id"]
+        if any(key in arguments for key in ("command", "cmd", "argv", "shell")):
+            return "unresolved-governed-action"
     return None
 
 
@@ -135,7 +194,7 @@ def handle_hook(payload: dict[str, Any], repository: Path) -> dict[str, Any]:
                     "GOVERNANCE_PROJECTION_STALE: bootstrap-only permits projection repair and read-only inspection."
                 )
         if bundle:
-            action_id = _bypass_action(payload, bundle["action_graph"])
+            action_id = _bypass_action(payload, bundle["action_graph"], repository)
             if action_id:
                 return _deny(
                     f"INVOCATION_BYPASS_ATTEMPT: use Harness action_id {action_id}."
@@ -170,5 +229,16 @@ def handle_hook(payload: dict[str, Any], repository: Path) -> dict[str, Any]:
                 "systemMessage": "No accepted Action Evidence closes this governed run.",
             }
         return {"continue": True}
+
+    if event == "SessionEnd":
+        return {
+            "continue": True,
+            "systemMessage": (
+                f"Harness session closed for projection {state['projection_id']}."
+                if state["mode"] == "active"
+                else "Harness session closed in bootstrap-only mode: "
+                + ", ".join(state["blocker_codes"])
+            ),
+        }
 
     return {}

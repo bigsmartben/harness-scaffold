@@ -27,6 +27,7 @@
         "validation",
         "test",
         "build",
+        "codegen",
         "ci",
         "package",
         "push",

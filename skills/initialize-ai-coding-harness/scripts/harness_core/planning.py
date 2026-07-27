@@ -59,6 +59,7 @@ def _supports_scope(category: str) -> str:
         "validation": "contract",
         "test": "contract",
         "build": "integration",
+        "codegen": "integration",
         "ci": "full",
         "package": "integration",
         "push": "publish",
@@ -73,7 +74,7 @@ def _supports_scope(category: str) -> str:
 def _automation(category: str) -> tuple[str, bool]:
     if category in DELIVERY_CATEGORIES:
         return "critical", False
-    if category in {"build", "ci", "package"}:
+    if category in {"build", "codegen", "ci", "package"}:
         return "expensive", False
     return "routine", True
 
@@ -605,6 +606,11 @@ def build_plan(
         for workflow in facts.get("workflows", [])
         if isinstance(workflow.get("path"), str)
     ]
+    preserve.extend(
+        path.relative_to(root).as_posix()
+        for path in root.rglob("AGENTS.md")
+        if path.is_file() and path.parent != root
+    )
     drift: list[dict[str, str]] = []
     blockers = {
         gap["code"]

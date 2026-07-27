@@ -1,4 +1,21 @@
 schema_version: 1.0.0
+specification_rules:
+  GG-001: [tests/unit/test_governance_core.py]
+  GG-002: [tests/integration/test_initialize_workflows.py]
+  GG-003: [tests/unit/test_governance_core.py]
+  GG-004: [tests/integration/test_initialize_workflows.py]
+  GG-005: [tests/unit/test_governance_core.py]
+  AG-001: [tests/unit/test_codex_governance.py]
+  AG-002: [tests/unit/test_codex_governance.py]
+  AG-003: [tests/unit/test_codex_governance.py]
+  AG-004: [tests/unit/test_codex_governance.py]
+  GE-001: [tests/unit/test_governance_core.py]
+  GE-002: [tests/unit/test_governance_core.py]
+  GE-003: [tests/unit/test_governance_core.py]
+  GE-004: [tests/unit/test_governance_core.py]
+  GE-005: [tests/unit/test_governance_core.py, tests/unit/test_codex_governance.py]
+  CF-001: [tests/unit/test_governance_core.py]
+  CF-002: [tests/unit/test_governance_core.py, tests/unit/test_delivery.py]
 use_cases:
   UC-001:
     evals:

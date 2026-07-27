@@ -1,0 +1,17 @@
+{
+  "name": "tool-intensive-fixture",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "pnpm exec vitest run",
+    "lint:fix": "pnpm exec eslint . --fix",
+    "codegen": "pnpm exec prisma generate",
+    "publish:package": "pnpm publish"
+  },
+  "devDependencies": {
+    "@prisma/client": "6.0.0",
+    "eslint": "9.0.0",
+    "prisma": "6.0.0",
+    "typescript": "5.0.0",
+    "vitest": "3.0.0"
+  }
+}

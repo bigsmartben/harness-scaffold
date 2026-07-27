@@ -229,6 +229,18 @@ def _hook_config() -> str:
                         ]
                     }
                 ],
+                "SessionEnd": [
+                    {
+                        "hooks": [
+                            {
+                                "type": "command",
+                                "command": command,
+                                "commandWindows": command,
+                                "timeout": 10,
+                            }
+                        ]
+                    }
+                ],
             },
         }
     )

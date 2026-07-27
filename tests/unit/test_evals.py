@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 from pathlib import Path
+import re
 
 import yaml
 
@@ -57,6 +58,18 @@ def test_all_user_cases_have_automated_test_or_eval_coverage() -> None:
         assert evidence.get("tests") or evidence.get("evals"), use_case
         for test_path in evidence.get("tests", []):
             assert (ROOT / test_path).is_file(), (use_case, test_path)
+
+
+def test_all_normative_specification_rules_have_automated_coverage() -> None:
+    coverage = yaml.safe_load((EVALS / "coverage.yaml").read_text("utf-8"))
+    specification = (ROOT / "docs" / "specification.md").read_text("utf-8")
+    expected = set(re.findall(r"\*\*((?:GG|AG|GE|CF)-\d{3})\*\*", specification))
+
+    assert set(coverage["specification_rules"]) == expected
+    for rule_id, test_paths in coverage["specification_rules"].items():
+        assert test_paths, rule_id
+        for test_path in test_paths:
+            assert (ROOT / test_path).is_file(), (rule_id, test_path)
 
 
 def test_eval_result_contract_retains_required_raw_artifacts() -> None:

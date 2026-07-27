@@ -20,6 +20,7 @@ from harness_core import (
     create_repository_snapshot,
     evaluate_gates,
     extract_source_facts,
+    run_governed_action,
     validate_governance_artifact,
     validate_governance_bundle,
     validate_postconditions,
@@ -232,6 +233,83 @@ def test_gates_return_all_blockers_and_routine_requests_need_no_confirmation(
     assert "HANDOFF_REQUIRED" in bypass["blocker_codes"]
 
 
+def test_every_gate_has_a_stable_blocking_branch(tmp_path: Path) -> None:
+    repository = _python_repository(tmp_path)
+    snapshot, _, graph, bundle = _projection(repository)
+    lock = bundle["projection_lock"]
+    action = graph["actions"][0]
+    grant = create_governance_work_grant(
+        lock["projection_id"], "exercise every gate", ["tests"]
+    )
+    request = create_action_request(
+        lock["projection_id"], grant, action["action_id"], scope=["tests"]
+    )
+    cases = {}
+
+    stale_lock = deepcopy(lock)
+    stale_lock["ready"] = False
+    cases["G0"] = {"projection_lock": stale_lock}
+
+    no_sources = deepcopy(bundle["rules"])
+    action_rule = next(
+        rule
+        for rule in no_sources["rules"]
+        if rule["action_id"] == action["action_id"]
+        and rule["audience"] == request["audience"]
+    )
+    action_rule["source_refs"] = []
+    cases["G1"] = {"rules": no_sources}
+
+    incomplete_graph = deepcopy(graph)
+    incomplete_graph["blockers"] = [{"code": "TOOL_ACTION_UNCLASSIFIED"}]
+    cases["G2"] = {"action_graph": incomplete_graph}
+
+    ambiguous_graph = deepcopy(graph)
+    ambiguous_graph["actions"][0]["invocation"] = {}
+    cases["G3"] = {"action_graph": ambiguous_graph}
+
+    expanded_request = create_action_request(
+        lock["projection_id"], grant, action["action_id"], scope=["src"]
+    )
+    cases["G4"] = {"request": expanded_request}
+    cases["G5"] = {"invocation_channel": "shell"}
+    cases["G6"] = {
+        "postcondition_result": {
+            "status": "blocked",
+            "blocker_codes": ["GOVERNANCE_EVIDENCE_INCOMPLETE"],
+        }
+    }
+    cases["G7"] = {
+        "postcondition_result": {"status": "passed", "blocker_codes": []},
+        "final_snapshot_digest": "sha256:" + "0" * 64,
+    }
+    expected = {
+        "G0": "GOVERNANCE_PROJECTION_STALE",
+        "G1": "GOVERNANCE_SOURCE_MISSING",
+        "G2": "GOVERNANCE_COVERAGE_INCOMPLETE",
+        "G3": "TOOL_BINDING_AMBIGUOUS",
+        "G4": "GOVERNANCE_PRECONDITION_FAILED",
+        "G5": "INVOCATION_BYPASS_ATTEMPT",
+        "G6": "GOVERNANCE_EVIDENCE_INCOMPLETE",
+        "G7": "GOVERNANCE_DRIFT_DETECTED",
+    }
+
+    for gate_id, overrides in cases.items():
+        arguments = {
+            "projection_lock": lock,
+            "action_graph": graph,
+            "rules": bundle["rules"],
+            "grant": grant,
+            "request": request,
+            "current_snapshot_digest": snapshot["snapshot_digest"],
+        }
+        arguments.update(overrides)
+        decision = evaluate_gates(**arguments)
+        gate = next(item for item in decision["gates"] if item["gate_id"] == gate_id)
+        assert gate["status"] == "blocked", gate_id
+        assert expected[gate_id] in gate["blocker_codes"], gate_id
+
+
 def test_action_request_rejects_binding_override_and_confirmation_is_aggregated(
     tmp_path: Path,
 ) -> None:
@@ -287,6 +365,50 @@ def test_test_exit_zero_without_parseable_report_is_not_accepted(
         required_reports=["report.json"],
     )
     assert accepted["status"] == "passed"
+
+
+def test_real_minimal_test_action_runs_through_gates_and_evidence(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "pyproject.toml").write_text(
+        """
+[project]
+name = "runner-fixture"
+version = "0.1.0"
+
+[tool.ai-coding-harness.tasks.test]
+argv = ["python", "-c", "from pathlib import Path; Path('.harness/reports').mkdir(parents=True, exist_ok=True); Path('.harness/reports/test.json').write_text('{\\"status\\":\\"passed\\"}')"]
+required_reports = [".harness/reports/test.json"]
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    snapshot, _, graph, bundle = _projection(tmp_path)
+    lock = bundle["projection_lock"]
+    action = graph["actions"][0]
+    grant = create_governance_work_grant(
+        lock["projection_id"], "run a source-backed test", ["."]
+    )
+    request = create_action_request(
+        lock["projection_id"], grant, action["action_id"], scope=["."]
+    )
+
+    evidence = run_governed_action(
+        repository=tmp_path,
+        projection_lock=lock,
+        action_graph=graph,
+        rules=bundle["rules"],
+        grant=grant,
+        request=request,
+    )
+
+    assert snapshot["snapshot_digest"] == create_repository_snapshot(tmp_path)[
+        "snapshot_digest"
+    ]
+    assert evidence["status"] == "passed"
+    assert evidence["postconditions"]["status"] == "passed"
+    assert evidence["blocker_codes"] == []
+    assert evidence["evidence_digest"].startswith("sha256:")
 
 
 def test_initialization_is_plan_bound_idempotent_and_preserves_agents_content(

@@ -68,6 +68,19 @@
           }
         ]
       }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sdd-harness hook",
+            "commandWindows": "sdd-harness hook",
+            "timeout": 10,
+            "statusMessage": "Closing Harness session"
+          }
+        ]
+      }
     ]
   }
 }

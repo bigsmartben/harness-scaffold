@@ -15,7 +15,7 @@
         "required": ["id", "category", "automation_level", "auto_allowed", "backend", "working_directory", "supports_scope", "timeout", "outputs"],
         "properties": {
           "id": { "$ref": "common.schema.json#/$defs/stableId" },
-          "category": { "enum": ["lint", "validation", "test", "build", "ci", "package", "push", "pull-request", "merge", "publish", "release", "deploy"] },
+          "category": { "enum": ["lint", "validation", "test", "build", "codegen", "ci", "package", "push", "pull-request", "merge", "publish", "release", "deploy"] },
           "automation_level": { "enum": ["routine", "expensive", "critical"] },
           "auto_allowed": { "type": "boolean" },
           "source": { "type": "string", "minLength": 1 },
