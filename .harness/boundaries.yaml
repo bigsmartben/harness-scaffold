@@ -7,7 +7,7 @@ branch_gate:
   private:
     - refs/heads/codex/**
     - refs/heads/agent/**
-  unmatched: unrestricted
+  unmatched: controlled
   actions:
     - push
     - pull-request

@@ -118,10 +118,16 @@ def _chain(
             "selected_tasks": [
                 {
                     "task_id": task["id"],
-                    "automation_level": task["automation_level"],
+                    "automation_level": (
+                        "expensive"
+                        if level in {"integration", "full"}
+                        and task["automation_level"] != "critical"
+                        else task["automation_level"]
+                    ),
                     "decision": (
                         "automatic"
                         if task["auto_allowed"]
+                        and level not in {"integration", "full"}
                         else "confirmation-required"
                     ),
                     "reason": f"selected for {level}",
@@ -475,6 +481,26 @@ def test_local_routine_task_returns_valid_bound_evidence(tmp_path: Path) -> None
     assert validate_runtime_artifact(evidence, SCHEMAS) == []
 
 
+def test_local_task_upgraded_to_expensive_requires_confirmation(
+    tmp_path: Path,
+) -> None:
+    task = _task()
+    chain = _chain(task, level="full")
+
+    evidence = run_local_task(
+        task,
+        task["command"],
+        tmp_path,
+        "full",
+        **chain,
+    )
+
+    assert evidence["status"] == "blocked"
+    assert evidence["backend_calls"] == 0
+    assert evidence["confirmation_status"] == "required"
+    assert "HANDOFF_REQUIRED" in evidence["blocker_codes"]
+
+
 def test_local_runner_rejects_command_that_differs_from_registered_task(
     tmp_path: Path,
 ) -> None:
@@ -736,6 +762,56 @@ def test_git_remote_push_uses_one_exact_non_force_refspec(tmp_path: Path) -> Non
     ]
     assert "--force" not in calls[0]
     assert validate_runtime_artifact(evidence, SCHEMAS) == []
+
+
+def test_git_remote_push_rejects_unclassified_ref_even_when_confirmed(
+    tmp_path: Path,
+) -> None:
+    repository, commit_sha = _git_repository(tmp_path)
+    task = _task(
+        task_id="push:branch",
+        category="push",
+        backend="git-remote",
+        automation_level="critical",
+        auto_allowed=False,
+        supports_scope="publish",
+    )
+    chain = _chain(
+        task,
+        level="publish",
+        target="refs/heads/feature/unclassified",
+        commit_sha=commit_sha,
+    )
+    confirmation = create_confirmation_artifact(
+        chain["request"], confirmed_at="2026-07-27T00:00:00Z"
+    )
+    calls: list[list[str]] = []
+
+    evidence = run_git_remote_push_task(
+        task,
+        {
+            "type": "git-remote",
+            "remote": "origin",
+            "execution": {
+                "shell": False,
+                "force": False,
+                "operation": "push-ref",
+            },
+        },
+        repository,
+        "publish",
+        confirmation=confirmation,
+        executor=lambda command, **kwargs: calls.append(command),
+        **chain,
+    )
+
+    assert evidence["status"] == "blocked"
+    assert evidence["backend_calls"] == 0
+    assert calls == []
+    assert {
+        "CONTROLLED_BRANCH_GATE_REQUIRED",
+        "HANDOFF_REQUIRED",
+    } <= set(evidence["blocker_codes"])
 
 
 def test_fake_adapter_is_not_called_without_matching_confirmation(
@@ -1089,6 +1165,43 @@ def test_pipeline_dispatch_has_its_own_state_and_one_dispatch_call() -> None:
     assert result["status"] == "dispatched"
     assert result["backend_calls"] == 1
     assert adapter.calls == {"prepare": 1, "dispatch": 1, "poll": 0, "normalize": 0}
+
+
+def test_publish_pipeline_requires_independent_confirmation() -> None:
+    task = _task(
+        task_id="publish:package",
+        category="publish",
+        backend="github-actions",
+        automation_level="critical",
+        auto_allowed=False,
+        supports_scope="publish",
+    )
+    chain = _chain(
+        task,
+        level="publish",
+        target="pypi",
+        environment="production",
+        artifact=canonical_digest({"artifact": "wheel"}),
+    )
+    pipeline = {
+        "kind": "publish",
+        "requires_independent_confirmation": True,
+        "stages": [
+            {
+                "id": "publish",
+                "tasks": ["publish:package"],
+                "requires_evidence": False,
+            }
+        ],
+    }
+
+    readiness = evaluate_pipeline_readiness(
+        pipeline, [], chain["request"], None
+    )
+
+    assert readiness["status"] == "confirmation-required"
+    assert readiness["backend_calls"] == 0
+    assert readiness["blocker_codes"] == ["HANDOFF_REQUIRED"]
 
 
 def test_publish_readiness_requires_artifact_digest() -> None:

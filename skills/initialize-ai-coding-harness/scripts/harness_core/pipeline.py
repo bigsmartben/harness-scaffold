@@ -142,18 +142,18 @@ def evaluate_pipeline_readiness(
             str(request["target"]), "merge", branch_gate or default_branch_gate()
         )
     )
-    if controlled_target and (
+    if (
         pipeline.get("requires_independent_confirmation") is not True
         or not _confirmation_matches(request, confirmation)
     ):
+        blocker_codes = ["HANDOFF_REQUIRED"]
+        if controlled_target:
+            blocker_codes.insert(0, "CONTROLLED_BRANCH_GATE_REQUIRED")
         return {
             "status": "confirmation-required",
             "missing_tasks": [],
             "backend_calls": 0,
-            "blocker_codes": [
-                "CONTROLLED_BRANCH_GATE_REQUIRED",
-                "HANDOFF_REQUIRED",
-            ],
+            "blocker_codes": blocker_codes,
         }
     return {
         "status": "ready-for-dispatch",
