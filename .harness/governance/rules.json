@@ -50,7 +50,7 @@
       "subdomain": "other-tools"
     }
   ],
-  "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+  "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
   "rules": [
     {
       "action_id": null,
@@ -79,7 +79,7 @@
       "preconditions": [
         "governance-source-present"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "generate",
       "rule_id": "rule:consumer:agent-runtime:inheritance",
       "scope": [
@@ -127,7 +127,7 @@
         "projection-current",
         "work-grant-current"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "enforce",
       "rule_id": "rule:consumer:ci:github:github-workflows-delivery-gate-evidence-yml:production-gate",
       "scope": [
@@ -176,7 +176,7 @@
         "projection-current",
         "work-grant-current"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "enforce",
       "rule_id": "rule:consumer:ci:github:github-workflows-harness-yml:full-ci",
       "scope": [
@@ -217,7 +217,7 @@
       "preconditions": [
         "governance-source-present"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "generate",
       "rule_id": "rule:consumer:engineering-runtime:inheritance",
       "scope": [
@@ -265,7 +265,7 @@
         "projection-current",
         "work-grant-current"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "enforce",
       "rule_id": "rule:consumer:merge:github:github-workflows-harness-yml:authorize",
       "scope": [
@@ -314,7 +314,7 @@
         "projection-current",
         "work-grant-current"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "enforce",
       "rule_id": "rule:consumer:merge:github:github-workflows-harness-yml:merge",
       "scope": [
@@ -363,7 +363,7 @@
         "projection-current",
         "work-grant-current"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "enforce",
       "rule_id": "rule:consumer:merge:github:github-workflows-harness-yml:pull-request",
       "scope": [
@@ -404,7 +404,7 @@
       "preconditions": [
         "governance-source-present"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "generate",
       "rule_id": "rule:consumer:other-tools:inheritance",
       "scope": [
@@ -444,7 +444,7 @@
       "preconditions": [
         "governance-source-present"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "generate",
       "rule_id": "rule:consumer:poc:inheritance",
       "scope": [
@@ -492,7 +492,7 @@
         "projection-current",
         "work-grant-current"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "enforce",
       "rule_id": "rule:consumer:push:github:github-workflows-harness-yml:push-delete-branch",
       "scope": [
@@ -541,7 +541,7 @@
         "projection-current",
         "work-grant-current"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "enforce",
       "rule_id": "rule:consumer:release:github:github-workflows-harness-yml:package-wheel",
       "scope": [
@@ -589,7 +589,7 @@
         "projection-current",
         "work-grant-current"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "enforce",
       "rule_id": "rule:consumer:release:github:github-workflows-harness-yml:release",
       "scope": [
@@ -629,7 +629,7 @@
       "preconditions": [
         "governance-source-present"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "generate",
       "rule_id": "rule:consumer:source-code:inheritance",
       "scope": [
@@ -669,7 +669,7 @@
       "preconditions": [
         "governance-source-present"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "generate",
       "rule_id": "rule:consumer:test-code:inheritance",
       "scope": [
@@ -717,7 +717,7 @@
         "projection-current",
         "work-grant-current"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "enforce",
       "rule_id": "rule:consumer:test:github:github-workflows-delivery-gate-evidence-yml:authorize",
       "scope": [
@@ -766,7 +766,7 @@
         "projection-current",
         "work-grant-current"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "enforce",
       "rule_id": "rule:consumer:test:github:github-workflows-routine-contracts-yml:contracts",
       "scope": [
@@ -818,7 +818,7 @@
         "projection-current",
         "work-grant-current"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "enforce",
       "rule_id": "rule:consumer:test:python-root:test",
       "scope": [
@@ -859,7 +859,7 @@
       "preconditions": [
         "governance-source-present"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "generate",
       "rule_id": "rule:maintainer:agent-runtime:inheritance",
       "scope": [
@@ -907,7 +907,7 @@
         "projection-current",
         "work-grant-current"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "enforce",
       "rule_id": "rule:maintainer:ci:github:github-workflows-delivery-gate-evidence-yml:production-gate",
       "scope": [
@@ -956,7 +956,7 @@
         "projection-current",
         "work-grant-current"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "enforce",
       "rule_id": "rule:maintainer:ci:github:github-workflows-harness-yml:full-ci",
       "scope": [
@@ -997,7 +997,7 @@
       "preconditions": [
         "governance-source-present"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "generate",
       "rule_id": "rule:maintainer:engineering-runtime:inheritance",
       "scope": [
@@ -1045,7 +1045,7 @@
         "projection-current",
         "work-grant-current"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "enforce",
       "rule_id": "rule:maintainer:merge:github:github-workflows-harness-yml:authorize",
       "scope": [
@@ -1094,7 +1094,7 @@
         "projection-current",
         "work-grant-current"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "enforce",
       "rule_id": "rule:maintainer:merge:github:github-workflows-harness-yml:merge",
       "scope": [
@@ -1143,7 +1143,7 @@
         "projection-current",
         "work-grant-current"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "enforce",
       "rule_id": "rule:maintainer:merge:github:github-workflows-harness-yml:pull-request",
       "scope": [
@@ -1184,7 +1184,7 @@
       "preconditions": [
         "governance-source-present"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "generate",
       "rule_id": "rule:maintainer:other-tools:inheritance",
       "scope": [
@@ -1224,7 +1224,7 @@
       "preconditions": [
         "governance-source-present"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "generate",
       "rule_id": "rule:maintainer:poc:inheritance",
       "scope": [
@@ -1272,7 +1272,7 @@
         "projection-current",
         "work-grant-current"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "enforce",
       "rule_id": "rule:maintainer:push:github:github-workflows-harness-yml:push-delete-branch",
       "scope": [
@@ -1321,7 +1321,7 @@
         "projection-current",
         "work-grant-current"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "enforce",
       "rule_id": "rule:maintainer:release:github:github-workflows-harness-yml:package-wheel",
       "scope": [
@@ -1369,7 +1369,7 @@
         "projection-current",
         "work-grant-current"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "enforce",
       "rule_id": "rule:maintainer:release:github:github-workflows-harness-yml:release",
       "scope": [
@@ -1409,7 +1409,7 @@
       "preconditions": [
         "governance-source-present"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "generate",
       "rule_id": "rule:maintainer:source-code:inheritance",
       "scope": [
@@ -1449,7 +1449,7 @@
       "preconditions": [
         "governance-source-present"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "generate",
       "rule_id": "rule:maintainer:test-code:inheritance",
       "scope": [
@@ -1497,7 +1497,7 @@
         "projection-current",
         "work-grant-current"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "enforce",
       "rule_id": "rule:maintainer:test:github:github-workflows-delivery-gate-evidence-yml:authorize",
       "scope": [
@@ -1546,7 +1546,7 @@
         "projection-current",
         "work-grant-current"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "enforce",
       "rule_id": "rule:maintainer:test:github:github-workflows-routine-contracts-yml:contracts",
       "scope": [
@@ -1598,7 +1598,7 @@
         "projection-current",
         "work-grant-current"
       ],
-      "projection_id": "sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32",
+      "projection_id": "sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152",
       "responsibility": "enforce",
       "rule_id": "rule:maintainer:test:python-root:test",
       "scope": [
@@ -1613,6 +1613,6 @@
       ]
     }
   ],
-  "rules_digest": "sha256:2fd5224e52b5df65218548f305f040cac38dcf316ec9499b5aec6bd7e8a20072",
+  "rules_digest": "sha256:ab3ffd8d11249e29c42d48c29a1aeedc8f545dca52a882f1bfa5135354c9464b",
   "schema_version": "1.0.0"
 }

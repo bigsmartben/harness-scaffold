@@ -275,6 +275,8 @@ def test_repository_workflow_has_controlled_triggers_and_read_only_token() -> No
     assert "release:github)" in workflows["harness.yml"]
     assert "Delete exact merged private branch" in workflows["harness.yml"]
     assert "refs/heads/(codex|agent)/" in workflows["harness.yml"]
+    assert "git/matching-refs/heads/${branch}" in workflows["harness.yml"]
+    assert 'result="already-absent"' in workflows["harness.yml"]
     assert "test:contracts-ci)" not in workflows["harness.yml"]
     assert "actions: read\n      contents: write" in workflows["harness.yml"]
     assert "environment:\n      name: production" in workflows["harness.yml"]
