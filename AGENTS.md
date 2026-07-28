@@ -8,7 +8,7 @@
 # AI Coding Harness
 
 - Treat this block as the Harness orchestration entrypoint.
-- Current governance projection: `sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7`.
+- Current governance projection: `sha256:f62c5bf0ee311f5bab85c5759afa5d507790fac076849646b19c2f3330c32a32`.
 - Read `.harness/governance/projection.lock.json` before governed work.
 - Use `$harness` for generation, update, action routing, or Evidence verification.
 - Spawn only the six project roles declared in `.codex/agents/`; do not fall back to a generic agent.

@@ -449,6 +449,30 @@ tools:
       - current confirmation required
       - no force push
       - git-remote backend only
+  - id: github-delete-merged-private-branch
+    type: project-action
+    purpose: delete-confirmed-merged-private-branch
+    capability: project-branch-delete
+    action_semantics: push
+    invocation_mode: managed
+    task_ref: branch:delete
+    working_directory: repository-root
+    use_when:
+      - delete one exact merged private remote branch
+    do_not_use_when:
+      - delete a controlled, unclassified, or unmerged branch
+    inputs:
+      scope: publish
+      target: private-remote-branch-ref
+      pull_request_number: positive-integer
+      commit_sha: expected-head-sha
+    outputs:
+      evidence: .harness/reports/branch-delete.json
+    constraints:
+      - independent current confirmation required
+      - exact refs/heads/codex or refs/heads/agent target required
+      - merged pull request and expected head SHA must match
+      - github-actions platform evidence required
   - id: github-create-pull-request
     type: project-action
     purpose: create-confirmed-pull-request

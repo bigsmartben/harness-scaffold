@@ -1,5 +1,5 @@
 {
-  "action_graph_digest": "sha256:58994b2e976aa2ca53417fb08560a92529c3173c1492425846bac37db14d754a",
+  "action_graph_digest": "sha256:12cb00236f92468e7deb8e4aad759dc715925f61d985297762ccc23f2a54d44c",
   "actions": [
     {
       "action_id": "ci:github:github-workflows-delivery-gate-evidence-yml:production-gate",
@@ -90,6 +90,25 @@
       "semantics": "merge",
       "source_refs": [
         ".github/workflows/harness.yml#jobs.pull-request"
+      ],
+      "subdomains": [
+        "engineering-runtime",
+        "source-code"
+      ]
+    },
+    {
+      "action_id": "push:github:github-workflows-harness-yml:push-delete-branch",
+      "binding_state": "declared",
+      "invocation": {
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "push-delete-branch",
+        "workflow": ".github/workflows/harness.yml"
+      },
+      "mutates_repository": true,
+      "semantics": "push",
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.push-delete-branch"
       ],
       "subdomains": [
         "engineering-runtime",
@@ -195,7 +214,7 @@
   ],
   "artifact_type": "action-graph",
   "blockers": [],
-  "facts_digest": "sha256:bb35878e8232e31f97d18929667f884e2c28e29442422b7d8e870a6eb9cbad12",
+  "facts_digest": "sha256:34c40bc7c3a6599e04591cd79aa01a5a08a43ba587f3c4a046ae839d8ebb7ab7",
   "schema_version": "1.0.0",
-  "snapshot_digest": "sha256:1614d15d93c591dadd157d9207c74cdff378ebfdb8d3bc258c4532561993ba6f"
+  "snapshot_digest": "sha256:c305cc4842733cac3222d2a806243074e488ad3d2da93cb3c263606275132baa"
 }
