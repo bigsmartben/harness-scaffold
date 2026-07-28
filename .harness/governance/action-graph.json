@@ -1,8 +1,8 @@
 {
-  "action_graph_digest": "sha256:9abb87038bd7e9f170c878731b9b91d9fbc8c86e635a9107cdb3e327c3262cf3",
+  "action_graph_digest": "sha256:4af13d979c41dec8733df2c552e3ab44e44c5e57efde089f04cb213e6e66dca5",
   "actions": [
     {
-      "action_id": "ci:workflow:full-ci",
+      "action_id": "ci:workflow:ci:full-ci",
       "binding": {
         "adapter": "github-actions",
         "job": "full-ci",
@@ -24,7 +24,7 @@
       "validation_floor": "T3"
     },
     {
-      "action_id": "ci:workflow:production-gate",
+      "action_id": "ci:workflow:ci:production-gate",
       "binding": {
         "adapter": "github-actions",
         "job": "production-gate",
@@ -42,6 +42,116 @@
       "semantics": "ci",
       "source_refs": [
         ".github/workflows/delivery-gate-evidence.yml#jobs.production-gate"
+      ],
+      "validation_floor": "T3"
+    },
+    {
+      "action_id": "ci:workflow:merge:authorize",
+      "binding": {
+        "adapter": "github-actions",
+        "job": "authorize",
+        "workflow": ".github/workflows/harness.yml"
+      },
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "verification",
+      "semantics": "ci",
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.authorize"
+      ],
+      "validation_floor": "T3"
+    },
+    {
+      "action_id": "ci:workflow:merge:merge",
+      "binding": {
+        "adapter": "github-actions",
+        "job": "merge",
+        "workflow": ".github/workflows/harness.yml"
+      },
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "verification",
+      "semantics": "ci",
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.merge"
+      ],
+      "validation_floor": "T3"
+    },
+    {
+      "action_id": "ci:workflow:merge:pull-request",
+      "binding": {
+        "adapter": "github-actions",
+        "job": "pull-request",
+        "workflow": ".github/workflows/harness.yml"
+      },
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "verification",
+      "semantics": "ci",
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.pull-request"
+      ],
+      "validation_floor": "T3"
+    },
+    {
+      "action_id": "ci:workflow:test:authorize",
+      "binding": {
+        "adapter": "github-actions",
+        "job": "authorize",
+        "workflow": ".github/workflows/delivery-gate-evidence.yml"
+      },
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "verification",
+      "semantics": "ci",
+      "source_refs": [
+        ".github/workflows/delivery-gate-evidence.yml#jobs.authorize"
+      ],
+      "validation_floor": "T3"
+    },
+    {
+      "action_id": "ci:workflow:test:contracts",
+      "binding": {
+        "adapter": "github-actions",
+        "job": "contracts",
+        "workflow": ".github/workflows/routine-contracts.yml"
+      },
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "verification",
+      "semantics": "ci",
+      "source_refs": [
+        ".github/workflows/routine-contracts.yml#jobs.contracts"
       ],
       "validation_floor": "T3"
     },
@@ -212,72 +322,6 @@
       "validation_floor": "T0"
     },
     {
-      "action_id": "merge:workflow:authorize",
-      "binding": {
-        "adapter": "github-actions",
-        "job": "authorize",
-        "workflow": ".github/workflows/harness.yml"
-      },
-      "binding_state": "bound",
-      "boundary": "controlled",
-      "cross_controls": [
-        "runtime-context",
-        "action-binding",
-        "platform-control",
-        "evidence"
-      ],
-      "domain": "delivery",
-      "semantics": "merge",
-      "source_refs": [
-        ".github/workflows/harness.yml#jobs.authorize"
-      ],
-      "validation_floor": "T3"
-    },
-    {
-      "action_id": "merge:workflow:merge",
-      "binding": {
-        "adapter": "github-actions",
-        "job": "merge",
-        "workflow": ".github/workflows/harness.yml"
-      },
-      "binding_state": "bound",
-      "boundary": "controlled",
-      "cross_controls": [
-        "runtime-context",
-        "action-binding",
-        "platform-control",
-        "evidence"
-      ],
-      "domain": "delivery",
-      "semantics": "merge",
-      "source_refs": [
-        ".github/workflows/harness.yml#jobs.merge"
-      ],
-      "validation_floor": "T3"
-    },
-    {
-      "action_id": "merge:workflow:pull-request",
-      "binding": {
-        "adapter": "github-actions",
-        "job": "pull-request",
-        "workflow": ".github/workflows/harness.yml"
-      },
-      "binding_state": "bound",
-      "boundary": "controlled",
-      "cross_controls": [
-        "runtime-context",
-        "action-binding",
-        "platform-control",
-        "evidence"
-      ],
-      "domain": "delivery",
-      "semantics": "merge",
-      "source_refs": [
-        ".github/workflows/harness.yml#jobs.pull-request"
-      ],
-      "validation_floor": "T3"
-    },
-    {
       "action_id": "specification:issue-plan",
       "binding": {
         "adapter": "harness-core",
@@ -319,51 +363,11 @@
         "pyproject.toml#pytest-dependency"
       ],
       "validation_floor": "T1"
-    },
-    {
-      "action_id": "test:workflow:authorize",
-      "binding": {
-        "adapter": "github-actions",
-        "job": "authorize",
-        "workflow": ".github/workflows/delivery-gate-evidence.yml"
-      },
-      "binding_state": "bound",
-      "boundary": "local",
-      "cross_controls": [
-        "runtime-context",
-        "action-binding"
-      ],
-      "domain": "verification",
-      "semantics": "test",
-      "source_refs": [
-        ".github/workflows/delivery-gate-evidence.yml#jobs.authorize"
-      ],
-      "validation_floor": "T1"
-    },
-    {
-      "action_id": "test:workflow:contracts",
-      "binding": {
-        "adapter": "github-actions",
-        "job": "contracts",
-        "workflow": ".github/workflows/routine-contracts.yml"
-      },
-      "binding_state": "bound",
-      "boundary": "local",
-      "cross_controls": [
-        "runtime-context",
-        "action-binding"
-      ],
-      "domain": "verification",
-      "semantics": "test",
-      "source_refs": [
-        ".github/workflows/routine-contracts.yml#jobs.contracts"
-      ],
-      "validation_floor": "T1"
     }
   ],
   "artifact_type": "action-graph",
   "blockers": [],
-  "facts_digest": "sha256:79dbf4ad288e2596d1f7fe9be5d073352e67cc08c11fc646197fcf7c1f4a7ed3",
+  "facts_digest": "sha256:74e11ff893127ee5a9e49941e3446edaf2dfd2bab826939e9513c9849c4f35cb",
   "schema_version": "2.0.0",
-  "snapshot_digest": "sha256:004a395a912b618e2329cda61acb9e44eff9bedf7ef26e26e5bd03e467a8b041"
+  "snapshot_digest": "sha256:0fa02fcddd3e2ad6d2584267a29e31e325cdf7dfefc6efd4f6bcc208c9aeff48"
 }

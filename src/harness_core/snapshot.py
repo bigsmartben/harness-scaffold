@@ -38,6 +38,15 @@ _HARNESS_SOURCE_NAMES = {
     "boundaries.yaml",
     "impact.yaml",
 }
+_IGNORED_SOURCE_PREFIXES = {
+    ".git",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".tmp",
+    ".venv",
+    "__pycache__",
+    "evals",
+}
 
 
 def _tracked_and_untracked(repository: Path) -> list[str]:
@@ -67,6 +76,12 @@ def governance_relevant_paths(repository: Path) -> tuple[str, ...]:
     for relative in _tracked_and_untracked(root):
         path = Path(relative)
         parts = path.parts
+        if (
+            not parts
+            or parts[0] in _IGNORED_SOURCE_PREFIXES
+            or parts[:2] == ("tests", "fixtures")
+        ):
+            continue
         if path.name in _SOURCE_NAMES:
             selected.append(relative)
         elif (

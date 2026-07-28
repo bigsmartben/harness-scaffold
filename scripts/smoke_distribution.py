@@ -6,6 +6,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 import tempfile
 from pathlib import Path
@@ -97,7 +98,11 @@ def main() -> int:
         distribution = workspace / "dist"
         tools = workspace / "tools"
         binaries = workspace / "bin"
+        invalid_tools = workspace / "invalid-tools"
+        invalid_binaries = workspace / "invalid-bin"
+        empty = workspace / "empty"
         fixture = workspace / "fixture"
+        hooks_fixture = workspace / "hooks-fixture"
         unsupported = workspace / "unsupported"
         environment = os.environ.copy()
         environment.pop("PYTHONPATH", None)
@@ -110,7 +115,9 @@ def main() -> int:
             }
         )
         _fixture(fixture, environment)
+        _fixture(hooks_fixture, environment)
         _fixture(unsupported, environment)
+        empty.mkdir()
         unsupported_harness = unsupported / ".harness"
         unsupported_harness.mkdir()
         (unsupported_harness / "harness.yaml").write_text(
@@ -135,6 +142,30 @@ def main() -> int:
         wheels = list(distribution.glob("sdd_harness-2.0.0-*.whl"))
         if len(wheels) != 1:
             raise RuntimeError(f"expected one 2.0.0 wheel, found {wheels}")
+        invalid_environment = {
+            **environment,
+            "UV_TOOL_DIR": str(invalid_tools),
+            "UV_TOOL_BIN_DIR": str(invalid_binaries),
+        }
+        unavailable = _run(
+            [
+                "uv",
+                "tool",
+                "install",
+                "--offline",
+                str(workspace / "missing-source.whl"),
+            ],
+            cwd=empty,
+            env=invalid_environment,
+            expected=(1, 2),
+        )
+        if unavailable.returncode == 0 or (
+            invalid_binaries.exists()
+            and any(invalid_binaries.iterdir())
+        ):
+            raise RuntimeError(
+                "unavailable installation source left a runnable entrypoint"
+            )
         _run(
             ["uv", "tool", "install", "--offline", str(wheels[0])],
             cwd=ROOT,
@@ -145,11 +176,33 @@ def main() -> int:
         )
         if not executable.is_file():
             raise RuntimeError(f"installed entrypoint is missing: {executable}")
+        resolved_entries = [
+            path
+            for path in binaries.iterdir()
+            if path.name.lower().startswith("sdd-harness")
+        ]
+        if resolved_entries != [executable]:
+            raise RuntimeError(
+                f"PATH does not contain exactly one Harness runtime: {resolved_entries}"
+            )
+        resolved = shutil.which(
+            "sdd-harness",
+            path=os.pathsep.join(
+                (str(binaries), environment.get("PATH", ""))
+            ),
+        )
+        if resolved is None or Path(resolved).resolve() != executable.resolve():
+            raise RuntimeError(
+                f"PATH resolved an unexpected Harness runtime: {resolved}"
+            )
+        empty_before = _tree_digest(empty)
         version = _run(
-            [str(executable), "--version"], cwd=fixture, env=environment
+            [str(executable), "--version"], cwd=empty, env=environment
         ).stdout.strip()
         if version != "sdd-harness 2.0.0":
             raise RuntimeError(f"unexpected version: {version}")
+        if _tree_digest(empty) != empty_before:
+            raise RuntimeError("version check wrote repository entrypoint files")
 
         first = json.loads(
             _run(
@@ -170,8 +223,8 @@ def main() -> int:
             raise RuntimeError(f"first init did not publish: {first}")
         if second["status"] != "applied" or second["changed_paths"]:
             raise RuntimeError(f"second init was not empty: {second}")
-        if first["projection_id"] != second["projection_id"]:
-            raise RuntimeError("projection_id changed without a source change")
+        if first["projection_id"] is not None or second["projection_id"] is not None:
+            raise RuntimeError("first-phase init must not generate a projection")
         if after_first != _tree_digest(fixture):
             raise RuntimeError("idempotent init changed repository bytes")
         _assert_skill_exact(fixture)
@@ -186,10 +239,69 @@ def main() -> int:
                 [str(executable), "inspect", ".", "--json"],
                 cwd=fixture,
                 env=environment,
+                expected=(2,),
             ).stdout
         )
-        if inspect["status"] != "active" or inspect["hook_defense"] != "disabled":
-            raise RuntimeError(f"Skill-first runtime is not active: {inspect}")
+        if (
+            inspect["status"] != "entrypoint-ready"
+            or inspect["mode"] != "projection-pending"
+            or inspect["hook_defense"] != "disabled"
+        ):
+            raise RuntimeError(f"first-phase entrypoint is not ready: {inspect}")
+
+        projection_plan = json.loads(
+            _run(
+                [str(executable), "projection-plan", ".", "--json"],
+                cwd=fixture,
+                env=environment,
+            ).stdout
+        )
+        plan_file = workspace / "projection-plan.json"
+        plan_file.write_text(
+            json.dumps(projection_plan),
+            encoding="utf-8",
+        )
+        projection = json.loads(
+            _run(
+                [
+                    str(executable),
+                    "projection-apply",
+                    ".",
+                    "--plan",
+                    str(plan_file),
+                    "--approve-plan",
+                    projection_plan["plan_digest"],
+                    "--json",
+                ],
+                cwd=fixture,
+                env=environment,
+            ).stdout
+        )
+        if projection["status"] != "applied" or len(
+            projection["changed_paths"]
+        ) != 5:
+            raise RuntimeError(f"second-phase projection failed: {projection}")
+        repeated_plan = json.loads(
+            _run(
+                [str(executable), "projection-plan", ".", "--json"],
+                cwd=fixture,
+                env=environment,
+            ).stdout
+        )
+        if (
+            repeated_plan["write_scope"]
+            or repeated_plan["projection_id"] != projection["projection_id"]
+        ):
+            raise RuntimeError("idempotent projection produced changes")
+        inspect = json.loads(
+            _run(
+                [str(executable), "inspect", ".", "--json"],
+                cwd=fixture,
+                env=environment,
+            ).stdout
+        )
+        if inspect["status"] != "active":
+            raise RuntimeError(f"second-phase projection is not active: {inspect}")
 
         hooks = json.loads(
             _run(
@@ -201,23 +313,27 @@ def main() -> int:
                     "--yes",
                     "--json",
                 ],
-                cwd=fixture,
+                cwd=hooks_fixture,
                 env=environment,
             ).stdout
         )
         if not hooks["with_hooks"] or not (
-            fixture / ".codex" / "hooks.json"
+            hooks_fixture / ".codex" / "hooks.json"
         ).is_file():
             raise RuntimeError("explicit Hook initialization did not configure hooks")
         hook_state = json.loads(
             _run(
                 [str(executable), "inspect", ".", "--json"],
-                cwd=fixture,
+                cwd=hooks_fixture,
                 env=environment,
+                expected=(2,),
             ).stdout
         )
-        if hook_state["status"] != "active":
-            raise RuntimeError("Hook defense changed governance authority")
+        if (
+            hook_state["status"] != "entrypoint-ready"
+            or hook_state["hook_defense"] != "configured"
+        ):
+            raise RuntimeError("Hook defense changed entrypoint readiness")
 
         before_unsupported = _tree_digest(unsupported)
         rejected = json.loads(
@@ -269,11 +385,12 @@ def main() -> int:
                     "status": "passed",
                     "wheel": wheels[0].name,
                     "version": version,
-                    "projection_id": first["projection_id"],
+                    "projection_id": projection["projection_id"],
                     "skill_bytes": "exact",
                     "base_hooks": "disabled",
                     "optional_hooks": "configured",
                     "historical_config": "rejected-without-write",
+                    "unavailable_source": "rejected-without-entrypoint",
                     "target_python_import": "unavailable",
                 },
                 indent=2,

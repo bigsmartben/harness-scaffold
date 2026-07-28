@@ -7,7 +7,9 @@ from harness_core.cli import main
 from harness_core.codex_adapter import runtime_state
 from harness_core.initializer import (
     apply_initialization_plan,
+    apply_projection_plan,
     build_initialization_plan,
+    build_projection_plan,
 )
 from harness_core.package_resources import iter_resource_files, repo_skill_root
 
@@ -128,3 +130,85 @@ def test_changed_initialization_plan_is_stale(
         approved_plan_digest=plan["plan_digest"],
     )
     assert result["blocker_codes"] == ["INITIALIZATION_PLAN_STALE"]
+
+
+def test_entrypoint_and_projection_are_two_exact_phases(
+    private_repository: Path,
+) -> None:
+    initial_tree = {
+        path.relative_to(private_repository).as_posix(): path.read_bytes()
+        for path in private_repository.rglob("*")
+        if path.is_file() and ".git" not in path.parts
+    }
+    entrypoint = build_initialization_plan(private_repository)
+    assert entrypoint["repository_model"] == "Blue"
+    assert entrypoint["mode"] == "bootstrap"
+    assert entrypoint["phase"] == "entrypoint"
+    assert entrypoint["projection_id"] is None
+    assert not any(
+        path.startswith(".harness/governance/")
+        for path in entrypoint["write_scope"]
+    )
+    assert "pyproject.toml" in entrypoint["preserved_paths"]
+    assert {
+        path.relative_to(private_repository).as_posix(): path.read_bytes()
+        for path in private_repository.rglob("*")
+        if path.is_file() and ".git" not in path.parts
+    } == initial_tree
+
+    applied = apply_initialization_plan(
+        private_repository,
+        entrypoint,
+        approved_plan_digest=entrypoint["plan_digest"],
+    )
+    assert applied["status"] == "applied"
+    assert runtime_state(private_repository)["status"] == "entrypoint-ready"
+
+    projection = build_projection_plan(private_repository)
+    assert projection["repository_model"] == "Blue"
+    assert projection["classification_mode"] == "Bootstrap"
+    assert len(projection["write_scope"]) == 5
+    assert projection["coverage"] == {"total": 16, "missing": []}
+    assert "ci" in projection["capability_gaps"]
+    assert "release" in projection["capability_gaps"]
+    assert "deploy" in projection["capability_gaps"]
+    projected = apply_projection_plan(
+        private_repository,
+        projection,
+        approved_plan_digest=projection["plan_digest"],
+    )
+    assert projected["status"] == "applied"
+    assert runtime_state(private_repository)["status"] == "active"
+
+    repeated = build_projection_plan(private_repository)
+    assert repeated["write_scope"] == []
+    assert repeated["projection_id"] == projection["projection_id"]
+    unchanged = apply_projection_plan(
+        private_repository,
+        repeated,
+        approved_plan_digest=repeated["plan_digest"],
+    )
+    assert unchanged["status"] == "unchanged"
+
+
+def test_projection_plan_stales_when_a_source_changes(
+    private_repository: Path,
+) -> None:
+    entrypoint = build_initialization_plan(private_repository)
+    apply_initialization_plan(
+        private_repository,
+        entrypoint,
+        approved_plan_digest=entrypoint["plan_digest"],
+    )
+    plan = build_projection_plan(private_repository)
+    (private_repository / "pyproject.toml").write_text(
+        "[project]\nname='changed'\nversion='0.2.0'\n",
+        encoding="utf-8",
+    )
+    result = apply_projection_plan(
+        private_repository,
+        plan,
+        approved_plan_digest=plan["plan_digest"],
+    )
+    assert result["blocker_codes"] == ["INITIALIZATION_PLAN_STALE"]
+    assert not (private_repository / ".harness/governance").exists()

@@ -109,6 +109,15 @@ def validate_governance_bundle(
     graph = bundle["action_graph"]
     rules = bundle["rules"]
     lock = bundle["projection_lock"]
+    fact_ids = [fact["fact_id"] for fact in sources["facts"]]
+    if len(fact_ids) != len(set(fact_ids)):
+        issues.append(
+            ValidationIssue(
+                "GOVERNANCE_CONFLICT",
+                "sources.facts",
+                "source fact IDs must be unique",
+            )
+        )
     digest_fields = {
         "sources": "facts_digest",
         "action_graph": "action_graph_digest",
@@ -166,6 +175,12 @@ def validate_governance_bundle(
             )
 
     cross_checks = (
+        (
+            digest_matches(sources["snapshot"], "snapshot_digest")
+            and sources["snapshot"]["snapshot_digest"]
+            == sources["snapshot_digest"],
+            "source facts snapshot summary does not match its snapshot digest",
+        ),
         (
             sources["snapshot_digest"] == graph["snapshot_digest"],
             "action graph snapshot does not match source facts",

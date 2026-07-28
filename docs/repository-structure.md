@@ -51,7 +51,7 @@ target-repository/
 |---|---|---|
 | `AGENTS.md` 中的 Harness marker | 初始化器 | 保留 marker 外用户内容 |
 | `.agents/skills/harness` | 初始化器 | 只复制 wheel 内规范资源 |
-| `.harness/harness.yaml` | 初始化器 / 用户确认的项目策略变更 | 变化产生新 `projection_id` |
-| `.harness/governance` | 确定性编译器 | 模型不能生成权威 Projection |
+| `.harness/harness.yaml` | 第一阶段初始化器 / 用户确认的项目策略变更 | 变化产生新 `projection_id` |
+| `.harness/governance/**` | 第二阶段确定性投影发布器 | 只按未变化的精确计划写入 5 个文件；模型不能直接生成 |
 | `.harness/runtime` | 精确动作 Adapter | 不版本化，不跨动作复用 |
 | 业务源码 | Codex / 用户工具 | 仅在私有工作边界内直接写 |

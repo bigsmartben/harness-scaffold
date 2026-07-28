@@ -7,7 +7,9 @@ import pytest
 
 from harness_core.initializer import (
     apply_initialization_plan,
+    apply_projection_plan,
     build_initialization_plan,
+    build_projection_plan,
 )
 
 
@@ -31,7 +33,15 @@ def initialize(repository: Path, *, with_hooks: bool = False) -> dict:
         approved_plan_digest=plan["plan_digest"],
     )
     assert result["status"] == "applied"
-    return result
+    projection_plan = build_projection_plan(repository)
+    assert projection_plan["blocker_codes"] == []
+    projection_result = apply_projection_plan(
+        repository,
+        projection_plan,
+        approved_plan_digest=projection_plan["plan_digest"],
+    )
+    assert projection_result["status"] == "applied"
+    return projection_result
 
 
 @pytest.fixture

@@ -10,10 +10,7 @@
         "delivery:pull-request",
         "delivery:push",
         "delivery:release",
-        "delivery:remote-issue",
-        "merge:workflow:authorize",
-        "merge:workflow:merge",
-        "merge:workflow:pull-request"
+        "delivery:remote-issue"
       ],
       "audience": "consumer",
       "cell_id": "consumer.enforce.delivery",
@@ -48,9 +45,6 @@
         "."
       ],
       "source_refs": [
-        ".github/workflows/harness.yml#jobs.authorize",
-        ".github/workflows/harness.yml#jobs.merge",
-        ".github/workflows/harness.yml#jobs.pull-request",
         "harness://specification/2.0.0/actions/commit",
         "harness://specification/2.0.0/actions/deploy",
         "harness://specification/2.0.0/actions/merge",
@@ -137,11 +131,14 @@
     },
     {
       "action_bindings": [
-        "ci:workflow:full-ci",
-        "ci:workflow:production-gate",
-        "test:python-root:test",
-        "test:workflow:authorize",
-        "test:workflow:contracts"
+        "ci:workflow:ci:full-ci",
+        "ci:workflow:ci:production-gate",
+        "ci:workflow:merge:authorize",
+        "ci:workflow:merge:merge",
+        "ci:workflow:merge:pull-request",
+        "ci:workflow:test:authorize",
+        "ci:workflow:test:contracts",
+        "test:python-root:test"
       ],
       "audience": "consumer",
       "cell_id": "consumer.enforce.verification",
@@ -175,7 +172,10 @@
       "source_refs": [
         ".github/workflows/delivery-gate-evidence.yml#jobs.authorize",
         ".github/workflows/delivery-gate-evidence.yml#jobs.production-gate",
+        ".github/workflows/harness.yml#jobs.authorize",
         ".github/workflows/harness.yml#jobs.full-ci",
+        ".github/workflows/harness.yml#jobs.merge",
+        ".github/workflows/harness.yml#jobs.pull-request",
         ".github/workflows/routine-contracts.yml#jobs.contracts",
         "harness://specification/2.0.0/domains/verification",
         "pyproject.toml#pytest-dependency"
@@ -212,9 +212,6 @@
         "."
       ],
       "source_refs": [
-        ".github/workflows/harness.yml#jobs.authorize",
-        ".github/workflows/harness.yml#jobs.merge",
-        ".github/workflows/harness.yml#jobs.pull-request",
         "harness://specification/2.0.0/actions/commit",
         "harness://specification/2.0.0/actions/deploy",
         "harness://specification/2.0.0/actions/merge",
@@ -328,7 +325,10 @@
       "source_refs": [
         ".github/workflows/delivery-gate-evidence.yml#jobs.authorize",
         ".github/workflows/delivery-gate-evidence.yml#jobs.production-gate",
+        ".github/workflows/harness.yml#jobs.authorize",
         ".github/workflows/harness.yml#jobs.full-ci",
+        ".github/workflows/harness.yml#jobs.merge",
+        ".github/workflows/harness.yml#jobs.pull-request",
         ".github/workflows/routine-contracts.yml#jobs.contracts",
         "harness://specification/2.0.0/domains/verification",
         "pyproject.toml#pytest-dependency"
@@ -343,10 +343,7 @@
         "delivery:pull-request",
         "delivery:push",
         "delivery:release",
-        "delivery:remote-issue",
-        "merge:workflow:authorize",
-        "merge:workflow:merge",
-        "merge:workflow:pull-request"
+        "delivery:remote-issue"
       ],
       "audience": "maintainer",
       "cell_id": "maintainer.enforce.delivery",
@@ -381,9 +378,6 @@
         "."
       ],
       "source_refs": [
-        ".github/workflows/harness.yml#jobs.authorize",
-        ".github/workflows/harness.yml#jobs.merge",
-        ".github/workflows/harness.yml#jobs.pull-request",
         "harness://specification/2.0.0/actions/commit",
         "harness://specification/2.0.0/actions/deploy",
         "harness://specification/2.0.0/actions/merge",
@@ -470,11 +464,14 @@
     },
     {
       "action_bindings": [
-        "ci:workflow:full-ci",
-        "ci:workflow:production-gate",
-        "test:python-root:test",
-        "test:workflow:authorize",
-        "test:workflow:contracts"
+        "ci:workflow:ci:full-ci",
+        "ci:workflow:ci:production-gate",
+        "ci:workflow:merge:authorize",
+        "ci:workflow:merge:merge",
+        "ci:workflow:merge:pull-request",
+        "ci:workflow:test:authorize",
+        "ci:workflow:test:contracts",
+        "test:python-root:test"
       ],
       "audience": "maintainer",
       "cell_id": "maintainer.enforce.verification",
@@ -508,7 +505,10 @@
       "source_refs": [
         ".github/workflows/delivery-gate-evidence.yml#jobs.authorize",
         ".github/workflows/delivery-gate-evidence.yml#jobs.production-gate",
+        ".github/workflows/harness.yml#jobs.authorize",
         ".github/workflows/harness.yml#jobs.full-ci",
+        ".github/workflows/harness.yml#jobs.merge",
+        ".github/workflows/harness.yml#jobs.pull-request",
         ".github/workflows/routine-contracts.yml#jobs.contracts",
         "harness://specification/2.0.0/domains/verification",
         "pyproject.toml#pytest-dependency"
@@ -545,9 +545,6 @@
         "."
       ],
       "source_refs": [
-        ".github/workflows/harness.yml#jobs.authorize",
-        ".github/workflows/harness.yml#jobs.merge",
-        ".github/workflows/harness.yml#jobs.pull-request",
         "harness://specification/2.0.0/actions/commit",
         "harness://specification/2.0.0/actions/deploy",
         "harness://specification/2.0.0/actions/merge",
@@ -661,14 +658,17 @@
       "source_refs": [
         ".github/workflows/delivery-gate-evidence.yml#jobs.authorize",
         ".github/workflows/delivery-gate-evidence.yml#jobs.production-gate",
+        ".github/workflows/harness.yml#jobs.authorize",
         ".github/workflows/harness.yml#jobs.full-ci",
+        ".github/workflows/harness.yml#jobs.merge",
+        ".github/workflows/harness.yml#jobs.pull-request",
         ".github/workflows/routine-contracts.yml#jobs.contracts",
         "harness://specification/2.0.0/domains/verification",
         "pyproject.toml#pytest-dependency"
       ]
     }
   ],
-  "projection_id": "sha256:c764cd65447eb9d8dcca6781401a578bffa223c83e748031864775976bd6e2c2",
-  "rules_digest": "sha256:d646bed950b1413238fcade3c6b59b3c01ece6168545fb0216ae9ed2b79187f7",
+  "projection_id": "sha256:5761c00478270c0f657d89ffde61ee7c98da118c7ecf1ead653e2b237c4405f3",
+  "rules_digest": "sha256:a620e8f0f0c4aa1fa0157baa2684e08ca3d4b82c2bc6b4ff4abca6ffb81ce342",
   "schema_version": "2.0.0"
 }

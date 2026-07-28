@@ -21,7 +21,7 @@ from .artifacts import (
     path_digest,
 )
 from .contracts import validate_governance_bundle, validate_project_config
-from .discovery import discover_repository
+from .discovery import classify_repository_model, discover_repository
 from .facts import extract_source_facts
 from .package_resources import iter_resource_files, repo_skill_root
 from .policy import (
@@ -220,27 +220,14 @@ def compile_repository_projection(
 
 
 def _target_mode(repository: Path) -> str:
-    return (
-        "adopt"
-        if any(
-            (repository / name).exists()
-            for name in (
-                "AGENTS.md",
-                "pyproject.toml",
-                "package.json",
-                ".github",
-                ".git",
-            )
-        )
-        else "bootstrap"
-    )
+    return str(classify_repository_model(repository)["mode"])
 
 
 def _planned_files(
     repository: Path,
     *,
     config: dict[str, Any],
-    bundle: dict[str, dict[str, Any]],
+    bundle: dict[str, dict[str, Any]] | None,
     agents_content: str,
     hooks_enabled: bool,
 ) -> tuple[dict[str, str | None], list[str]]:
@@ -249,24 +236,10 @@ def _planned_files(
         ".harness/.gitignore": (
             "runtime/\nreports/\nevidence/\nruns/\ncache/\n"
         ),
-        ".harness/governance/sources.lock.json": _json_text(bundle["sources"]),
-        ".harness/governance/action-graph.json": _json_text(
-            bundle["action_graph"]
-        ),
-        ".harness/governance/rules.json": _json_text(bundle["rules"]),
-        ".harness/governance/projection.lock.json": _json_text(
-            bundle["projection_lock"]
-        ),
-        ".harness/governance/compatibility.json": _json_text(
-            {
-                "core_version": CORE_VERSION,
-                "schema_version": SCHEMA_VERSION,
-                "skill_version": SCHEMA_VERSION,
-                "plugin_version": SCHEMA_VERSION,
-            }
-        ),
         "AGENTS.md": agents_content,
     }
+    if bundle is not None:
+        files.update(_projection_files(bundle))
     canonical_skill_paths: set[str] = set()
     for relative, payload in iter_resource_files(repo_skill_root()):
         target = f".agents/skills/harness/{relative}"
@@ -316,11 +289,96 @@ def _planned_files(
     return files, blockers
 
 
+def _projection_files(
+    bundle: dict[str, dict[str, Any]],
+) -> dict[str, str]:
+    return {
+        ".harness/governance/sources.lock.json": _json_text(bundle["sources"]),
+        ".harness/governance/action-graph.json": _json_text(
+            bundle["action_graph"]
+        ),
+        ".harness/governance/rules.json": _json_text(bundle["rules"]),
+        ".harness/governance/projection.lock.json": _json_text(
+            bundle["projection_lock"]
+        ),
+        ".harness/governance/compatibility.json": _json_text(
+            {
+                "core_version": CORE_VERSION,
+                "schema_version": SCHEMA_VERSION,
+                "skill_version": SCHEMA_VERSION,
+                "plugin_version": SCHEMA_VERSION,
+            }
+        ),
+    }
+
+
+def _file_actions(
+    repository: Path,
+    files: dict[str, str | None],
+) -> list[dict[str, Any]]:
+    actions: list[dict[str, Any]] = []
+    for relative, content in sorted(files.items()):
+        target = repository / relative
+        if content is None:
+            operation = "delete" if target.is_file() else "unchanged"
+        elif target.is_file():
+            operation = (
+                "unchanged"
+                if target.read_text(encoding="utf-8") == content
+                else "update"
+            )
+        else:
+            operation = "create"
+        actions.append(
+            {
+                "path": relative,
+                "expected_digest": path_digest(target),
+                "content": content,
+                "operation": operation,
+            }
+        )
+    return actions
+
+
+def _preserved_paths(
+    repository: Path,
+    managed_paths: set[str],
+    snapshot: dict[str, Any],
+) -> list[str]:
+    preserved = {
+        item["path"]
+        for item in snapshot["files"]
+        if item["path"] not in managed_paths
+    }
+    for name in (
+        "README.md",
+        "pyproject.toml",
+        "package.json",
+        "requirements.txt",
+    ):
+        if (repository / name).is_file() and name not in managed_paths:
+            preserved.add(name)
+    for name in (
+        "src",
+        "tests",
+        "apps",
+        "services",
+        ".github/workflows",
+    ):
+        if (repository / name).is_dir() and not any(
+            path == name or path.startswith(f"{name}/")
+            for path in managed_paths
+        ):
+            preserved.add(f"{name}/**")
+    return sorted(preserved)
+
+
 def build_initialization_plan(
     repository: Path,
     *,
     with_hooks: bool = False,
     project_config_override: dict[str, Any] | None = None,
+    include_projection: bool = False,
 ) -> dict[str, Any]:
     root = repository.resolve()
     existing = load_project_config(root)
@@ -365,23 +423,27 @@ def build_initialization_plan(
         agents_content = current_agents
         inheritance_blockers.append("GOVERNANCE_INHERITANCE_INVALID")
     harness_text = render_project_config(config)
-    final_snapshot_overrides = {
-        "AGENTS.md": agents_content,
-        ".harness/harness.yaml": harness_text,
-    }
     preflight = create_repository_snapshot(root)
-    compiled = compile_repository_projection(
-        root,
-        project_config=config,
-        snapshot_overrides=final_snapshot_overrides,
-    )
-    bundle = compiled["bundle"]
-    validation = validate_governance_bundle(bundle)
+    bundle: dict[str, dict[str, Any]] | None = None
+    projection_blockers: set[str] = set()
+    if include_projection:
+        compiled = compile_repository_projection(
+            root,
+            project_config=config,
+            snapshot_overrides={
+                "AGENTS.md": agents_content,
+                ".harness/harness.yaml": harness_text,
+            },
+        )
+        bundle = compiled["bundle"]
+        projection_blockers.update(
+            issue.code for issue in validate_governance_bundle(bundle)
+        )
+        projection_blockers.update(bundle["projection_lock"]["blockers"])
     blockers = {
         *config_blockers,
         *inheritance_blockers,
-        *(issue.code for issue in validation),
-        *bundle["projection_lock"]["blockers"],
+        *projection_blockers,
     }
     files, file_blockers = _planned_files(
         root,
@@ -392,34 +454,27 @@ def build_initialization_plan(
     )
     blockers.update(file_blockers)
 
-    actions = []
-    for relative, content in sorted(files.items()):
-        target = root / relative
-        if content is None:
-            operation = "delete" if target.is_file() else "unchanged"
-        elif target.is_file():
-            operation = (
-                "unchanged"
-                if target.read_text(encoding="utf-8") == content
-                else "update"
-            )
-        else:
-            operation = "create"
-        actions.append(
-            {
-                "path": relative,
-                "expected_digest": path_digest(target),
-                "content": content,
-                "operation": operation,
-            }
-        )
+    actions = _file_actions(root, files)
+    model = classify_repository_model(root)
 
     plan = {
         "artifact_type": "initialization-plan",
         "schema_version": SCHEMA_VERSION,
+        "phase": (
+            "entrypoint-and-projection"
+            if include_projection
+            else "entrypoint"
+        ),
         "mode": "update" if existing else mode,
+        "repository_model": model["model"],
+        "classification_sources": model["source_refs"],
+        "classification_reason": model["reason"],
         "preflight_snapshot_digest": preflight["snapshot_digest"],
-        "projection_id": bundle["projection_lock"]["projection_id"],
+        "projection_id": (
+            bundle["projection_lock"]["projection_id"]
+            if bundle is not None
+            else None
+        ),
         "with_hooks": hooks_enabled,
         "actions": actions,
         "write_scope": [
@@ -427,9 +482,168 @@ def build_initialization_plan(
             for item in actions
             if item["operation"] != "unchanged"
         ],
+        "preserved_paths": _preserved_paths(
+            root, set(files), preflight
+        ),
         "blocker_codes": sorted(blockers),
     }
     return attach_digest(plan, "plan_digest")
+
+
+def build_projection_plan(repository: Path) -> dict[str, Any]:
+    """Build the zero-write second-phase governance projection plan."""
+
+    root = repository.resolve()
+    preflight = create_repository_snapshot(root)
+    config = load_project_config(root)
+    blockers: set[str] = set()
+    if config is None:
+        blockers.add("CONFIG_INVALID")
+        bundle = None
+        discovery = discover_repository(root)
+        files: dict[str, str | None] = {}
+    else:
+        compiled = compile_repository_projection(
+            root,
+            project_config=config,
+        )
+        discovery = compiled["discovery"]
+        bundle = compiled["bundle"]
+        blockers.update(
+            issue.code for issue in validate_governance_bundle(bundle)
+        )
+        blockers.update(bundle["projection_lock"]["blockers"])
+        files = _projection_files(bundle)
+
+    actions = _file_actions(root, files)
+    graph_actions = (
+        bundle["action_graph"].get("actions", []) if bundle is not None else []
+    )
+    available = [
+        {
+            "action_id": action["action_id"],
+            "semantics": action["semantics"],
+            "cwd": action.get("binding", {}).get("cwd"),
+            "source_refs": action["source_refs"],
+        }
+        for action in graph_actions
+        if not all(
+            str(source).startswith("harness://")
+            for source in action.get("source_refs", [])
+        )
+    ]
+    available_semantics = {item["semantics"] for item in available}
+    capability_gaps = [
+        semantics
+        for semantics in ("test", "build", "ci", "release", "deploy")
+        if semantics not in available_semantics
+    ]
+    model = (
+        config.get("mode")
+        if config is not None
+        else discovery["repository_model"]["mode"]
+    )
+    plan = {
+        "artifact_type": "governance-projection-plan",
+        "schema_version": SCHEMA_VERSION,
+        "phase": "projection",
+        "mode": "projection",
+        "repository_model": (
+            "Gray" if model == "adopt" else "Blue"
+        ),
+        "classification_mode": (
+            "Adopt" if model == "adopt" else "Bootstrap"
+        ),
+        "classification_sources": discovery["repository_model"][
+            "source_refs"
+        ],
+        "classification_reason": discovery["repository_model"]["reason"],
+        "preflight_snapshot_digest": preflight["snapshot_digest"],
+        "projection_id": (
+            bundle["projection_lock"]["projection_id"]
+            if bundle is not None
+            else None
+        ),
+        "with_hooks": False,
+        "actions": actions,
+        "write_scope": [
+            item["path"]
+            for item in actions
+            if item["operation"] != "unchanged"
+        ],
+        "preserved_paths": _preserved_paths(
+            root, set(files), preflight
+        ),
+        "available_capabilities": available,
+        "capability_gaps": capability_gaps,
+        "coverage": {
+            "total": (
+                len(bundle["rules"]["cells"]) if bundle is not None else 0
+            ),
+            "missing": (
+                [
+                    cell["cell_id"]
+                    for cell in bundle["rules"]["cells"]
+                    if cell["coverage_status"] == "missing"
+                ]
+                if bundle is not None
+                else []
+            ),
+        },
+        "blocker_codes": sorted(blockers),
+    }
+    return attach_digest(plan, "plan_digest")
+
+
+def apply_projection_plan(
+    repository: Path,
+    plan: dict[str, Any],
+    *,
+    approved_plan_digest: str | None = None,
+) -> dict[str, Any]:
+    """Apply exactly the five managed projection files from a current plan."""
+
+    expected_paths = {
+        ".harness/governance/sources.lock.json",
+        ".harness/governance/action-graph.json",
+        ".harness/governance/rules.json",
+        ".harness/governance/projection.lock.json",
+        ".harness/governance/compatibility.json",
+    }
+    observed_paths = {
+        str(item.get("path"))
+        for item in plan.get("actions", [])
+        if isinstance(item, dict)
+    }
+    if (
+        plan.get("artifact_type") != "governance-projection-plan"
+        or observed_paths != expected_paths
+    ):
+        return {
+            "status": "blocked",
+            "blocker_codes": ["INITIALIZATION_PLAN_STALE"],
+        }
+    result = apply_initialization_plan(
+        repository,
+        plan,
+        approved_plan_digest=approved_plan_digest,
+    )
+    if result["status"] == "applied":
+        result.update(
+            {
+                "status": (
+                    "unchanged"
+                    if not result["changed_paths"]
+                    else "applied"
+                ),
+                "repository_model": plan["repository_model"],
+                "classification_mode": plan["classification_mode"],
+                "available_capabilities": plan["available_capabilities"],
+                "capability_gaps": plan["capability_gaps"],
+                "coverage": plan["coverage"],
+            }
+        )
+    return result
 
 
 def apply_initialization_plan(

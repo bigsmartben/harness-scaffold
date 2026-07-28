@@ -53,6 +53,33 @@ def _hook_status(repository: Path, config: dict[str, Any] | None) -> str:
     return "missing" if expected else "disabled"
 
 
+def _stale_source_paths(
+    current: dict[str, Any],
+    projected: dict[str, Any] | None,
+) -> list[str]:
+    if not isinstance(projected, dict):
+        return []
+    previous = {
+        item["path"]: item["digest"]
+        for item in projected.get("files", [])
+        if isinstance(item, dict)
+        and isinstance(item.get("path"), str)
+        and isinstance(item.get("digest"), str)
+    }
+    observed = {
+        item["path"]: item["digest"]
+        for item in current.get("files", [])
+        if isinstance(item, dict)
+        and isinstance(item.get("path"), str)
+        and isinstance(item.get("digest"), str)
+    }
+    return sorted(
+        path
+        for path in set(previous) | set(observed)
+        if previous.get(path) != observed.get(path)
+    )
+
+
 def runtime_state(repository: Path) -> dict[str, Any]:
     root = repository.resolve()
     blockers: set[str] = set()
@@ -66,23 +93,27 @@ def runtime_state(repository: Path) -> dict[str, Any]:
                 for issue in validate_project_config(config_path)
             )
     bundle = load_projection_bundle(root)
+    current = create_repository_snapshot(root)
+    stale_sources: list[str] = []
     if bundle is None:
         blockers.add("GOVERNANCE_SOURCE_MISSING")
     else:
         blockers.update(
             issue.code for issue in validate_governance_bundle(bundle)
         )
-        current = create_repository_snapshot(root)
         if (
             current["snapshot_digest"]
             != bundle["projection_lock"].get("snapshot_digest")
         ):
             blockers.add("GOVERNANCE_PROJECTION_STALE")
+            stale_sources = _stale_source_paths(
+                current, bundle["sources"].get("snapshot")
+            )
 
     compatibility = _load_json(
         root / ".harness" / "governance" / "compatibility.json"
     )
-    if (
+    if bundle is not None and (
         not compatibility
         or compatibility.get("core_version") != CORE_VERSION
         or compatibility.get("schema_version") != SCHEMA_VERSION
@@ -95,18 +126,105 @@ def runtime_state(repository: Path) -> dict[str, Any]:
     projection_id = (
         bundle["projection_lock"].get("projection_id") if bundle else None
     )
+    entrypoint_ready = config is not None and _skill_matches(root)
+    projection_ready = bundle is not None and not blockers
+    status = (
+        "active"
+        if projection_ready
+        else "entrypoint-ready"
+        if entrypoint_ready
+        and blockers == {"GOVERNANCE_SOURCE_MISSING"}
+        else "blocked"
+    )
+    graph_actions = (
+        bundle["action_graph"].get("actions", []) if bundle is not None else []
+    )
+    capabilities = [
+        {
+            "action_id": action["action_id"],
+            "semantics": action["semantics"],
+            "cwd": action.get("binding", {}).get("cwd"),
+            "source_refs": action["source_refs"],
+        }
+        for action in graph_actions
+        if not all(
+            str(source).startswith("harness://")
+            for source in action.get("source_refs", [])
+        )
+    ]
+    available_semantics = {item["semantics"] for item in capabilities}
+    capability_gaps = [
+        semantics
+        for semantics in ("test", "build", "ci", "release", "deploy")
+        if semantics not in available_semantics
+    ]
+    artifact_status = (
+        "current"
+        if status == "active"
+        else "stale"
+        if "GOVERNANCE_PROJECTION_STALE" in blockers
+        else "missing"
+    )
     return {
-        "status": "active" if not blockers else "blocked",
-        "mode": "active" if not blockers else "bootstrap-only",
+        "status": status,
+        "mode": (
+            "active"
+            if status == "active"
+            else "projection-pending"
+            if status == "entrypoint-ready"
+            else "blocked"
+        ),
+        "repository_model": (
+            "Gray / Adopt"
+            if (config or {}).get("mode") == "adopt"
+            else "Blue / Bootstrap"
+        ),
+        "head_ref": current.get("head_ref"),
         "core_version": CORE_VERSION,
         "schema_version": SCHEMA_VERSION,
         "projection_id": projection_id,
+        "projection_artifacts": [
+            {
+                "path": f".harness/governance/{name}",
+                "status": artifact_status,
+            }
+            for name in (
+                "sources.lock.json",
+                "action-graph.json",
+                "rules.json",
+                "projection.lock.json",
+                "compatibility.json",
+            )
+        ],
+        "capabilities": capabilities,
+        "capability_gaps": capability_gaps,
+        "coverage": {
+            "total": (
+                len(bundle["rules"].get("cells", []))
+                if bundle is not None
+                else 0
+            ),
+            "missing": (
+                [
+                    cell["cell_id"]
+                    for cell in bundle["rules"].get("cells", [])
+                    if cell.get("coverage_status") == "missing"
+                ]
+                if bundle is not None
+                else []
+            ),
+        },
+        "stale_sources": stale_sources,
         "hook_defense": _hook_status(root, config),
         "blocker_codes": sorted(blockers),
         "summary": (
             "Harness is ready for repository work."
-            if not blockers
-            else "Harness needs repair before governed work."
+            if status == "active"
+            else (
+                "The Harness entrypoint is ready; generate the repository governance projection next."
+                if status == "entrypoint-ready"
+                else "Harness needs repair before governed work."
+            )
         ),
     }
 

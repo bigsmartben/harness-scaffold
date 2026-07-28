@@ -63,6 +63,7 @@
         "fact_type": {
           "enum": [
             "governance-source",
+            "repository-model",
             "action-binding",
             "project-policy",
             "governance-gap"
@@ -79,6 +80,7 @@
         "artifact_type",
         "schema_version",
         "snapshot_digest",
+        "snapshot",
         "facts",
         "facts_digest"
       ],
@@ -86,6 +88,7 @@
         "artifact_type": {"const": "source-facts"},
         "schema_version": {"const": "2.0.0"},
         "snapshot_digest": {"$ref": "#/$defs/digest"},
+        "snapshot": {"$ref": "#/$defs/repositorySnapshot"},
         "facts": {
           "type": "array",
           "items": {"$ref": "#/$defs/sourceFact"}
@@ -287,4 +290,3 @@
     }
   }
 }
-

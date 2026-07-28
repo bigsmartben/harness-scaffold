@@ -23,14 +23,19 @@ controlled actions exact.
 
 1. Read `AGENTS.md` and `.harness/harness.yaml`.
 2. Run `sdd-harness inspect --json`.
-3. If `blocker_codes` is non-empty, stop and use the diagnostics route. Do not
-   repair governance outside the user-confirmed task scope.
-4. Keep internal artifact names out of normal user summaries.
+3. If status is `entrypoint-ready` and the user wants to generate or refresh
+   repository governance, use the Projection route. The only allowed pending
+   blocker at this point is `GOVERNANCE_SOURCE_MISSING`.
+4. For every other non-empty `blocker_codes` result, stop and use the
+   diagnostics route. Do not repair governance outside the user-confirmed task
+   scope.
+5. Keep internal artifact names out of normal user summaries.
 
 ## Route
 
 | Intent | Reference |
 |---|---|
+| Generate, refresh, or explain repository governance | [references/projection.md](references/projection.md) |
 | Inspect, edit, Test, or Build locally | [references/local-work.md](references/local-work.md) |
 | Explicit `git commit` or equivalent | [references/commit.md](references/commit.md) |
 | Plan or create a local/remote Issue | [references/issues.md](references/issues.md) |

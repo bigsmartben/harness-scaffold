@@ -55,7 +55,9 @@ from .contracts import (
 from .facts import extract_source_facts
 from .initializer import (
     apply_initialization_plan,
+    apply_projection_plan,
     build_initialization_plan,
+    build_projection_plan,
     compile_repository_projection,
 )
 from .projection import COVERAGE_STATUSES, compile_governance_projection
@@ -86,6 +88,7 @@ __all__ = [
     "DecisionStateError",
     "analyze_workspace_impact",
     "apply_initialization_plan",
+    "apply_projection_plan",
     "apply_push_plan",
     "apply_project_policy_plan",
     "artifact_digest",
@@ -93,6 +96,7 @@ __all__ = [
     "blocker_codes",
     "build_action_graph",
     "build_initialization_plan",
+    "build_projection_plan",
     "build_project_policy_plan",
     "build_controlled_delivery_plan",
     "build_platform_gate_evidence",

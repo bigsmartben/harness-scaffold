@@ -19,10 +19,11 @@
 - 非 2.0 配置零写入拒绝与 stale plan digest 拒绝
 - Commit、Issue、策略、决定、受控交付、16 Cell、T0–T3 集成测试
 
-本地 Evidence：`test:contracts` 39 项通过；`test:distribution-smoke` 通过
+本地 Evidence：`test:contracts` 48 项通过；`test:distribution-smoke` 通过
 wheel 构建、隔离安装、Skill 字节一致、无 Hook / 显式 Hook、历史配置拒绝和项目
-Python 隔离检查。
+Python 隔离检查；Issue #28 的两阶段 Blue / Gray、Monorepo、冲突、stale 与
+本地 `run-action` 场景见 `docs/issue-28-acceptance.md`。
 
 PR、Merge、Publish、Release、Deploy 已有统一的确定性计划、平台门禁、Provider
 请求和回执校验适配层；每次实际远端执行仍需独立本次决定。GitHub Full CI 与
-#22/#23 远端回写也需各自的本次决定。
+#28/#22 远端回写也需各自的本次决定。

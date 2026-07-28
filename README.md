@@ -20,7 +20,9 @@ $harness 修改解析器并运行最低充分验证
 
 `sdd-harness init` 是确定性初始化入口；仓库内
 `.agents/skills/harness` 是正式用户入口。Plugin、Hook 和 MCP 都是显式
-启用的纵深防御（defense in depth），不是基础依赖。
+启用的纵深防御（defense in depth），不是基础依赖。初始化只发布入口；进入
+Codex 后由 `$harness` 识别 Blue / Gray，并以独立零写入计划生成 5 个治理投影
+文件。
 
 ## 2.0 架构
 
@@ -31,8 +33,8 @@ flowchart LR
     C --> D["AGENTS.md"]
     C --> E[".agents/skills/harness"]
     C --> F[".harness/harness.yaml"]
-    C --> G["四域、16 Cell 投影"]
     E --> H["Codex App / CLI"]
+    H --> G["$harness 生成四域、16 Cell 投影"]
     I["Hook / Plugin / MCP"] -. "可选加固" .-> H
 ```
 
@@ -78,6 +80,7 @@ Commit、Remote Issue、Push、PR 互不共享决定。
 - [2.0 规范](docs/specification.md)
 - [快速上手](docs/quickstart.md)
 - [仓库结构](docs/repository-structure.md)
+- [Issue #28 消费者验收证据映射](docs/issue-28-acceptance.md)
 - [可观察用例](uc.md)
 - [实施状态](plan.md)
 

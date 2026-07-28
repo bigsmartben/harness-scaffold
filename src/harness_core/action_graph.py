@@ -107,8 +107,21 @@ def build_action_graph(source_facts: dict[str, Any]) -> dict[str, Any]:
     counts = Counter(
         fact.get("value", {}).get("action_id") for fact in binding_facts
     )
+    ambiguous_sources = {
+        action_id: sorted(
+            {
+                source
+                for fact in binding_facts
+                if fact.get("value", {}).get("action_id") == action_id
+                for source in fact.get("source_refs", [])
+            }
+        )
+        for action_id, count in counts.items()
+        if action_id and count != 1
+    }
     actions = [_action(**item) for item in _BUILT_INS]
     blockers: list[dict[str, Any]] = []
+    reported_ambiguous: set[str] = set()
 
     for fact in sorted(binding_facts, key=lambda item: item["fact_id"]):
         value = fact["value"]
@@ -124,13 +137,17 @@ def build_action_graph(source_facts: dict[str, Any]) -> dict[str, Any]:
             )
             continue
         if counts[action_id] != 1:
-            blockers.append(
-                {
-                    "code": "TOOL_BINDING_AMBIGUOUS",
-                    "action_id": action_id or None,
-                    "source_refs": fact["source_refs"],
-                }
-            )
+            if action_id not in reported_ambiguous:
+                blockers.append(
+                    {
+                        "code": "TOOL_BINDING_AMBIGUOUS",
+                        "action_id": action_id or None,
+                        "source_refs": ambiguous_sources.get(
+                            action_id, fact["source_refs"]
+                        ),
+                    }
+                )
+                reported_ambiguous.add(action_id)
             continue
         binding = {
             key: value[key]

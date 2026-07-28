@@ -24,7 +24,12 @@ from .delivery import (
     prepare_controlled_delivery_request,
     validate_controlled_delivery_receipt,
 )
-from .initializer import apply_initialization_plan, build_initialization_plan
+from .initializer import (
+    apply_initialization_plan,
+    apply_projection_plan,
+    build_initialization_plan,
+    build_projection_plan,
+)
 from .issues import (
     apply_local_issue_plan,
     build_issue_plan,
@@ -32,7 +37,7 @@ from .issues import (
     validate_remote_issue_receipt,
 )
 from .mcp_server import serve
-from .runner import run_local_task_ref
+from .runner import run_local_action, run_local_task_ref
 from .push import apply_push_plan, build_push_plan
 from .policy import apply_project_policy_plan, build_project_policy_plan
 from .selection import analyze_workspace_impact
@@ -92,9 +97,11 @@ def _init(args: argparse.Namespace) -> int:
             {
                 "status": "confirmation-required",
                 "mode": plan["mode"],
+                "repository_model": plan["repository_model"],
+                "phase": plan["phase"],
                 "plan_digest": plan["plan_digest"],
-                "projection_id": plan["projection_id"],
                 "write_scope": plan["write_scope"],
+                "preserved_paths": plan["preserved_paths"],
                 "with_hooks": plan["with_hooks"],
                 "blocker_codes": ["HANDOFF_REQUIRED"],
             },
@@ -114,6 +121,11 @@ def _init(args: argparse.Namespace) -> int:
     result = apply_initialization_plan(
         repository, plan, approved_plan_digest=approval
     )
+    if result["status"] == "applied" and plan["phase"] == "entrypoint":
+        result["next_step"] = (
+            "Use $harness to plan and generate the current repository "
+            "governance projection."
+        )
     _print(result, compact=args.json)
     return 0 if result["status"] == "applied" else 2
 
@@ -122,6 +134,22 @@ def _inspect(args: argparse.Namespace) -> int:
     result = runtime_state(args.repository.resolve())
     _print(result, compact=args.json)
     return 0 if result["status"] == "active" else 2
+
+
+def _projection_plan(args: argparse.Namespace) -> int:
+    plan = build_projection_plan(args.repository.resolve())
+    _print(plan, compact=args.json)
+    return 0 if not plan["blocker_codes"] else 2
+
+
+def _projection_apply(args: argparse.Namespace) -> int:
+    result = apply_projection_plan(
+        args.repository.resolve(),
+        _load_document(args.plan),
+        approved_plan_digest=args.approve_plan,
+    )
+    _print(result, compact=args.json)
+    return 0 if result["status"] in {"applied", "unchanged"} else 2
 
 
 def _impact(args: argparse.Namespace) -> int:
@@ -388,6 +416,46 @@ def _run_task(args: argparse.Namespace) -> int:
     return 0 if report["status"] == "passed" else 2
 
 
+def _run_action(args: argparse.Namespace) -> int:
+    try:
+        report = run_local_action(
+            args.repository.resolve(),
+            args.action_id,
+            validation_level=args.validation_level,
+        )
+    except ValueError as exc:
+        code = str(exc).split(":", 1)[0]
+        _print(
+            {
+                "status": "blocked",
+                "action_id": args.action_id,
+                "validation_level": args.validation_level,
+                "blocker_codes": [code],
+                "summary": str(exc),
+            },
+            compact=args.json,
+        )
+        return 2
+    if report["stdout"]:
+        print(report["stdout"], end="")
+    if report["stderr"]:
+        print(report["stderr"], end="", file=sys.stderr)
+    _print(
+        {
+            "status": report["status"],
+            "action_id": args.action_id,
+            "validation_level": args.validation_level,
+            "cwd": report["cwd"],
+            "source_refs": report["source_refs"],
+            "returncode": report["returncode"],
+            "evidence_digest": report["evidence_digest"],
+            "blocker_codes": report["blocker_codes"],
+        },
+        compact=args.json,
+    )
+    return 0 if report["status"] == "passed" else 2
+
+
 def _repository_argument(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("repository", nargs="?", type=Path, default=Path.cwd())
 
@@ -412,6 +480,24 @@ def build_parser() -> argparse.ArgumentParser:
     init_parser.add_argument("--with-hooks", action="store_true")
     _json_argument(init_parser)
     init_parser.set_defaults(handler=_init)
+
+    projection_plan_parser = subparsers.add_parser(
+        "projection-plan",
+        help="plan the second-phase repository governance projection",
+    )
+    _repository_argument(projection_plan_parser)
+    _json_argument(projection_plan_parser)
+    projection_plan_parser.set_defaults(handler=_projection_plan)
+
+    projection_apply_parser = subparsers.add_parser(
+        "projection-apply",
+        help="apply one exact second-phase governance projection plan",
+    )
+    _repository_argument(projection_apply_parser)
+    projection_apply_parser.add_argument("--plan", type=Path, required=True)
+    projection_apply_parser.add_argument("--approve-plan", required=True)
+    _json_argument(projection_apply_parser)
+    projection_apply_parser.set_defaults(handler=_projection_apply)
 
     inspect_parser = subparsers.add_parser(
         "inspect", help="inspect runtime and projection compatibility"
@@ -608,6 +694,19 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--scope", required=True)
     _json_argument(run_parser)
     run_parser.set_defaults(handler=_run_task)
+
+    run_action_parser = subparsers.add_parser(
+        "run-action", help="run one source-bound local projection action"
+    )
+    _repository_argument(run_action_parser)
+    run_action_parser.add_argument("action_id")
+    run_action_parser.add_argument(
+        "--validation-level",
+        choices=("T0", "T1", "T2", "T3"),
+        required=True,
+    )
+    _json_argument(run_action_parser)
+    run_action_parser.set_defaults(handler=_run_action)
 
     hook_parser = subparsers.add_parser("hook", help=argparse.SUPPRESS)
     hook_parser.add_argument("--repository", type=Path)

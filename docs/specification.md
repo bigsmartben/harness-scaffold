@@ -8,6 +8,7 @@ Harness 是仓库脚手架，不是常驻 Agent 平台。公共闭环是：
 
 ```text
 uv tool install → sdd-harness init → repository Skill → Codex App / CLI
+  → $harness projection plan/apply
 ```
 
 Python Core 是唯一确定性权威。Skill 解释工作流；Hook、Plugin、MCP 只提供可选
@@ -127,7 +128,9 @@ target_digest`。缺失或摘要不符返回 `PLATFORM_GATE_REQUIRED`；Provider
 ## 7. 初始化与版本边界
 
 新仓库使用 `sdd-harness init .`；自动化可使用 `--yes`，也可用
-`--approve-plan <plan_digest>` 接受一份未变化的精确计划。
+`--approve-plan <plan_digest>` 接受一份未变化的精确计划。该命令只发布
+`AGENTS.md`、仓库 Skill、项目配置和忽略规则，不生成治理投影。第二阶段必须由
+仓库 `$harness` 先识别 Blue / Gray，再以独立计划生成 5 个投影文件。
 
 Harness 2.0 不提供历史版本兼容、字段映射或迁移工具。目标仓库存在非 2.0
 配置时，初始化必须零写入返回 `HARNESS_RUNTIME_INCOMPATIBLE`。无效的 2.0 配置

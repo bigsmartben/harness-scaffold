@@ -119,6 +119,7 @@ def build_project_policy_plan(
         build_initialization_plan(
             root,
             project_config_override=next_config,
+            include_projection=True,
         )
         if current is not None and not blockers
         else None

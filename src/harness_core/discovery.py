@@ -11,6 +11,8 @@ from typing import Any
 
 import yaml
 
+from .templates import HARNESS_MARKER_END, HARNESS_MARKER_START
+
 
 PROTECTED_TRIGGERS = {"push", "pull_request", "schedule"}
 SCRIPT_CATEGORIES = {
@@ -397,6 +399,51 @@ def summarize_discovery(
     }
 
 
+def classify_repository_model(root: Path) -> dict[str, Any]:
+    """Classify repository adoption from governance facts, never from Git alone."""
+
+    repository = root.resolve()
+    reasons: list[str] = []
+    agents = repository / "AGENTS.md"
+    if agents.is_file():
+        agents_text = agents.read_text(encoding="utf-8")
+        marker_start = agents_text.find(HARNESS_MARKER_START)
+        marker_end = agents_text.find(HARNESS_MARKER_END)
+        if marker_start >= 0 and marker_end >= marker_start:
+            marker_end += len(HARNESS_MARKER_END)
+            agents_text = (
+                agents_text[:marker_start] + agents_text[marker_end:]
+            )
+        if agents_text.strip():
+            reasons.append("AGENTS.md")
+
+    workflow_root = repository / ".github" / "workflows"
+    if workflow_root.is_dir() and any(
+        path.is_file()
+        for path in (
+            *workflow_root.glob("*.yml"),
+            *workflow_root.glob("*.yaml"),
+        )
+    ):
+        reasons.append(".github/workflows")
+
+    package_json = repository / "package.json"
+    if _package_scripts(package_json):
+        reasons.append("package.json#scripts")
+
+    mode = "adopt" if reasons else "bootstrap"
+    return {
+        "model": "Gray" if mode == "adopt" else "Blue",
+        "mode": mode,
+        "source_refs": sorted(reasons),
+        "reason": (
+            "existing governance, automation, or repository instructions must be preserved"
+            if reasons
+            else "no existing governance, CI, delivery entrypoint, or user instruction was found"
+        ),
+    }
+
+
 def discover_repository(root: Path) -> dict[str, Any]:
     """Return source-backed facts without modifying the repository."""
 
@@ -517,6 +564,7 @@ def discover_repository(root: Path) -> dict[str, Any]:
 
     return {
         "repository_root": str(root),
+        "repository_model": classify_repository_model(root),
         "project_types": project_types,
         "project_units": project_units,
         "fact_sources": fact_sources,

@@ -36,6 +36,23 @@ def extract_source_facts(
     project_policy: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     facts: list[dict[str, Any]] = []
+    repository_model = discovery.get("repository_model", {})
+    facts.append(
+        _fact(
+            "repository-model",
+            "repository",
+            {
+                "model": str(repository_model.get("model") or "Blue"),
+                "mode": str(repository_model.get("mode") or "bootstrap"),
+                "reason": str(repository_model.get("reason") or ""),
+            },
+            [
+                str(source)
+                for source in repository_model.get("source_refs", [])
+            ]
+            or ["harness://classification/no-existing-governance"],
+        )
+    )
     for domain in DOMAINS:
         facts.append(
             _fact(
@@ -88,17 +105,21 @@ def extract_source_facts(
 
     for workflow in discovery.get("workflows", []):
         for job in workflow.get("jobs", []):
-            action_id = f"{job['category']}:workflow:{_slug(job['id'])}"
+            action_id = (
+                f"ci:workflow:{_slug(job['category'])}:"
+                f"{_slug(job['id'])}"
+            )
             facts.append(
                 _fact(
                     "action-binding",
-                    action_id,
+                    f"{action_id}:{job['source']}",
                     {
                         "action_id": action_id,
-                        "semantics": job["category"],
+                        "semantics": "ci",
                         "adapter": "github-actions",
                         "workflow": workflow["path"],
                         "job": job["id"],
+                        "job_semantics": job["category"],
                     },
                     [job["source"]],
                 )
@@ -130,6 +151,7 @@ def extract_source_facts(
         "artifact_type": "source-facts",
         "schema_version": SCHEMA_VERSION,
         "snapshot_digest": snapshot["snapshot_digest"],
+        "snapshot": snapshot,
         "facts": sorted(facts, key=lambda item: item["fact_id"]),
     }
     return attach_digest(document, "facts_digest")

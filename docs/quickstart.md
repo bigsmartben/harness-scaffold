@@ -27,7 +27,7 @@ Harness 2.0 不兼容历史配置。如果目标仓库已有非 2.0
 AGENTS.md
 .agents/skills/harness/
 .harness/harness.yaml
-.harness/governance/
+.harness/.gitignore
 ```
 
 默认不生成 Hook、Plugin 或固定 Agent TOML。需要项目 Hook 时显式执行：
@@ -38,9 +38,28 @@ sdd-harness init . --with-hooks --yes
 
 项目 Hook 仍需按 Codex 的信任模型启用；没有 Hook 不影响基础流程。
 
-## 2. 在 Codex 中工作
+初始化完成后，治理投影仍未生成。这是预期的两阶段边界，而不是安装失败。
+
+## 2. 在 Codex 中生成治理投影并工作
 
 Codex App / CLI 会发现仓库内 Skill。可以直接描述任务，也可以显式写：
+
+```text
+$harness 为当前仓库生成治理投影；先展示计划，保留既有文件
+```
+
+Harness 会先说明 Blue / Bootstrap 或 Gray / Adopt 及逐条路径依据，再展示只
+涉及以下 5 个文件的零写入计划：
+
+```text
+.harness/governance/sources.lock.json
+.harness/governance/action-graph.json
+.harness/governance/rules.json
+.harness/governance/projection.lock.json
+.harness/governance/compatibility.json
+```
+
+投影生成并复查为 `active` 后，可以继续描述本地目标：
 
 ```text
 $harness 修改解析器并运行最低充分验证
@@ -52,7 +71,8 @@ Harness 先运行：
 sdd-harness inspect . --json
 ```
 
-状态为 `active` 后，普通本地工作连续执行。验证层级示例：
+状态为 `active` 后，普通本地工作连续执行。若状态为 `entrypoint-ready`，说明
+入口可用但第二阶段投影仍待生成。验证层级示例：
 
 | 变化 | 层级 | 实例 |
 |---|---|---|
@@ -74,23 +94,19 @@ target`。例如 Commit 的决定不能授权 Remote Issue，文件变化后旧�
 持久修改项目策略时先生成零写入计划：
 
 ```text
-sdd-harness policy-plan . \
-  --changes-json '{"declarations":{"validation_profile":"strict-contracts"}}' \
-  --json > policy-plan.json
-sdd-harness policy-apply . --plan policy-plan.json \
-  --approve-plan <plan_digest>
+$harness 把后续验证配置为 strict-contracts；先展示项目策略计划，不写文件
 ```
 
 应用过程会原子更新 `.harness/harness.yaml` 和治理投影；摘要、工作区或旧投影
-发生变化时返回 `PROJECT_POLICY_PLAN_STALE`。任务或精确动作完成后，用
-`sdd-harness decision-end . --task-id <task_id>` 结束临时决定。
+发生变化时返回 `PROJECT_POLICY_PLAN_STALE`。任务或精确动作完成后，Harness
+结束对应的临时决定。
 
 ## 4. Commit 与 Issue
 
 选择性 Commit 先生成计划：
 
 ```text
-sdd-harness commit-plan . --path src/a.py --message "fix: parser"
+$harness git commit：只提交 src/a.py，提交信息为 fix: parser
 ```
 
 确认后由临时 Git Index 创建只含 `src/a.py` 的提交。无关暂存保持原样；目标文件
@@ -99,7 +115,7 @@ sdd-harness commit-plan . --path src/a.py --message "fix: parser"
 Issue 先生成 Provider 无关的 Issue Plan：
 
 ```text
-sdd-harness issue-plan . --title "Parser error" --body "Reproduce..."
+$harness 创建 Issue：标题“Parser error”；正文包含复现、期望、实际与完成标准
 ```
 
 Consumer 默认写 `.harness/issues`。配置为 GitHub 时，Harness 只准备精确的
@@ -118,15 +134,11 @@ Pull Request、Merge、Publish、Release 和 Deploy 使用同一条确定性流�
   → delivery-validate-receipt
 ```
 
-平台门禁证据（platform-gate evidence）是上游平台事实的摘要绑定记录。例如，
-创建 PR 前先把 GitHub 查询结果保存为 `{"checks":[...]}`，再交给内核绑定：
+平台门禁证据（platform-gate evidence）是 Harness 从上游平台独立查询后生成的
+摘要绑定记录。消费者只需描述精确目标，例如：
 
 ```text
-sdd-harness gate-evidence \
-  --action delivery:pull-request \
-  --target-file pr-target.json \
-  --checks-file github-checks.json \
-  --json > platform-gate.json
+$harness 为当前已推送分支创建 Draft PR 到 main；标题为“fix: parser”
 ```
 
 生成结果示例：

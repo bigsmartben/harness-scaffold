@@ -5,7 +5,11 @@ Keep work inside the local workspace and the requested scope.
 1. Treat private branches, staged changes, unstaged changes, and untracked files
    as local workspace state.
 2. Preserve unrelated user changes.
+   If the fix requires a path outside the requested scope, stop before editing
+   it and explain the new path, why it is required, and any T0-T3 escalation.
 3. Use the repository Action binding for Test or Build; do not invent a command.
+   Execute a local binding by its exact `action_id` through `run-action`, at or
+   above the Action Graph's validation floor.
 4. Select the lowest sufficient validation:
    - T0 Inspect: documentation, comments, or inert configuration.
    - T1 Nearest: one function, component, or narrow defect.
