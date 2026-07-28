@@ -109,6 +109,21 @@ Private Branch 可直接进行仓库内动作。Controlled 或 Unclassified Bran
 Commit、Issue Write 和交付动作返回 `CONTROLLED_BRANCH_GATE_REQUIRED` 与
 `HANDOFF_REQUIRED`，并要求上游平台门禁。
 
+PR、Merge、Publish、Release、Deploy 使用同一受控交付契约：
+
+```text
+精确目标 + 平台门禁 Evidence
+  → Delivery Plan
+  → 绑定 action_id / projection / workspace / target 的本次决定
+  → Provider Request
+  → Provider Receipt
+  → Evidence 校验
+```
+
+平台门禁必须来自独立查询并绑定 `action_id + provider + repository +
+target_digest`。缺失或摘要不符返回 `PLATFORM_GATE_REQUIRED`；Provider 失败返回
+`REMOTE_DELIVERY_FAILED`，不得回退到其他目标。
+
 ## 7. 初始化与版本边界
 
 新仓库使用 `sdd-harness init .`；自动化可使用 `--yes`，也可用

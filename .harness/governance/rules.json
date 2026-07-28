@@ -4,7 +4,12 @@
     {
       "action_bindings": [
         "delivery:commit",
+        "delivery:deploy",
+        "delivery:merge",
+        "delivery:publish",
+        "delivery:pull-request",
         "delivery:push",
+        "delivery:release",
         "delivery:remote-issue",
         "merge:workflow:authorize",
         "merge:workflow:merge",
@@ -47,7 +52,12 @@
         ".github/workflows/harness.yml#jobs.merge",
         ".github/workflows/harness.yml#jobs.pull-request",
         "harness://specification/2.0.0/actions/commit",
+        "harness://specification/2.0.0/actions/deploy",
+        "harness://specification/2.0.0/actions/merge",
+        "harness://specification/2.0.0/actions/publish",
+        "harness://specification/2.0.0/actions/pull-request",
         "harness://specification/2.0.0/actions/push",
+        "harness://specification/2.0.0/actions/release",
         "harness://specification/2.0.0/actions/remote-issue",
         "harness://specification/2.0.0/domains/delivery"
       ]
@@ -206,7 +216,12 @@
         ".github/workflows/harness.yml#jobs.merge",
         ".github/workflows/harness.yml#jobs.pull-request",
         "harness://specification/2.0.0/actions/commit",
+        "harness://specification/2.0.0/actions/deploy",
+        "harness://specification/2.0.0/actions/merge",
+        "harness://specification/2.0.0/actions/publish",
+        "harness://specification/2.0.0/actions/pull-request",
         "harness://specification/2.0.0/actions/push",
+        "harness://specification/2.0.0/actions/release",
         "harness://specification/2.0.0/actions/remote-issue",
         "harness://specification/2.0.0/domains/delivery"
       ]
@@ -322,7 +337,12 @@
     {
       "action_bindings": [
         "delivery:commit",
+        "delivery:deploy",
+        "delivery:merge",
+        "delivery:publish",
+        "delivery:pull-request",
         "delivery:push",
+        "delivery:release",
         "delivery:remote-issue",
         "merge:workflow:authorize",
         "merge:workflow:merge",
@@ -365,7 +385,12 @@
         ".github/workflows/harness.yml#jobs.merge",
         ".github/workflows/harness.yml#jobs.pull-request",
         "harness://specification/2.0.0/actions/commit",
+        "harness://specification/2.0.0/actions/deploy",
+        "harness://specification/2.0.0/actions/merge",
+        "harness://specification/2.0.0/actions/publish",
+        "harness://specification/2.0.0/actions/pull-request",
         "harness://specification/2.0.0/actions/push",
+        "harness://specification/2.0.0/actions/release",
         "harness://specification/2.0.0/actions/remote-issue",
         "harness://specification/2.0.0/domains/delivery"
       ]
@@ -524,7 +549,12 @@
         ".github/workflows/harness.yml#jobs.merge",
         ".github/workflows/harness.yml#jobs.pull-request",
         "harness://specification/2.0.0/actions/commit",
+        "harness://specification/2.0.0/actions/deploy",
+        "harness://specification/2.0.0/actions/merge",
+        "harness://specification/2.0.0/actions/publish",
+        "harness://specification/2.0.0/actions/pull-request",
         "harness://specification/2.0.0/actions/push",
+        "harness://specification/2.0.0/actions/release",
         "harness://specification/2.0.0/actions/remote-issue",
         "harness://specification/2.0.0/domains/delivery"
       ]
@@ -638,7 +668,7 @@
       ]
     }
   ],
-  "projection_id": "sha256:bea41e31439d8fee4d4306e5a14db7ef616c01d31248d9febf369d287000b2ec",
-  "rules_digest": "sha256:1a5a2c99ecad0a9fb52a70bfe150088a94eb8af33b8d6a27acd8743bdc71ab64",
+  "projection_id": "sha256:c764cd65447eb9d8dcca6781401a578bffa223c83e748031864775976bd6e2c2",
+  "rules_digest": "sha256:d646bed950b1413238fcade3c6b59b3c01ece6168545fb0216ae9ed2b79187f7",
   "schema_version": "2.0.0"
 }

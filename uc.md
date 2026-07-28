@@ -16,3 +16,7 @@
 | UC-010 Controlled Branch | `refs/heads/main` 直接写/Commit | `CONTROLLED_BRANCH_GATE_REQUIRED` |
 | UC-011 历史配置 | 非 2.0 `harness.yaml` | 零写入返回 `HARNESS_RUNTIME_INCOMPATIBLE` |
 | UC-012 可选 Hook | `init --with-hooks` | 增加纵深防御，治理 SSOT 不变 |
+| UC-013 项目策略应用 | 摘要未变化的 Policy Plan | 原子刷新投影；旧本次决定失效 |
+| UC-014 结束本次决定 | `decision-end --task-id task-22` | 只删除被忽略的对应运行态文件 |
+| UC-015 受控交付 | PR / Merge / Publish / Release / Deploy | 平台门禁 + 独立决定 + 单次 Provider 调用 + 精确回执 |
+| UC-016 交付失败 | Provider 异常或回执不完整 | 失败关闭，不回退其他 Provider 或本地动作 |

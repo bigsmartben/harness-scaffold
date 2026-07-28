@@ -320,6 +320,7 @@ def build_initialization_plan(
     repository: Path,
     *,
     with_hooks: bool = False,
+    project_config_override: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     root = repository.resolve()
     existing = load_project_config(root)
@@ -340,9 +341,13 @@ def build_initialization_plan(
         else:
             config_blockers.append("CONFIG_INVALID")
     mode = _target_mode(root)
-    config = existing or default_project_config(
+    config = project_config_override or existing or default_project_config(
         mode=mode, hooks_enabled=with_hooks
     )
+    if project_config_override is not None:
+        config_blockers.extend(
+            issue.code for issue in validate_project_config(config)
+        )
     if with_hooks and config["project_policy"]["hooks"] != "enabled":
         config = json.loads(json.dumps(config))
         config["project_policy"]["hooks"] = "enabled"

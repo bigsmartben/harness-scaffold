@@ -16,3 +16,8 @@ Keep work inside the local workspace and the requested scope.
 
 Example: after editing one parser function, run its nearest unit test. After
 changing a public JSON Schema, run the component contract tests.
+
+For a lasting Project policy change, use `policy-plan` first. Apply only the
+unchanged plan digest with `policy-apply`; the atomic publication must refresh
+the Projection. End an exact Task Decision with `decision-end` when its task
+or action is finished.

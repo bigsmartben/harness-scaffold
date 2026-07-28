@@ -7,7 +7,9 @@
     {"$ref": "#/$defs/impactAnalysis"},
     {"$ref": "#/$defs/commitPlan"},
     {"$ref": "#/$defs/pushPlan"},
-    {"$ref": "#/$defs/issuePlan"}
+    {"$ref": "#/$defs/issuePlan"},
+    {"$ref": "#/$defs/projectPolicyPlan"},
+    {"$ref": "#/$defs/controlledDeliveryPlan"}
   ],
   "$defs": {
     "digest": {
@@ -169,6 +171,160 @@
         },
         "branch": {"type": "string", "minLength": 1},
         "commit_sha": {"type": "string", "minLength": 1},
+        "blocker_codes": {
+          "type": "array",
+          "items": {
+            "$ref": "https://sdd-harness.dev/schemas/2.0/common.schema.json#/$defs/blockerCode"
+          },
+          "uniqueItems": true
+        },
+        "plan_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "projectPolicyPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_type",
+        "schema_version",
+        "workspace_digest",
+        "previous_projection_id",
+        "projection_id",
+        "current_policy_digest",
+        "changes",
+        "initialization_plan",
+        "write_scope",
+        "blocker_codes",
+        "plan_digest"
+      ],
+      "properties": {
+        "artifact_type": {"const": "project-policy-plan"},
+        "schema_version": {"const": "2.0.0"},
+        "workspace_digest": {"$ref": "#/$defs/digest"},
+        "previous_projection_id": {
+          "oneOf": [
+            {"$ref": "#/$defs/digest"},
+            {"type": "null"}
+          ]
+        },
+        "projection_id": {
+          "oneOf": [
+            {"$ref": "#/$defs/digest"},
+            {"type": "null"}
+          ]
+        },
+        "current_policy_digest": {
+          "oneOf": [
+            {"$ref": "#/$defs/digest"},
+            {"type": "null"}
+          ]
+        },
+        "changes": {"type": "object"},
+        "initialization_plan": {"type": ["object", "null"]},
+        "write_scope": {"$ref": "#/$defs/stringList"},
+        "blocker_codes": {
+          "type": "array",
+          "items": {
+            "$ref": "https://sdd-harness.dev/schemas/2.0/common.schema.json#/$defs/blockerCode"
+          },
+          "uniqueItems": true
+        },
+        "plan_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "controlledDeliveryPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_type",
+        "schema_version",
+        "projection_id",
+        "workspace_digest",
+        "action_id",
+        "semantics",
+        "action_digest",
+        "source_refs",
+        "target",
+        "target_digest",
+        "platform_evidence",
+        "blocker_codes",
+        "plan_digest"
+      ],
+      "properties": {
+        "artifact_type": {"const": "controlled-delivery-plan"},
+        "schema_version": {"const": "2.0.0"},
+        "projection_id": {
+          "oneOf": [
+            {"$ref": "#/$defs/digest"},
+            {"type": "null"}
+          ]
+        },
+        "workspace_digest": {"$ref": "#/$defs/digest"},
+        "action_id": {"type": "string", "minLength": 1},
+        "semantics": {
+          "enum": [
+            "pull-request",
+            "merge",
+            "publish",
+            "release",
+            "deploy",
+            ""
+          ]
+        },
+        "action_digest": {
+          "oneOf": [
+            {"$ref": "#/$defs/digest"},
+            {"type": "null"}
+          ]
+        },
+        "source_refs": {"$ref": "#/$defs/stringList"},
+        "target": {"type": "object"},
+        "target_digest": {"$ref": "#/$defs/digest"},
+        "platform_evidence": {
+          "oneOf": [
+            {"type": "null"},
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+            "artifact_type",
+            "schema_version",
+            "action_id",
+            "provider",
+            "repository",
+            "target_digest",
+            "status",
+            "checks",
+            "evidence_digest"
+              ],
+              "properties": {
+            "artifact_type": {"const": "platform-gate-evidence"},
+            "schema_version": {"const": "2.0.0"},
+            "action_id": {"type": "string", "minLength": 1},
+            "provider": {"type": "string", "minLength": 1},
+            "repository": {"type": "string", "minLength": 1},
+            "target_digest": {"$ref": "#/$defs/digest"},
+            "status": {"const": "passed"},
+            "checks": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name", "status", "source", "evidence_id"],
+                "properties": {
+                  "name": {"type": "string", "minLength": 1},
+                  "status": {"const": "passed"},
+                  "source": {"type": "string", "minLength": 1},
+                  "evidence_id": {"type": "string", "minLength": 1}
+                }
+              }
+            },
+                "evidence_digest": {"$ref": "#/$defs/digest"}
+              }
+            }
+          ]
+        },
         "blocker_codes": {
           "type": "array",
           "items": {

@@ -54,6 +54,23 @@ _BUILT_INS = (
         "source_refs": ["harness://specification/2.0.0/actions/push"],
         "binding": {"adapter": "harness-core", "operation": "push"},
     },
+    *(
+        {
+            "action_id": f"delivery:{semantics}",
+            "semantics": semantics,
+            "source_refs": [
+                f"harness://specification/2.0.0/actions/{semantics}"
+            ],
+            "binding": {"adapter": "provider", "operation": semantics},
+        }
+        for semantics in (
+            "pull-request",
+            "merge",
+            "publish",
+            "release",
+            "deploy",
+        )
+    ),
 )
 
 

@@ -22,6 +22,24 @@ from .artifacts import (
     verify_digest,
 )
 from .codex_adapter import handle_hook, load_projection_bundle, runtime_state
+from .decisions import (
+    DecisionStateError,
+    create_task_decision,
+    end_task_decision,
+    load_task_decision,
+    save_task_decision,
+    task_decision_blockers,
+)
+from .delivery import (
+    CONTROLLED_DELIVERY_SEMANTICS,
+    build_platform_gate_evidence,
+    build_controlled_delivery_plan,
+    delivery_decision_target,
+    execute_controlled_delivery_plan,
+    platform_gate_blockers,
+    prepare_controlled_delivery_request,
+    validate_controlled_delivery_receipt,
+)
 from .contracts import (
     AUDIENCES,
     DOMAINS,
@@ -41,6 +59,7 @@ from .initializer import (
     compile_repository_projection,
 )
 from .projection import COVERAGE_STATUSES, compile_governance_projection
+from .policy import apply_project_policy_plan, build_project_policy_plan
 from .push import apply_push_plan, build_push_plan
 from .selection import analyze_workspace_impact, select_validation
 from .snapshot import (
@@ -56,6 +75,7 @@ __all__ = [
     "ABSENT_DIGEST",
     "AUDIENCES",
     "CORE_VERSION",
+    "CONTROLLED_DELIVERY_SEMANTICS",
     "COVERAGE_STATUSES",
     "DOMAINS",
     "GOVERNANCE_SCHEMA_VERSION",
@@ -63,14 +83,19 @@ __all__ = [
     "RESPONSIBILITIES",
     "SCHEMA_VERSION",
     "ValidationIssue",
+    "DecisionStateError",
     "analyze_workspace_impact",
     "apply_initialization_plan",
     "apply_push_plan",
+    "apply_project_policy_plan",
     "artifact_digest",
     "attach_digest",
     "blocker_codes",
     "build_action_graph",
     "build_initialization_plan",
+    "build_project_policy_plan",
+    "build_controlled_delivery_plan",
+    "build_platform_gate_evidence",
     "build_push_plan",
     "canonical_digest",
     "canonical_json",
@@ -78,23 +103,33 @@ __all__ = [
     "compile_governance_projection",
     "compile_repository_projection",
     "content_digest",
+    "create_task_decision",
     "create_repository_snapshot",
     "digest_matches",
+    "delivery_decision_target",
+    "end_task_decision",
+    "execute_controlled_delivery_plan",
+    "platform_gate_blockers",
     "extract_source_facts",
     "file_digest",
     "governance_relevant_paths",
     "handle_hook",
     "load_projection_bundle",
+    "load_task_decision",
     "normalized_path_digest",
     "path_digest",
     "paths_digest",
     "runtime_artifact_is_valid",
     "runtime_state",
+    "save_task_decision",
     "select_validation",
     "snapshot_matches",
+    "task_decision_blockers",
     "validate_governance_artifact",
     "validate_governance_bundle",
     "validate_project_config",
     "validate_runtime_artifact",
+    "validate_controlled_delivery_receipt",
     "verify_digest",
+    "prepare_controlled_delivery_request",
 ]

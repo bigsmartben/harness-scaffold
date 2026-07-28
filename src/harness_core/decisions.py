@@ -9,9 +9,18 @@ from pathlib import Path
 from typing import Any
 
 from .artifacts import SCHEMA_VERSION, attach_digest, canonical_digest, digest_matches
+from .workspace import run_git
 
 
 _TASK_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+
+
+class DecisionStateError(ValueError):
+    """Stable failure for unsafe or inconsistent ephemeral decision state."""
+
+    def __init__(self, *blocker_codes: str) -> None:
+        self.blocker_codes = list(blocker_codes)
+        super().__init__(", ".join(self.blocker_codes))
 
 
 def create_task_decision(
@@ -48,7 +57,20 @@ def decision_path(repository: Path, task_id: str) -> Path:
 
 
 def save_task_decision(repository: Path, decision: dict[str, Any]) -> Path:
+    if not digest_matches(decision, "decision_digest"):
+        raise DecisionStateError("TASK_DECISION_STALE", "HANDOFF_REQUIRED")
     target = decision_path(repository, decision["task_id"])
+    relative = target.relative_to(repository.resolve()).as_posix()
+    ignored = run_git(
+        repository,
+        ["check-ignore", "--quiet", "--", relative],
+        check=False,
+    )
+    if ignored.returncode != 0:
+        raise DecisionStateError(
+            "GOVERNANCE_PRECONDITION_FAILED",
+            "HANDOFF_REQUIRED",
+        )
     target.parent.mkdir(parents=True, exist_ok=True)
     temporary = target.with_suffix(".tmp")
     temporary.write_text(
@@ -58,6 +80,38 @@ def save_task_decision(repository: Path, decision: dict[str, Any]) -> Path:
     )
     os.replace(temporary, target)
     return target
+
+
+def end_task_decision(repository: Path, task_id: str) -> dict[str, Any]:
+    """Expire one exact task decision by removing its ignored runtime state."""
+
+    path = decision_path(repository, task_id)
+    decision = load_task_decision(repository, task_id)
+    if decision is None or not digest_matches(decision, "decision_digest"):
+        return {
+            "status": "blocked",
+            "task_id": task_id,
+            "blocker_codes": ["TASK_DECISION_STALE", "HANDOFF_REQUIRED"],
+        }
+    try:
+        path.unlink()
+        path.parent.rmdir()
+    except OSError:
+        if path.exists():
+            return {
+                "status": "blocked",
+                "task_id": task_id,
+                "blocker_codes": [
+                    "GOVERNANCE_PRECONDITION_FAILED",
+                    "HANDOFF_REQUIRED",
+                ],
+            }
+    return {
+        "status": "expired",
+        "task_id": task_id,
+        "decision_digest": decision["decision_digest"],
+        "blocker_codes": [],
+    }
 
 
 def load_task_decision(repository: Path, task_id: str) -> dict[str, Any] | None:

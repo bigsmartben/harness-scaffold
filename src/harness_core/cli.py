@@ -12,9 +12,17 @@ from . import __version__
 from .codex_adapter import handle_hook, runtime_state
 from .commit import apply_commit_plan, build_commit_plan
 from .decisions import (
+    DecisionStateError,
     create_task_decision,
+    end_task_decision,
     load_task_decision,
     save_task_decision,
+)
+from .delivery import (
+    build_platform_gate_evidence,
+    build_controlled_delivery_plan,
+    prepare_controlled_delivery_request,
+    validate_controlled_delivery_receipt,
 )
 from .initializer import apply_initialization_plan, build_initialization_plan
 from .issues import (
@@ -26,6 +34,7 @@ from .issues import (
 from .mcp_server import serve
 from .runner import run_local_task_ref
 from .push import apply_push_plan, build_push_plan
+from .policy import apply_project_policy_plan, build_project_policy_plan
 from .selection import analyze_workspace_impact
 from .workspace import workspace_state
 
@@ -141,7 +150,14 @@ def _decision(args: argparse.Namespace) -> int:
         exact_action=args.action,
         target=target,
     )
-    path = save_task_decision(repository, decision)
+    try:
+        path = save_task_decision(repository, decision)
+    except DecisionStateError as exc:
+        _print(
+            {"status": "blocked", "blocker_codes": exc.blocker_codes},
+            compact=args.json,
+        )
+        return 2
     _print(
         {
             "status": "created",
@@ -152,6 +168,39 @@ def _decision(args: argparse.Namespace) -> int:
         compact=args.json,
     )
     return 0
+
+
+def _decision_end(args: argparse.Namespace) -> int:
+    result = end_task_decision(args.repository.resolve(), args.task_id)
+    _print(result, compact=args.json)
+    return 0 if result["status"] == "expired" else 2
+
+
+def _policy_plan(args: argparse.Namespace) -> int:
+    changes = (
+        _load_document(args.changes_file)
+        if args.changes_file
+        else json.loads(args.changes_json)
+    )
+    if not isinstance(changes, dict):
+        raise ValueError("project policy changes must be a JSON object")
+    plan = build_project_policy_plan(
+        args.repository.resolve(),
+        changes=changes,
+    )
+    _print(plan, compact=args.json)
+    return 0 if not plan["blocker_codes"] else 2
+
+
+def _policy_apply(args: argparse.Namespace) -> int:
+    plan = _load_document(args.plan)
+    result = apply_project_policy_plan(
+        args.repository.resolve(),
+        plan,
+        approved_plan_digest=args.approve_plan,
+    )
+    _print(result, compact=args.json)
+    return 0 if result["status"] == "applied" else 2
 
 
 def _commit_plan(args: argparse.Namespace) -> int:
@@ -251,6 +300,63 @@ def _push_apply(args: argparse.Namespace) -> int:
     return 0 if result["status"] == "pushed" else 2
 
 
+def _delivery_plan(args: argparse.Namespace) -> int:
+    target = (
+        _load_document(args.target_file)
+        if args.target_file
+        else json.loads(args.target_json)
+    )
+    if not isinstance(target, dict):
+        raise ValueError("controlled delivery target must be a JSON object")
+    plan = build_controlled_delivery_plan(
+        args.repository.resolve(),
+        action_id=args.action,
+        target=target,
+        platform_evidence=_load_document(args.gate_file),
+    )
+    _print(plan, compact=args.json)
+    return 0 if not plan["blocker_codes"] else 2
+
+
+def _gate_evidence(args: argparse.Namespace) -> int:
+    target = _load_document(args.target_file)
+    checks_document = _load_document(args.checks_file)
+    checks = checks_document.get("checks")
+    if not isinstance(checks, list):
+        raise ValueError("platform gate checks must be a JSON array")
+    evidence = build_platform_gate_evidence(
+        action_id=args.action,
+        target=target,
+        checks=checks,
+    )
+    _print(evidence, compact=args.json)
+    return 0
+
+
+def _delivery_prepare(args: argparse.Namespace) -> int:
+    repository = args.repository.resolve()
+    result = prepare_controlled_delivery_request(
+        repository,
+        _load_document(args.plan),
+        decision=load_task_decision(repository, args.task_id),
+    )
+    _print(result, compact=args.json)
+    return 0 if result["status"] == "provider-required" else 2
+
+
+def _delivery_validate_receipt(args: argparse.Namespace) -> int:
+    blockers = validate_controlled_delivery_receipt(
+        _load_document(args.plan),
+        _load_document(args.receipt),
+    )
+    result = {
+        "status": "accepted" if not blockers else "blocked",
+        "blocker_codes": blockers,
+    }
+    _print(result, compact=args.json)
+    return 0 if not blockers else 2
+
+
 def _hook(args: argparse.Namespace) -> int:
     payload = json.load(sys.stdin)
     repository = Path(payload.get("cwd") or args.repository or ".").resolve()
@@ -333,6 +439,35 @@ def build_parser() -> argparse.ArgumentParser:
     _json_argument(decision_parser)
     decision_parser.set_defaults(handler=_decision)
 
+    decision_end_parser = subparsers.add_parser(
+        "decision-end", help="expire one exact ephemeral task decision"
+    )
+    _repository_argument(decision_end_parser)
+    decision_end_parser.add_argument("--task-id", required=True)
+    _json_argument(decision_end_parser)
+    decision_end_parser.set_defaults(handler=_decision_end)
+
+    policy_plan_parser = subparsers.add_parser(
+        "policy-plan", help="plan a versioned project-policy update"
+    )
+    _repository_argument(policy_plan_parser)
+    policy_changes = policy_plan_parser.add_mutually_exclusive_group(
+        required=True
+    )
+    policy_changes.add_argument("--changes-json")
+    policy_changes.add_argument("--changes-file", type=Path)
+    _json_argument(policy_plan_parser)
+    policy_plan_parser.set_defaults(handler=_policy_plan)
+
+    policy_apply_parser = subparsers.add_parser(
+        "policy-apply", help="atomically apply an approved project-policy plan"
+    )
+    _repository_argument(policy_apply_parser)
+    policy_apply_parser.add_argument("--plan", type=Path, required=True)
+    policy_apply_parser.add_argument("--approve-plan", required=True)
+    _json_argument(policy_apply_parser)
+    policy_apply_parser.set_defaults(handler=_policy_apply)
+
     commit_plan_parser = subparsers.add_parser(
         "commit-plan", help="create a selective commit plan without writes"
     )
@@ -409,6 +544,61 @@ def build_parser() -> argparse.ArgumentParser:
     push_apply_parser.add_argument("--task-id", required=True)
     _json_argument(push_apply_parser)
     push_apply_parser.set_defaults(handler=_push_apply)
+
+    delivery_plan_parser = subparsers.add_parser(
+        "delivery-plan",
+        help="plan one exact source-backed controlled delivery action",
+    )
+    _repository_argument(delivery_plan_parser)
+    delivery_plan_parser.add_argument("--action", required=True)
+    delivery_target = delivery_plan_parser.add_mutually_exclusive_group(
+        required=True
+    )
+    delivery_target.add_argument("--target-json")
+    delivery_target.add_argument("--target-file", type=Path)
+    delivery_plan_parser.add_argument(
+        "--gate-file",
+        type=Path,
+        required=True,
+        help="digest-bound upstream platform-gate evidence",
+    )
+    _json_argument(delivery_plan_parser)
+    delivery_plan_parser.set_defaults(handler=_delivery_plan)
+
+    gate_evidence_parser = subparsers.add_parser(
+        "gate-evidence",
+        help="bind queried upstream platform checks to one exact target",
+    )
+    gate_evidence_parser.add_argument("--action", required=True)
+    gate_evidence_parser.add_argument(
+        "--target-file", type=Path, required=True
+    )
+    gate_evidence_parser.add_argument(
+        "--checks-file", type=Path, required=True
+    )
+    _json_argument(gate_evidence_parser)
+    gate_evidence_parser.set_defaults(handler=_gate_evidence)
+
+    delivery_prepare_parser = subparsers.add_parser(
+        "delivery-prepare",
+        help="validate a controlled delivery plan before provider execution",
+    )
+    _repository_argument(delivery_prepare_parser)
+    delivery_prepare_parser.add_argument("--plan", type=Path, required=True)
+    delivery_prepare_parser.add_argument("--task-id", required=True)
+    _json_argument(delivery_prepare_parser)
+    delivery_prepare_parser.set_defaults(handler=_delivery_prepare)
+
+    delivery_receipt_parser = subparsers.add_parser(
+        "delivery-validate-receipt",
+        help="validate exact controlled delivery provider evidence",
+    )
+    delivery_receipt_parser.add_argument("--plan", type=Path, required=True)
+    delivery_receipt_parser.add_argument(
+        "--receipt", type=Path, required=True
+    )
+    _json_argument(delivery_receipt_parser)
+    delivery_receipt_parser.set_defaults(handler=_delivery_validate_receipt)
 
     run_parser = subparsers.add_parser(
         "run-task", help="run one registered routine local task_ref"

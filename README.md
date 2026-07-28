@@ -69,6 +69,7 @@ Commit、Remote Issue、Push、PR 互不共享决定。
 - Action 只有一个主域，调用只能来自仓库事实，不能由模型发明命令。
 - Controlled / Unclassified Branch 的直接写入、Commit 和交付失败关闭。
 - Remote Issue 失败不会回退为本地 Issue。
+- PR、Merge、Publish、Release、Deploy 必须同时绑定平台门禁证据和独立的本次决定。
 - 临时 Git Index 只提交确认路径，并保留无关暂存状态。
 - Coverage 缺失、重复或无来源的 `not_applicable` 都会阻断。
 

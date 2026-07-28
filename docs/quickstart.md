@@ -71,6 +71,20 @@ sdd-harness inspect . --json
 本次决定绑定 `task_id + projection_id + workspace_digest + exact_action +
 target`。例如 Commit 的决定不能授权 Remote Issue，文件变化后旧决定也不能复用。
 
+持久修改项目策略时先生成零写入计划：
+
+```text
+sdd-harness policy-plan . \
+  --changes-json '{"declarations":{"validation_profile":"strict-contracts"}}' \
+  --json > policy-plan.json
+sdd-harness policy-apply . --plan policy-plan.json \
+  --approve-plan <plan_digest>
+```
+
+应用过程会原子更新 `.harness/harness.yaml` 和治理投影；摘要、工作区或旧投影
+发生变化时返回 `PROJECT_POLICY_PLAN_STALE`。任务或精确动作完成后，用
+`sdd-harness decision-end . --task-id <task_id>` 结束临时决定。
+
 ## 4. Commit 与 Issue
 
 选择性 Commit 先生成计划：
@@ -91,7 +105,55 @@ sdd-harness issue-plan . --title "Parser error" --body "Reproduce..."
 Consumer 默认写 `.harness/issues`。配置为 GitHub 时，Harness 只准备精确的
 Provider Request；远端失败不会创建本地副本。
 
-## 5. 常见阻断
+## 5. 受控交付
+
+Pull Request、Merge、Publish、Release 和 Deploy 使用同一条确定性流程：
+
+```text
+平台门禁证据
+  → delivery-plan
+  → 针对 action_id 的独立本次决定
+  → delivery-prepare
+  → Provider 单次调用
+  → delivery-validate-receipt
+```
+
+平台门禁证据（platform-gate evidence）是上游平台事实的摘要绑定记录。例如，
+创建 PR 前先把 GitHub 查询结果保存为 `{"checks":[...]}`，再交给内核绑定：
+
+```text
+sdd-harness gate-evidence \
+  --action delivery:pull-request \
+  --target-file pr-target.json \
+  --checks-file github-checks.json \
+  --json > platform-gate.json
+```
+
+生成结果示例：
+
+```json
+{
+  "artifact_type": "platform-gate-evidence",
+  "schema_version": "2.0.0",
+  "action_id": "delivery:pull-request",
+  "provider": "github",
+  "repository": "owner/repo",
+  "target_digest": "sha256:<exact-target>",
+  "status": "passed",
+  "checks": [{
+    "name": "required-checks",
+    "status": "passed",
+    "source": "github://owner/repo/rules",
+    "evidence_id": "ruleset-22"
+  }],
+  "evidence_digest": "sha256:<canonical-evidence>"
+}
+```
+
+缺失或篡改的门禁返回 `PLATFORM_GATE_REQUIRED`。Provider 失败返回
+`REMOTE_DELIVERY_FAILED`，不会回退到其他 Provider 或本地替代动作。
+
+## 6. 常见阻断
 
 | 阻断码 | 人话解释 | 处理 |
 |---|---|---|
@@ -99,4 +161,5 @@ Provider Request；远端失败不会创建本地副本。
 | `GOVERNANCE_PROJECTION_STALE` | 项目策略或治理输入已变化 | 重新生成投影 |
 | `TASK_DECISION_STALE` | 本次决定绑定的工作区、动作或目标变了 | 重新确认精确动作 |
 | `CONTROLLED_BRANCH_GATE_REQUIRED` | 当前分支不能直接写入或交付 | 切到私有工作分支或走平台门禁 |
+| `PLATFORM_GATE_REQUIRED` | 受控交付缺少匹配的上游平台证据 | 查询平台规则并绑定证据摘要 |
 | `GOVERNANCE_COVERAGE_INCOMPLETE` | 16 Cell 存在缺失、重复或无来源 N/A | 修复来源后重新编译 |

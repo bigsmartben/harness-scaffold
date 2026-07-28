@@ -1,5 +1,5 @@
 {
-  "action_graph_digest": "sha256:0e06079f8bab81af53f2532589c55239a8c65a73d46698e8e38c3a0c72fa301e",
+  "action_graph_digest": "sha256:9abb87038bd7e9f170c878731b9b91d9fbc8c86e635a9107cdb3e327c3262cf3",
   "actions": [
     {
       "action_id": "ci:workflow:full-ci",
@@ -65,6 +65,90 @@
       "validation_floor": "T0"
     },
     {
+      "action_id": "delivery:deploy",
+      "binding": {
+        "adapter": "provider",
+        "operation": "deploy"
+      },
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "delivery",
+      "semantics": "deploy",
+      "source_refs": [
+        "harness://specification/2.0.0/actions/deploy"
+      ],
+      "validation_floor": "T3"
+    },
+    {
+      "action_id": "delivery:merge",
+      "binding": {
+        "adapter": "provider",
+        "operation": "merge"
+      },
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "delivery",
+      "semantics": "merge",
+      "source_refs": [
+        "harness://specification/2.0.0/actions/merge"
+      ],
+      "validation_floor": "T3"
+    },
+    {
+      "action_id": "delivery:publish",
+      "binding": {
+        "adapter": "provider",
+        "operation": "publish"
+      },
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "delivery",
+      "semantics": "publish",
+      "source_refs": [
+        "harness://specification/2.0.0/actions/publish"
+      ],
+      "validation_floor": "T3"
+    },
+    {
+      "action_id": "delivery:pull-request",
+      "binding": {
+        "adapter": "provider",
+        "operation": "pull-request"
+      },
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "delivery",
+      "semantics": "pull-request",
+      "source_refs": [
+        "harness://specification/2.0.0/actions/pull-request"
+      ],
+      "validation_floor": "T3"
+    },
+    {
       "action_id": "delivery:push",
       "binding": {
         "adapter": "harness-core",
@@ -82,6 +166,27 @@
       "semantics": "push",
       "source_refs": [
         "harness://specification/2.0.0/actions/push"
+      ],
+      "validation_floor": "T3"
+    },
+    {
+      "action_id": "delivery:release",
+      "binding": {
+        "adapter": "provider",
+        "operation": "release"
+      },
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "delivery",
+      "semantics": "release",
+      "source_refs": [
+        "harness://specification/2.0.0/actions/release"
       ],
       "validation_floor": "T3"
     },
@@ -258,7 +363,7 @@
   ],
   "artifact_type": "action-graph",
   "blockers": [],
-  "facts_digest": "sha256:f5c2172fc0e66ee1b515c4d335b41d2c391ddea33a378965aecd069bf156e62c",
+  "facts_digest": "sha256:79dbf4ad288e2596d1f7fe9be5d073352e67cc08c11fc646197fcf7c1f4a7ed3",
   "schema_version": "2.0.0",
-  "snapshot_digest": "sha256:4cd485198b22f51a659335c95b488eddcc0c3a97b37f9d8070896500f2ad436c"
+  "snapshot_digest": "sha256:004a395a912b618e2329cda61acb9e44eff9bedf7ef26e26e5bd03e467a8b041"
 }
