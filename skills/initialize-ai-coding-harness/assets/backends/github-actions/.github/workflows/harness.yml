@@ -165,18 +165,24 @@ jobs:
           case "$branch" in
             *..*|*//*|*/|*[\*\?\[\]\{\}\\\:\^\~\ ]*) exit 64 ;;
           esac
-          actual_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${branch}" --jq '.object.sha')"
-          test "$actual_sha" = "$EXPECTED_HEAD_SHA"
           pr_state="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json state --jq '.state')"
           pr_head="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json headRefName --jq '.headRefName')"
           pr_head_sha="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json headRefOid --jq '.headRefOid')"
           test "$pr_state" = "MERGED"
           test "$pr_head" = "$branch"
           test "$pr_head_sha" = "$EXPECTED_HEAD_SHA"
-          gh api --method DELETE "repos/${GITHUB_REPOSITORY}/git/refs/heads/${branch}"
-          if gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${branch}" >/dev/null 2>&1; then
-            exit 1
+          refs_json="$(gh api "repos/${GITHUB_REPOSITORY}/git/matching-refs/heads/${branch}")"
+          ref_count="$(jq --arg target "$TARGET" '[.[] | select(.ref == $target)] | length' <<<"$refs_json")"
+          test "$ref_count" -le 1
+          result="already-absent"
+          if test "$ref_count" = 1; then
+            actual_sha="$(jq -r --arg target "$TARGET" '.[] | select(.ref == $target) | .object.sha' <<<"$refs_json")"
+            test "$actual_sha" = "$EXPECTED_HEAD_SHA"
+            gh api --method DELETE "repos/${GITHUB_REPOSITORY}/git/refs/heads/${branch}"
+            result="deleted"
           fi
+          remaining="$(gh api "repos/${GITHUB_REPOSITORY}/git/matching-refs/heads/${branch}" | jq --arg target "$TARGET" '[.[] | select(.ref == $target)] | length')"
+          test "$remaining" = 0
           mkdir -p .harness/reports
           jq -n \
             --arg task_id "branch:delete" \
@@ -185,7 +191,8 @@ jobs:
             --arg target "$TARGET" \
             --arg commit_sha "$EXPECTED_HEAD_SHA" \
             --arg pull_request_number "$PR_NUMBER" \
-            '{task_id: $task_id, request_digest: $request_digest, run_id: $run_id, target: $target, commit_sha: $commit_sha, pull_request_number: $pull_request_number, postcondition: "remote-ref-absent", status: "completed"}' \
+            --arg result "$result" \
+            '{task_id: $task_id, request_digest: $request_digest, run_id: $run_id, target: $target, commit_sha: $commit_sha, pull_request_number: $pull_request_number, result: $result, postcondition: "remote-ref-absent", status: "completed"}' \
             > .harness/reports/branch-delete.json
       - name: Upload branch deletion evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

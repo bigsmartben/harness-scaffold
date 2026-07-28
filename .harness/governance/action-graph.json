@@ -1,5 +1,5 @@
 {
-  "action_graph_digest": "sha256:12cb00236f92468e7deb8e4aad759dc715925f61d985297762ccc23f2a54d44c",
+  "action_graph_digest": "sha256:d94b30aafd899a08a52f12face41527a67dc2d593299098986f143dcd671c61c",
   "actions": [
     {
       "action_id": "ci:github:github-workflows-delivery-gate-evidence-yml:production-gate",
@@ -214,7 +214,7 @@
   ],
   "artifact_type": "action-graph",
   "blockers": [],
-  "facts_digest": "sha256:34c40bc7c3a6599e04591cd79aa01a5a08a43ba587f3c4a046ae839d8ebb7ab7",
+  "facts_digest": "sha256:c4fc088904ec0b59077571a05464c3650028b325cf06b101df996707cfffb74a",
   "schema_version": "1.0.0",
-  "snapshot_digest": "sha256:c305cc4842733cac3222d2a806243074e488ad3d2da93cb3c263606275132baa"
+  "snapshot_digest": "sha256:31a864497940b1b335790fca7391e0b613eb39060c71db96bf1b1d7073875fb3"
 }
