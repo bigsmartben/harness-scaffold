@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://ai-coding-harness.local/schemas/tools.schema.json",
   "title": "Tool Registry",
-  "x-harness-schema-version": "0.3.0",
+  "x-harness-schema-version": "1.0.0",
   "type": "object",
   "additionalProperties": false,
   "required": ["tools"],

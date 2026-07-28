@@ -16,10 +16,8 @@ from .artifacts import (
     canonical_json_bytes,
     content_digest,
     digest_matches,
-    file_digest,
     normalized_path_digest,
     path_digest,
-    verify_digest,
 )
 from .contracts import (
     ValidationIssue,
@@ -161,7 +159,6 @@ __all__ = [
     "summarize_discovery",
     "EVIDENCE_FIELDS",
     "PlatformAdapter",
-    "file_digest",
     "create_external_request",
     "dispatch_pipeline",
     "evaluate_merge_readiness",
@@ -192,7 +189,6 @@ __all__ = [
     "validate_governance_bundle",
     "validate_postconditions",
     "validate_runtime_artifact",
-    "verify_digest",
     "governance_relevant_paths",
     "snapshot_matches",
     "compile_governance_projection",

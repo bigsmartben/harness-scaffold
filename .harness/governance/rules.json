@@ -1,0 +1,1520 @@
+{
+  "artifact_type": "governance-rules",
+  "matrix": [
+    {
+      "audience": "maintainer",
+      "subdomain": "agent-runtime"
+    },
+    {
+      "audience": "maintainer",
+      "subdomain": "engineering-runtime"
+    },
+    {
+      "audience": "maintainer",
+      "subdomain": "poc"
+    },
+    {
+      "audience": "maintainer",
+      "subdomain": "source-code"
+    },
+    {
+      "audience": "maintainer",
+      "subdomain": "test-code"
+    },
+    {
+      "audience": "maintainer",
+      "subdomain": "other-tools"
+    },
+    {
+      "audience": "consumer",
+      "subdomain": "agent-runtime"
+    },
+    {
+      "audience": "consumer",
+      "subdomain": "engineering-runtime"
+    },
+    {
+      "audience": "consumer",
+      "subdomain": "poc"
+    },
+    {
+      "audience": "consumer",
+      "subdomain": "source-code"
+    },
+    {
+      "audience": "consumer",
+      "subdomain": "test-code"
+    },
+    {
+      "audience": "consumer",
+      "subdomain": "other-tools"
+    }
+  ],
+  "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+  "rules": [
+    {
+      "action_id": null,
+      "audience": "consumer",
+      "confirmation_policy": "none",
+      "directive": "MUST inherit source-backed governance for this audience and subdomain.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "source-facts",
+        "projection-lock"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_SOURCE_MISSING",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": null,
+      "postconditions": [
+        "projection-bound"
+      ],
+      "preconditions": [
+        "governance-source-present"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "generate",
+      "rule_id": "rule:consumer:agent-runtime:inheritance",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        "harness://specification/1.0.0/subdomains/agent-runtime"
+      ],
+      "subdomains": [
+        "agent-runtime"
+      ]
+    },
+    {
+      "action_id": "ci:github:github-workflows-delivery-gate-evidence-yml:production-gate",
+      "audience": "consumer",
+      "confirmation_policy": "none",
+      "directive": "MUST use the resolved Harness action binding.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "action-request",
+        "gate-decision",
+        "action-evidence"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_PRECONDITION_FAILED",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": {
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "production-gate",
+        "workflow": ".github/workflows/delivery-gate-evidence.yml"
+      },
+      "postconditions": [
+        "binding-unchanged",
+        "evidence-complete"
+      ],
+      "preconditions": [
+        "projection-current",
+        "work-grant-current"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "enforce",
+      "rule_id": "rule:consumer:ci:github:github-workflows-delivery-gate-evidence-yml:production-gate",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        ".github/workflows/delivery-gate-evidence.yml#jobs.production-gate"
+      ],
+      "subdomains": [
+        "engineering-runtime",
+        "test-code"
+      ]
+    },
+    {
+      "action_id": "ci:github:github-workflows-harness-yml:full-ci",
+      "audience": "consumer",
+      "confirmation_policy": "none",
+      "directive": "MUST use the resolved Harness action binding.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "action-request",
+        "gate-decision",
+        "action-evidence"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_PRECONDITION_FAILED",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": {
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "full-ci",
+        "workflow": ".github/workflows/harness.yml"
+      },
+      "postconditions": [
+        "binding-unchanged",
+        "evidence-complete"
+      ],
+      "preconditions": [
+        "projection-current",
+        "work-grant-current"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "enforce",
+      "rule_id": "rule:consumer:ci:github:github-workflows-harness-yml:full-ci",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.full-ci"
+      ],
+      "subdomains": [
+        "engineering-runtime",
+        "test-code"
+      ]
+    },
+    {
+      "action_id": null,
+      "audience": "consumer",
+      "confirmation_policy": "none",
+      "directive": "MUST inherit source-backed governance for this audience and subdomain.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "source-facts",
+        "projection-lock"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_SOURCE_MISSING",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": null,
+      "postconditions": [
+        "projection-bound"
+      ],
+      "preconditions": [
+        "governance-source-present"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "generate",
+      "rule_id": "rule:consumer:engineering-runtime:inheritance",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        "harness://specification/1.0.0/subdomains/engineering-runtime"
+      ],
+      "subdomains": [
+        "engineering-runtime"
+      ]
+    },
+    {
+      "action_id": "merge:github:github-workflows-harness-yml:authorize",
+      "audience": "consumer",
+      "confirmation_policy": "once_per_delivery",
+      "directive": "MUST use the resolved Harness action binding.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "action-request",
+        "gate-decision",
+        "action-evidence"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_PRECONDITION_FAILED",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": {
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "authorize",
+        "workflow": ".github/workflows/harness.yml"
+      },
+      "postconditions": [
+        "binding-unchanged",
+        "evidence-complete"
+      ],
+      "preconditions": [
+        "projection-current",
+        "work-grant-current"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "enforce",
+      "rule_id": "rule:consumer:merge:github:github-workflows-harness-yml:authorize",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.authorize"
+      ],
+      "subdomains": [
+        "engineering-runtime",
+        "source-code"
+      ]
+    },
+    {
+      "action_id": "merge:github:github-workflows-harness-yml:merge",
+      "audience": "consumer",
+      "confirmation_policy": "once_per_delivery",
+      "directive": "MUST use the resolved Harness action binding.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "action-request",
+        "gate-decision",
+        "action-evidence"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_PRECONDITION_FAILED",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": {
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "merge",
+        "workflow": ".github/workflows/harness.yml"
+      },
+      "postconditions": [
+        "binding-unchanged",
+        "evidence-complete"
+      ],
+      "preconditions": [
+        "projection-current",
+        "work-grant-current"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "enforce",
+      "rule_id": "rule:consumer:merge:github:github-workflows-harness-yml:merge",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.merge"
+      ],
+      "subdomains": [
+        "engineering-runtime",
+        "source-code"
+      ]
+    },
+    {
+      "action_id": "merge:github:github-workflows-harness-yml:pull-request",
+      "audience": "consumer",
+      "confirmation_policy": "once_per_delivery",
+      "directive": "MUST use the resolved Harness action binding.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "action-request",
+        "gate-decision",
+        "action-evidence"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_PRECONDITION_FAILED",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": {
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "pull-request",
+        "workflow": ".github/workflows/harness.yml"
+      },
+      "postconditions": [
+        "binding-unchanged",
+        "evidence-complete"
+      ],
+      "preconditions": [
+        "projection-current",
+        "work-grant-current"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "enforce",
+      "rule_id": "rule:consumer:merge:github:github-workflows-harness-yml:pull-request",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.pull-request"
+      ],
+      "subdomains": [
+        "engineering-runtime",
+        "source-code"
+      ]
+    },
+    {
+      "action_id": null,
+      "audience": "consumer",
+      "confirmation_policy": "none",
+      "directive": "MUST inherit source-backed governance for this audience and subdomain.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "source-facts",
+        "projection-lock"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_SOURCE_MISSING",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": null,
+      "postconditions": [
+        "projection-bound"
+      ],
+      "preconditions": [
+        "governance-source-present"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "generate",
+      "rule_id": "rule:consumer:other-tools:inheritance",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        "harness://specification/1.0.0/subdomains/other-tools"
+      ],
+      "subdomains": [
+        "other-tools"
+      ]
+    },
+    {
+      "action_id": null,
+      "audience": "consumer",
+      "confirmation_policy": "none",
+      "directive": "MUST inherit source-backed governance for this audience and subdomain.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "source-facts",
+        "projection-lock"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_SOURCE_MISSING",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": null,
+      "postconditions": [
+        "projection-bound"
+      ],
+      "preconditions": [
+        "governance-source-present"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "generate",
+      "rule_id": "rule:consumer:poc:inheritance",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        "harness://specification/1.0.0/subdomains/poc"
+      ],
+      "subdomains": [
+        "poc"
+      ]
+    },
+    {
+      "action_id": "release:github:github-workflows-harness-yml:package-wheel",
+      "audience": "consumer",
+      "confirmation_policy": "once_per_delivery",
+      "directive": "MUST use the resolved Harness action binding.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "action-request",
+        "gate-decision",
+        "action-evidence"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_PRECONDITION_FAILED",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": {
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "package-wheel",
+        "workflow": ".github/workflows/harness.yml"
+      },
+      "postconditions": [
+        "binding-unchanged",
+        "evidence-complete"
+      ],
+      "preconditions": [
+        "projection-current",
+        "work-grant-current"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "enforce",
+      "rule_id": "rule:consumer:release:github:github-workflows-harness-yml:package-wheel",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.package-wheel"
+      ],
+      "subdomains": [
+        "engineering-runtime"
+      ]
+    },
+    {
+      "action_id": "release:github:github-workflows-harness-yml:release",
+      "audience": "consumer",
+      "confirmation_policy": "once_per_delivery",
+      "directive": "MUST use the resolved Harness action binding.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "action-request",
+        "gate-decision",
+        "action-evidence"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_PRECONDITION_FAILED",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": {
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "release",
+        "workflow": ".github/workflows/harness.yml"
+      },
+      "postconditions": [
+        "binding-unchanged",
+        "evidence-complete"
+      ],
+      "preconditions": [
+        "projection-current",
+        "work-grant-current"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "enforce",
+      "rule_id": "rule:consumer:release:github:github-workflows-harness-yml:release",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.release"
+      ],
+      "subdomains": [
+        "engineering-runtime"
+      ]
+    },
+    {
+      "action_id": null,
+      "audience": "consumer",
+      "confirmation_policy": "none",
+      "directive": "MUST inherit source-backed governance for this audience and subdomain.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "source-facts",
+        "projection-lock"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_SOURCE_MISSING",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": null,
+      "postconditions": [
+        "projection-bound"
+      ],
+      "preconditions": [
+        "governance-source-present"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "generate",
+      "rule_id": "rule:consumer:source-code:inheritance",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        "harness://specification/1.0.0/subdomains/source-code"
+      ],
+      "subdomains": [
+        "source-code"
+      ]
+    },
+    {
+      "action_id": null,
+      "audience": "consumer",
+      "confirmation_policy": "none",
+      "directive": "MUST inherit source-backed governance for this audience and subdomain.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "source-facts",
+        "projection-lock"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_SOURCE_MISSING",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": null,
+      "postconditions": [
+        "projection-bound"
+      ],
+      "preconditions": [
+        "governance-source-present"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "generate",
+      "rule_id": "rule:consumer:test-code:inheritance",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        "harness://specification/1.0.0/subdomains/test-code"
+      ],
+      "subdomains": [
+        "test-code"
+      ]
+    },
+    {
+      "action_id": "test:github:github-workflows-delivery-gate-evidence-yml:authorize",
+      "audience": "consumer",
+      "confirmation_policy": "none",
+      "directive": "MUST use the resolved Harness action binding.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "action-request",
+        "gate-decision",
+        "action-evidence"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_PRECONDITION_FAILED",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": {
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "authorize",
+        "workflow": ".github/workflows/delivery-gate-evidence.yml"
+      },
+      "postconditions": [
+        "binding-unchanged",
+        "evidence-complete"
+      ],
+      "preconditions": [
+        "projection-current",
+        "work-grant-current"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "enforce",
+      "rule_id": "rule:consumer:test:github:github-workflows-delivery-gate-evidence-yml:authorize",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        ".github/workflows/delivery-gate-evidence.yml#jobs.authorize"
+      ],
+      "subdomains": [
+        "engineering-runtime",
+        "test-code"
+      ]
+    },
+    {
+      "action_id": "test:github:github-workflows-routine-contracts-yml:contracts",
+      "audience": "consumer",
+      "confirmation_policy": "none",
+      "directive": "MUST use the resolved Harness action binding.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "action-request",
+        "gate-decision",
+        "action-evidence"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_PRECONDITION_FAILED",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": {
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "contracts",
+        "workflow": ".github/workflows/routine-contracts.yml"
+      },
+      "postconditions": [
+        "binding-unchanged",
+        "evidence-complete"
+      ],
+      "preconditions": [
+        "projection-current",
+        "work-grant-current"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "enforce",
+      "rule_id": "rule:consumer:test:github:github-workflows-routine-contracts-yml:contracts",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        ".github/workflows/routine-contracts.yml#jobs.contracts"
+      ],
+      "subdomains": [
+        "engineering-runtime",
+        "test-code"
+      ]
+    },
+    {
+      "action_id": "test:python-root:test",
+      "audience": "consumer",
+      "confirmation_policy": "none",
+      "directive": "MUST use the resolved Harness action binding.",
+      "enforcement_level": "verified",
+      "evidence": [
+        "action-request",
+        "gate-decision",
+        "action-evidence"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_PRECONDITION_FAILED",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": {
+        "argv": [
+          "uv",
+          "run",
+          "pytest"
+        ],
+        "cwd": ".",
+        "environment": {}
+      },
+      "postconditions": [
+        "binding-unchanged",
+        "evidence-complete"
+      ],
+      "preconditions": [
+        "projection-current",
+        "work-grant-current"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "enforce",
+      "rule_id": "rule:consumer:test:python-root:test",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        "pyproject.toml#pytest-dependency"
+      ],
+      "subdomains": [
+        "engineering-runtime",
+        "test-code"
+      ]
+    },
+    {
+      "action_id": null,
+      "audience": "maintainer",
+      "confirmation_policy": "none",
+      "directive": "MUST inherit source-backed governance for this audience and subdomain.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "source-facts",
+        "projection-lock"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_SOURCE_MISSING",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": null,
+      "postconditions": [
+        "projection-bound"
+      ],
+      "preconditions": [
+        "governance-source-present"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "generate",
+      "rule_id": "rule:maintainer:agent-runtime:inheritance",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        "harness://specification/1.0.0/subdomains/agent-runtime"
+      ],
+      "subdomains": [
+        "agent-runtime"
+      ]
+    },
+    {
+      "action_id": "ci:github:github-workflows-delivery-gate-evidence-yml:production-gate",
+      "audience": "maintainer",
+      "confirmation_policy": "none",
+      "directive": "MUST use the resolved Harness action binding.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "action-request",
+        "gate-decision",
+        "action-evidence"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_PRECONDITION_FAILED",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": {
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "production-gate",
+        "workflow": ".github/workflows/delivery-gate-evidence.yml"
+      },
+      "postconditions": [
+        "binding-unchanged",
+        "evidence-complete"
+      ],
+      "preconditions": [
+        "projection-current",
+        "work-grant-current"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "enforce",
+      "rule_id": "rule:maintainer:ci:github:github-workflows-delivery-gate-evidence-yml:production-gate",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        ".github/workflows/delivery-gate-evidence.yml#jobs.production-gate"
+      ],
+      "subdomains": [
+        "engineering-runtime",
+        "test-code"
+      ]
+    },
+    {
+      "action_id": "ci:github:github-workflows-harness-yml:full-ci",
+      "audience": "maintainer",
+      "confirmation_policy": "none",
+      "directive": "MUST use the resolved Harness action binding.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "action-request",
+        "gate-decision",
+        "action-evidence"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_PRECONDITION_FAILED",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": {
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "full-ci",
+        "workflow": ".github/workflows/harness.yml"
+      },
+      "postconditions": [
+        "binding-unchanged",
+        "evidence-complete"
+      ],
+      "preconditions": [
+        "projection-current",
+        "work-grant-current"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "enforce",
+      "rule_id": "rule:maintainer:ci:github:github-workflows-harness-yml:full-ci",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.full-ci"
+      ],
+      "subdomains": [
+        "engineering-runtime",
+        "test-code"
+      ]
+    },
+    {
+      "action_id": null,
+      "audience": "maintainer",
+      "confirmation_policy": "none",
+      "directive": "MUST inherit source-backed governance for this audience and subdomain.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "source-facts",
+        "projection-lock"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_SOURCE_MISSING",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": null,
+      "postconditions": [
+        "projection-bound"
+      ],
+      "preconditions": [
+        "governance-source-present"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "generate",
+      "rule_id": "rule:maintainer:engineering-runtime:inheritance",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        "harness://specification/1.0.0/subdomains/engineering-runtime"
+      ],
+      "subdomains": [
+        "engineering-runtime"
+      ]
+    },
+    {
+      "action_id": "merge:github:github-workflows-harness-yml:authorize",
+      "audience": "maintainer",
+      "confirmation_policy": "once_per_delivery",
+      "directive": "MUST use the resolved Harness action binding.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "action-request",
+        "gate-decision",
+        "action-evidence"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_PRECONDITION_FAILED",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": {
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "authorize",
+        "workflow": ".github/workflows/harness.yml"
+      },
+      "postconditions": [
+        "binding-unchanged",
+        "evidence-complete"
+      ],
+      "preconditions": [
+        "projection-current",
+        "work-grant-current"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "enforce",
+      "rule_id": "rule:maintainer:merge:github:github-workflows-harness-yml:authorize",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.authorize"
+      ],
+      "subdomains": [
+        "engineering-runtime",
+        "source-code"
+      ]
+    },
+    {
+      "action_id": "merge:github:github-workflows-harness-yml:merge",
+      "audience": "maintainer",
+      "confirmation_policy": "once_per_delivery",
+      "directive": "MUST use the resolved Harness action binding.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "action-request",
+        "gate-decision",
+        "action-evidence"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_PRECONDITION_FAILED",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": {
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "merge",
+        "workflow": ".github/workflows/harness.yml"
+      },
+      "postconditions": [
+        "binding-unchanged",
+        "evidence-complete"
+      ],
+      "preconditions": [
+        "projection-current",
+        "work-grant-current"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "enforce",
+      "rule_id": "rule:maintainer:merge:github:github-workflows-harness-yml:merge",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.merge"
+      ],
+      "subdomains": [
+        "engineering-runtime",
+        "source-code"
+      ]
+    },
+    {
+      "action_id": "merge:github:github-workflows-harness-yml:pull-request",
+      "audience": "maintainer",
+      "confirmation_policy": "once_per_delivery",
+      "directive": "MUST use the resolved Harness action binding.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "action-request",
+        "gate-decision",
+        "action-evidence"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_PRECONDITION_FAILED",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": {
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "pull-request",
+        "workflow": ".github/workflows/harness.yml"
+      },
+      "postconditions": [
+        "binding-unchanged",
+        "evidence-complete"
+      ],
+      "preconditions": [
+        "projection-current",
+        "work-grant-current"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "enforce",
+      "rule_id": "rule:maintainer:merge:github:github-workflows-harness-yml:pull-request",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.pull-request"
+      ],
+      "subdomains": [
+        "engineering-runtime",
+        "source-code"
+      ]
+    },
+    {
+      "action_id": null,
+      "audience": "maintainer",
+      "confirmation_policy": "none",
+      "directive": "MUST inherit source-backed governance for this audience and subdomain.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "source-facts",
+        "projection-lock"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_SOURCE_MISSING",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": null,
+      "postconditions": [
+        "projection-bound"
+      ],
+      "preconditions": [
+        "governance-source-present"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "generate",
+      "rule_id": "rule:maintainer:other-tools:inheritance",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        "harness://specification/1.0.0/subdomains/other-tools"
+      ],
+      "subdomains": [
+        "other-tools"
+      ]
+    },
+    {
+      "action_id": null,
+      "audience": "maintainer",
+      "confirmation_policy": "none",
+      "directive": "MUST inherit source-backed governance for this audience and subdomain.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "source-facts",
+        "projection-lock"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_SOURCE_MISSING",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": null,
+      "postconditions": [
+        "projection-bound"
+      ],
+      "preconditions": [
+        "governance-source-present"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "generate",
+      "rule_id": "rule:maintainer:poc:inheritance",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        "harness://specification/1.0.0/subdomains/poc"
+      ],
+      "subdomains": [
+        "poc"
+      ]
+    },
+    {
+      "action_id": "release:github:github-workflows-harness-yml:package-wheel",
+      "audience": "maintainer",
+      "confirmation_policy": "once_per_delivery",
+      "directive": "MUST use the resolved Harness action binding.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "action-request",
+        "gate-decision",
+        "action-evidence"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_PRECONDITION_FAILED",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": {
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "package-wheel",
+        "workflow": ".github/workflows/harness.yml"
+      },
+      "postconditions": [
+        "binding-unchanged",
+        "evidence-complete"
+      ],
+      "preconditions": [
+        "projection-current",
+        "work-grant-current"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "enforce",
+      "rule_id": "rule:maintainer:release:github:github-workflows-harness-yml:package-wheel",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.package-wheel"
+      ],
+      "subdomains": [
+        "engineering-runtime"
+      ]
+    },
+    {
+      "action_id": "release:github:github-workflows-harness-yml:release",
+      "audience": "maintainer",
+      "confirmation_policy": "once_per_delivery",
+      "directive": "MUST use the resolved Harness action binding.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "action-request",
+        "gate-decision",
+        "action-evidence"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_PRECONDITION_FAILED",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": {
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "release",
+        "workflow": ".github/workflows/harness.yml"
+      },
+      "postconditions": [
+        "binding-unchanged",
+        "evidence-complete"
+      ],
+      "preconditions": [
+        "projection-current",
+        "work-grant-current"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "enforce",
+      "rule_id": "rule:maintainer:release:github:github-workflows-harness-yml:release",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.release"
+      ],
+      "subdomains": [
+        "engineering-runtime"
+      ]
+    },
+    {
+      "action_id": null,
+      "audience": "maintainer",
+      "confirmation_policy": "none",
+      "directive": "MUST inherit source-backed governance for this audience and subdomain.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "source-facts",
+        "projection-lock"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_SOURCE_MISSING",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": null,
+      "postconditions": [
+        "projection-bound"
+      ],
+      "preconditions": [
+        "governance-source-present"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "generate",
+      "rule_id": "rule:maintainer:source-code:inheritance",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        "harness://specification/1.0.0/subdomains/source-code"
+      ],
+      "subdomains": [
+        "source-code"
+      ]
+    },
+    {
+      "action_id": null,
+      "audience": "maintainer",
+      "confirmation_policy": "none",
+      "directive": "MUST inherit source-backed governance for this audience and subdomain.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "source-facts",
+        "projection-lock"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_SOURCE_MISSING",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": null,
+      "postconditions": [
+        "projection-bound"
+      ],
+      "preconditions": [
+        "governance-source-present"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "generate",
+      "rule_id": "rule:maintainer:test-code:inheritance",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        "harness://specification/1.0.0/subdomains/test-code"
+      ],
+      "subdomains": [
+        "test-code"
+      ]
+    },
+    {
+      "action_id": "test:github:github-workflows-delivery-gate-evidence-yml:authorize",
+      "audience": "maintainer",
+      "confirmation_policy": "none",
+      "directive": "MUST use the resolved Harness action binding.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "action-request",
+        "gate-decision",
+        "action-evidence"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_PRECONDITION_FAILED",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": {
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "authorize",
+        "workflow": ".github/workflows/delivery-gate-evidence.yml"
+      },
+      "postconditions": [
+        "binding-unchanged",
+        "evidence-complete"
+      ],
+      "preconditions": [
+        "projection-current",
+        "work-grant-current"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "enforce",
+      "rule_id": "rule:maintainer:test:github:github-workflows-delivery-gate-evidence-yml:authorize",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        ".github/workflows/delivery-gate-evidence.yml#jobs.authorize"
+      ],
+      "subdomains": [
+        "engineering-runtime",
+        "test-code"
+      ]
+    },
+    {
+      "action_id": "test:github:github-workflows-routine-contracts-yml:contracts",
+      "audience": "maintainer",
+      "confirmation_policy": "none",
+      "directive": "MUST use the resolved Harness action binding.",
+      "enforcement_level": "documented",
+      "evidence": [
+        "action-request",
+        "gate-decision",
+        "action-evidence"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_PRECONDITION_FAILED",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": {
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "contracts",
+        "workflow": ".github/workflows/routine-contracts.yml"
+      },
+      "postconditions": [
+        "binding-unchanged",
+        "evidence-complete"
+      ],
+      "preconditions": [
+        "projection-current",
+        "work-grant-current"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "enforce",
+      "rule_id": "rule:maintainer:test:github:github-workflows-routine-contracts-yml:contracts",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        ".github/workflows/routine-contracts.yml#jobs.contracts"
+      ],
+      "subdomains": [
+        "engineering-runtime",
+        "test-code"
+      ]
+    },
+    {
+      "action_id": "test:python-root:test",
+      "audience": "maintainer",
+      "confirmation_policy": "none",
+      "directive": "MUST use the resolved Harness action binding.",
+      "enforcement_level": "verified",
+      "evidence": [
+        "action-request",
+        "gate-decision",
+        "action-evidence"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_PRECONDITION_FAILED",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "inheritance": {
+        "conflict": "fail",
+        "mode": "inherit"
+      },
+      "invocation": {
+        "argv": [
+          "uv",
+          "run",
+          "pytest"
+        ],
+        "cwd": ".",
+        "environment": {}
+      },
+      "postconditions": [
+        "binding-unchanged",
+        "evidence-complete"
+      ],
+      "preconditions": [
+        "projection-current",
+        "work-grant-current"
+      ],
+      "projection_id": "sha256:21facfc6d3be59c8b6344b0916c3d6fe8e5af6e087aea373b1805a27a33781a7",
+      "responsibility": "enforce",
+      "rule_id": "rule:maintainer:test:python-root:test",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        "pyproject.toml#pytest-dependency"
+      ],
+      "subdomains": [
+        "engineering-runtime",
+        "test-code"
+      ]
+    }
+  ],
+  "rules_digest": "sha256:4f3619362d40d090225f87b5575ac386f572def602baa8aa1ce1e50557644fc9",
+  "schema_version": "1.0.0"
+}

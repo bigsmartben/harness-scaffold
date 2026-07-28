@@ -1,4 +1,4 @@
-"""Public sdd-harness compatibility CLI and internal adapter entrypoints."""
+"""Public sdd-harness CLI and internal adapter entrypoints."""
 
 from __future__ import annotations
 
@@ -50,19 +50,6 @@ def _init(args: argparse.Namespace) -> int:
             compact=args.json,
         )
         return 2
-    if not args.yes:
-        _print(
-            {
-                "status": "confirmation-required",
-                "mode": plan["mode"],
-                "plan_digest": plan["plan_digest"],
-                "projection_id": plan["projection_id"],
-                "write_scope": plan["write_scope"],
-                "blocker_codes": ["HANDOFF_REQUIRED"],
-            },
-            compact=args.json,
-        )
-        return 2
     result = apply_initialization_plan(repository, plan)
     _print(result, compact=args.json)
     return 0 if result["status"] == "applied" else 2
@@ -86,9 +73,6 @@ def build_parser() -> argparse.ArgumentParser:
         "init", help="compile and publish a repo-first governance projection"
     )
     init_parser.add_argument("repository", nargs="?", type=Path, default=Path.cwd())
-    init_parser.add_argument(
-        "--yes", action="store_true", help="confirm the exact generated Plan"
-    )
     init_parser.add_argument("--json", action="store_true", help="emit compact JSON")
     init_parser.set_defaults(handler=_init)
 

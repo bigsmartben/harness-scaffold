@@ -30,5 +30,5 @@ description: Generate, update, inspect, or enforce the current repository's dete
 5. Use `evidence_verifier` for G6-G7.
 6. Report only accepted conclusions.
 
-If Plugin/Core/Schema compatibility is missing or the projection is stale, stay
+If the projection Schema version is unsupported or the projection is stale, stay
 in bootstrap-only mode and permit only read-only inspection and projection repair.

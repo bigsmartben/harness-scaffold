@@ -1,4 +1,4 @@
-"""Preflight and apply an explicitly approved 0.3 Harness Plan."""
+"""Preflight and apply an explicitly approved 1.0 Harness Plan."""
 
 from __future__ import annotations
 

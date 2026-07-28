@@ -11,7 +11,7 @@ from typing import Any
 
 ABSENT = "absent"
 ABSENT_DIGEST = ABSENT
-SCHEMA_VERSION = "0.3.0"
+SCHEMA_VERSION = "1.0.0"
 GOVERNANCE_SCHEMA_VERSION = "1.0.0"
 CORE_VERSION = "1.0.0"
 PROJECTION_COMPILER_VERSION = "1.0.0"
@@ -91,12 +91,6 @@ def path_digest(path: Path) -> str:
     return content_digest(path.read_bytes()) if path.is_file() else ABSENT
 
 
-def file_digest(path: Path) -> str:
-    """Compatibility name for exact file or absent-state hashing."""
-
-    return path_digest(path)
-
-
 def normalized_path_digest(repository: Path, relative_path: str) -> str:
     """Hash a normalized repository-relative file path without escaping root."""
 
@@ -117,12 +111,3 @@ def digest_matches(
     return isinstance(recorded, str) and recorded == canonical_digest(
         document, exclude_field=digest_field
     )
-
-
-def verify_digest(
-    document: dict[str, Any],
-    digest_field: str,
-) -> bool:
-    """Compatibility name for canonical runtime digest verification."""
-
-    return digest_matches(document, digest_field)

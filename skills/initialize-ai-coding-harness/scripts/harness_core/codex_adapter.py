@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from .agent_contracts import validate_agent_directory
-from .artifacts import CORE_VERSION, GOVERNANCE_SCHEMA_VERSION
+from .artifacts import GOVERNANCE_SCHEMA_VERSION
 from .contracts import validate_governance_bundle
 from .snapshot import create_repository_snapshot
 
@@ -46,11 +46,7 @@ def runtime_state(repository: Path) -> dict[str, Any]:
         current = create_repository_snapshot(repository)
         if current["snapshot_digest"] != lock.get("snapshot_digest"):
             blockers.append("GOVERNANCE_PROJECTION_STALE")
-        compatibility = repository / ".harness" / "governance" / "compatibility.json"
-        handshake = _load_json(compatibility)
-        if not handshake or handshake.get("core_version") != CORE_VERSION:
-            blockers.append("CONFIG_INVALID")
-        if not handshake or handshake.get("schema_version") != GOVERNANCE_SCHEMA_VERSION:
+        if lock.get("governance_schema_version") != GOVERNANCE_SCHEMA_VERSION:
             blockers.append("CONFIG_INVALID")
         for issue in validate_agent_directory(repository / ".codex" / "agents"):
             blockers.extend(issue["blocker_codes"])

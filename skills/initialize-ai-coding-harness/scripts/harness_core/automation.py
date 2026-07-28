@@ -230,7 +230,7 @@ def create_task_request(
     validation_level: str,
     context: dict[str, Any],
 ) -> dict[str, Any]:
-    """Create one 0.3 Task Request bound to the current execution chain."""
+    """Create one 1.0 Task Request bound to the current execution chain."""
 
     required = {
         "commit_sha",
@@ -278,7 +278,7 @@ def create_task_request(
     if not runtime_artifact_is_valid(request):
         raise ValueError(
             "EVIDENCE_BINDING_MISMATCH + HANDOFF_REQUIRED: "
-            "Task Request does not satisfy the 0.3 runtime schema"
+            "Task Request does not satisfy the 1.0 runtime schema"
         )
     return request
 

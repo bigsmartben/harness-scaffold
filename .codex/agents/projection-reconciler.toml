@@ -1,0 +1,9 @@
+# managed-by: sdd-harness
+name = "projection_reconciler"
+description = "Reconcile candidates without hiding conflicts."
+sandbox_mode = "read-only"
+developer_instructions = """
+Merge candidate artifacts deterministically.
+Preserve every conflict and gap. Never choose silently between conflicting rules.
+Do not publish or modify the repository.
+"""

@@ -211,7 +211,7 @@ def test_mcp_get_projection_is_read_only(tmp_path: Path) -> None:
     assert before == after
 
 
-def test_console_module_exposes_help_and_plan_without_writes(tmp_path: Path) -> None:
+def test_console_module_exposes_help_and_initializes_by_default(tmp_path: Path) -> None:
     help_result = subprocess.run(
         [sys.executable, "-m", "harness_core.cli", "--help"],
         text=True,
@@ -237,6 +237,24 @@ dependencies = ["pytest>=8"]
         capture_output=True,
         check=False,
     )
-    assert result.returncode == 2
-    assert json.loads(result.stdout)["status"] == "confirmation-required"
-    assert not (tmp_path / ".harness").exists()
+    assert result.returncode == 0
+    assert json.loads(result.stdout)["status"] == "applied"
+    assert (tmp_path / ".harness" / "governance").is_dir()
+    removed_handshake = "compat" + "ibility.json"
+    assert not (tmp_path / ".harness" / "governance" / removed_handshake).exists()
+
+    removed_flag = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "harness_core.cli",
+            "init",
+            str(tmp_path),
+            "--yes",
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert removed_flag.returncode == 2
+    assert "unrecognized arguments" in removed_flag.stderr

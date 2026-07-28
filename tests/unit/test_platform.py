@@ -26,7 +26,7 @@ def _request(
     return attach_digest(
         {
             "artifact_type": "task-request",
-            "schema_version": "0.3.0",
+            "schema_version": "1.0.0",
             "request_id": f"request:{category}",
             "task_id": f"{category}:default",
             "action_semantics": category,
@@ -37,7 +37,7 @@ def _request(
             "artifact_digest": artifact_digest,
             "environment": environment,
             "automation_level": "critical",
-            "policy_version": "0.3.0",
+            "policy_version": "1.0.0",
             "grant_digest": "sha256:" + "1" * 64,
             "manifest_digest": "sha256:" + "2" * 64,
             "selection_digest": "sha256:" + "3" * 64,

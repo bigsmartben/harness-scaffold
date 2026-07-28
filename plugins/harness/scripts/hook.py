@@ -1,4 +1,4 @@
-"""Compatibility wrapper for hosts that require a plugin-local hook script."""
+"""Plugin-local hook entrypoint."""
 
 from harness_core.cli import main
 

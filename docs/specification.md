@@ -1,6 +1,7 @@
 # Harness 治理规范（SSOT）
 
-版本：`1.0.0`
+目标规范：`2.0.0-draft`（已接受）
+当前运行时协议：`1.0.0`
 
 本文件是 Harness 的唯一规范来源（SSOT, Single Source of Truth）。其他文档只能解释或演示本规范，不得建立平行政策。
 
@@ -15,7 +16,7 @@ Harness 是运行在 Codex App / Codex CLI 中、绑定仓库的 Agent 治理框
 
 Audit、仓库发现、Tool Registry、Task Catalog、边界和平台门禁都是这两个职责的实现机制，不是第三个产品模式。
 
-正式入口是项目级 `$harness` Skill。`uv tool install` 与 `sdd-harness init` 是分发和初始化兼容入口；CLI、Plugin、Hook、MCP 和常驻服务都不是基础运行前提。
+正式入口是项目级 `$harness` Skill。`uv tool install` 与 `sdd-harness init` 用于分发和初始化；CLI、Plugin、Hook、MCP 和常驻服务都不是基础运行前提。
 
 ## 2. Contract-first 契约
 
@@ -24,7 +25,7 @@ Audit、仓库发现、Tool Registry、Task Catalog、边界和平台门禁都�
 - 具有稳定摘要的 Repository Snapshot（仓库快照）；
 - Manifest、Lockfile、Package Script、Workflow、仓库脚本和既有治理声明中的 source-backed facts（有来源事实）；
 - `maintainer`、`consumer` 两类 Audience（适用用户）；
-- 六类 Subdomain（治理子域）的规范来源；
+- Specification、Implementation、Verification、Delivery 四个治理域的规范来源；
 - 当前任务、Work Grant（工作授权）和执行上下文。
 
 环境中偶然存在的工具、模型推测、默认习惯和未验证命令都不是仓库事实。
@@ -62,19 +63,30 @@ Audit、仓库发现、Tool Registry、Task Catalog、边界和平台门禁都�
 
 ## 3. 治理模型
 
-每条规则同时具有三个正交维度：
+每条规则同时具有三个正交维度，形成 `2 × 2 × 4 = 16` 个最小治理单元：
 
 | 维度 | 封闭枚举 | 回答 |
 |---|---|---|
 | Audience | `maintainer`, `consumer` | 规则约束谁 |
-| Subdomain | `agent-runtime`, `engineering-runtime`, `poc`, `source-code`, `test-code`, `other-tools` | 规则约束哪类活动 |
 | Responsibility | `generate`, `enforce` | 如何产生并落实规则 |
+| Governance Domain | `specification`, `implementation`, `verification`, `delivery` | 规则约束 SDD 的哪个阶段 |
 
-`maintainer` 维护仓库本身；`consumer` 使用仓库提供的产品。例如本脚手架仓库的维护者修改 Core，而消费者用 `$harness` 初始化自己的项目。六个子域独立适用于两类用户，因此必须覆盖 2 × 6 矩阵。
+`maintainer` 维护 Harness 产品、规范和控制面；`consumer` 使用 Harness 治理目标项目。目标项目维护者在使用 Harness 时仍属于 `consumer`。
+
+四个治理域分别回答：
+
+| 治理域 | 人话定义 | 示例 |
+|---|---|---|
+| Specification | 要做什么、为什么做、怎样算完成 | “登录失败时显示可操作提示，不能泄露账号是否存在” |
+| Implementation | 如何把规范变成项目制品 | 修改登录服务和错误提示组件 |
+| Verification | 如何证明实现满足规范 | 运行最近的登录单测和接口契约测试 |
+| Delivery | 如何把已验证制品交给外部系统或用户 | Commit、Push、PR、Release 或 Deploy |
+
+Agent Control、Runtime Context、Action Binding、Tool and Platform Control、Project Profile 与 Evidence 是作用于四域的横向控制。PoC 是 `implementation` 中的开发模式；`other-tools` 不再作为分类，工具必须绑定明确 Action 和治理域。
 
 ### 3.1 Rule 最小结构
 
-每条 Rule（规则）必须包含：`rule_id`、可空的 `action_id`、`audience`、`subdomains`、`projection_id`、`source_refs`、单一 `directive`、`scope`、`inheritance`、`invocation`、`preconditions`、`postconditions`、`enforcement_level`、`confirmation_policy`、`evidence` 和 `failure`。
+每条 Rule（规则）必须包含：`rule_id`、可空的 `action_id`、`audience`、`responsibility`、`domain`、`projection_id`、`source_refs`、单一 `directive`、`scope`、`inheritance`、`invocation`、`preconditions`、`postconditions`、`enforcement_level`、`confirmation_policy`、`evidence` 和 `failure`。
 
 ### 3.2 确定性投影
 
@@ -96,7 +108,7 @@ projection_id = SHA256(
 
 - **GG-001**：发现器 MUST 只输出带 `source_ref` 与内容摘要的仓库事实。
 - **GG-002**：投影器 MUST 构建 Action Graph（行为图），不能用工具清单代替行为分类。
-- **GG-003**：编译器 MUST 为 `maintainer` 与 `consumer` 生成完整 2 × 6 覆盖；无来源或缺少绑定的格子必须成为阻断性缺口。
+- **GG-003**：编译器 MUST 为两类 Audience、两类 Responsibility 与四个 Governance Domain 生成完整 16 单元覆盖；无来源或缺少必要绑定的单元必须成为阻断性缺口。
 - **GG-004**：Bootstrap、Adopt、Update MUST 先完成零写入预检，再按精确 Plan 由单写者发布；相同输入重复运行必须为空 Diff。
 - **GG-005**：候选归并 MUST 保留冲突，不能静默选择；Schema 或跨文件校验失败时必须零写入。
 
@@ -120,6 +132,26 @@ projection_id = SHA256(
 - **CF-001**：常规只读、已登记测试和 Work Grant 范围内修改不逐工具确认。
 - **CF-002**：扩大范围按变更集确认一次；关键外部动作按交付包确认一次；确认不能替代分类、Gate 或 Evidence。
 
+### 4.5 本地工作区与最低充分验证
+
+- **LW-001**：本地目录、Staged/Unstaged/Untracked 修改和 Private Branch 属于 Local Workspace；目标范围内工作应连续推进，不逐文件或逐命令打断用户。
+- **LW-002**：本地验证默认从 T0 Inspect 开始，只在影响事实要求时升级到 T1 Nearest、T2 Component 或 T3 Full。
+- **LW-003**：正常成功时只向用户展示修改、验证强度、未运行项和剩余风险；内部 Gate、Digest 和完整 Evidence 按需展开。
+- **LW-004**：Harness MUST 保留无关用户修改，不得自动 Stage、覆盖或提交未接管内容。
+
+例如，只修改一段文档使用 T0 结构检查；修改单个函数优先运行最近的单元测试，而不是默认执行全仓库测试。
+
+### 4.6 Commit 检查点与远端 Issue
+
+- **CP-001**：`git commit` 或等价明确指令是本地工作唯一的常规可见检查点。
+- **CP-002**：Commit 前询问用户是否对当前工作区执行跨对话影响分析；分析事实范围覆盖 Staged、Unstaged 和 Untracked。
+- **CP-003**：Workspace Impact Scope 与 Commit Scope 必须分离；后者由用户确认的 Issue 格式计划决定。
+- **IS-001**：普通消费者项目未配置远端时，Issue 目标默认是本地 `.harness/issues`；项目可以显式配置远端 Provider 和 Repository。
+- **IS-002**：远端 Issue 创建、更新、评论、标签、负责人、里程碑、关闭和重开必须绑定精确 Provider、Repository、Issue 或内容，并获得当前确认。
+- **IS-003**：远端失败不得静默回退为本地 Issue，也不得改投其他远端。
+- **IS-004**：Harness 产品维护者迭代统一使用本仓库 GitHub Issues 作为唯一 SSOT；本地文档只能链接远端 Issue，不得保存可独立编辑的 Issue 正文镜像。
+- **DL-001**：Commit 授权不得继承为 Push、PR、Merge、Publish、Release 或 Deploy 授权。
+
 ## 5. G0–G7
 
 | Gate | 检查 | 典型失败 |
@@ -138,28 +170,27 @@ projection_id = SHA256(
 ```text
 主 Agent
 ├─ repo_mapper                 只读事实
-├─ governance_projector × 2×6 只读候选
+├─ governance_projector × 16   只读候选
 ├─ projection_reconciler      只读归并
 ├─ governance_validator       只读裁决
 ├─ governed_worker            单写者执行
 └─ evidence_verifier          只读验收
 ```
 
-生成链为 Snapshot → Facts → Action Graph → 2 × 6 Candidates → Reconciliation → Validation → 一次 Plan → 单点发布。执行链为 Action Request → Resolver → G0–G5 → Narrow Runner → Postconditions → G6–G7 → Evidence。
+生成链为 Snapshot → Facts → Action Graph → 16 Governance Units → Reconciliation → Validation → 一次 Plan → 单点发布。执行链为 Action Request → Resolver → G0–G5 → Narrow Runner → Postconditions → G6–G7 → Evidence。
 
-## 7. 旧规则迁移决议
+## 7. 版本迁移边界
 
-| 旧 0.3 构件 | 决议 | 1.0 定位 |
-|---|---|---|
-| Workspace / Branch Policy | 迁移 | Rule 的 G4 前置条件 |
-| Tool Registry / Task Catalog | 迁移 | source-backed Action Binding |
-| CI/CD Router / Adapter | 迁移 | Narrow Runner 与外部平台 Gate |
-| Plan / Approval 摘要链 | 替换 | Projection-bound Work Grant、Confirmation Package、Evidence |
-| Audit 独立模式 | 删除 | `generate` / `enforce` 的只读诊断视图 |
-| 通用 Agent 回退 | 删除 | `AGENT_BINDING_UNAVAILABLE` |
-| 每工具确认 | 删除 | Standing Policy + Work Grant |
-| 0.3 Schema | 兼容适配器 | 非规范 SSOT；只服务旧执行 Artifact 的内部读取 |
+四域模型是已接受的目标规范；当前 Schema、编译器和运行时仍使用 1.0 Artifact。迁移由 [Epic #22](https://github.com/bigsmartben/harness-scaffold/issues/22) 统一跟踪。
+
+迁移完成前：
+
+- 不得把目标文档描述成已经实现的运行时能力；
+- 当前 1.0 Artifact 继续按现有 Schema 失败关闭；
+- 新旧模型不得静默互转；
+- 兼容或拒绝策略必须显式、可测试；
+- Workspace / Branch Policy、Tool Registry、Task Catalog 和 Adapter 仍只是 source-backed 输入，不能形成平行政策。
 
 ## 8. 完成定义
 
-只有当前投影可追溯、六个 Agent 契约有效、2 × 6 覆盖完整、写入满足单写者、Action 通过 G0–G7 且 Evidence 摘要链完整时，Harness 才能声明治理闭环有效。
+只有当前投影可追溯、Agent 契约有效、16 个治理单元覆盖完整、写入满足单写者、Action 通过 G0–G7 且 Evidence 摘要链完整时，Harness 才能声明四域治理闭环有效。在迁移完成前，只能分别声明当前 1.0 运行时能力与已接受目标，不能混为一谈。

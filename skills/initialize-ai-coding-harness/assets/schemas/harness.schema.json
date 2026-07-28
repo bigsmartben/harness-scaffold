@@ -2,12 +2,12 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://ai-coding-harness.local/schemas/harness.schema.json",
   "title": "Harness project binding",
-  "x-harness-schema-version": "0.3.0",
+  "x-harness-schema-version": "1.0.0",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "mode", "delivery_authority", "fact_sources"],
   "properties": {
-    "schema_version": { "const": "0.3.0" },
+    "schema_version": { "const": "1.0.0" },
     "mode": { "enum": ["adopt", "bootstrap"] },
     "delivery_authority": { "const": "ci-platform" },
     "fact_sources": {

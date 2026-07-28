@@ -1,6 +1,7 @@
 # SDD Harness 维护者手册
 
-当前正式版本：`1.0.0`
+目标规范：Harness SDD 四域治理模型
+当前运行时：`1.0.0`（迁移实施由 [Epic #22](https://github.com/bigsmartben/harness-scaffold/issues/22) 跟踪）
 
 本仓库维护 SDD Harness：一个运行在 Codex App / Codex CLI 中、绑定仓库事实的 Agent 治理框架。它把仓库里的 Manifest、Workflow、测试入口和既有治理声明编译成可追溯规则，再用 Gate（门禁）和 Evidence（证据）约束执行。
 
@@ -16,6 +17,8 @@
 | 对关键外部动作要求确认和平台门禁 | 绕过分支保护直接 Push、Merge 或 Release |
 
 `docs/specification.md` 是唯一规范来源（SSOT, Single Source of Truth）。代码、测试、Plugin 和其他文档只能实现或解释该规范，不能建立平行政策。
+
+本仓库的维护者迭代统一使用 [GitHub Issues](https://github.com/bigsmartben/harness-scaffold/issues) 管理。GitHub Issue 是计划、状态、清单和验收结论的唯一权威来源；仓库内不保存可编辑的 Issue 正文副本。
 
 ## 工作方式
 
@@ -35,13 +38,15 @@ Repository Snapshot（仓库快照）
 | 确定性 Core | Schema、Resolver、Gate、摘要链 | 相同输入产生相同 `projection_id` |
 | 仓库控制面 | Action Binding、Task、边界与 Evidence | `.harness/tools.yaml` 将行为绑定到 `task_ref` |
 
-固定治理维度为两类 Audience（适用用户）× 六类 Subdomain（治理子域）：
+固定治理维度为两类 Audience（适用角色）× 两类 Responsibility（治理职责）× 四个 Governance Domain（治理域），共 16 个最小治理单元：
 
 - Audience：`maintainer`、`consumer`
-- Subdomain：`agent-runtime`、`engineering-runtime`、`poc`、`source-code`、`test-code`、`other-tools`
 - Responsibility（职责）：`generate`、`enforce`
+- Governance Domain：`specification`、`implementation`、`verification`、`delivery`
 
-例如，`uv run pytest` 不只是“系统里有 pytest”，而是一个需要来源、范围、后置条件和 Evidence 的测试行为。
+例如，用户要求“修改登录错误提示”时，Harness 分别确认需求与验收标准（Specification）、修改实现（Implementation）、执行最近的相关测试（Verification）；只有用户明确要求 Push、PR 或发布时才进入 Delivery。
+
+Agent、Runtime、Action Binding、Tool、Project Profile 和 Evidence 是横向控制，不再作为顶层分类。PoC 是 Implementation 的开发模式，不是独立治理域；`other-tools` 剩余桶被删除，任何工具都必须绑定明确 Action。
 
 ## 仓库结构与所有权
 
@@ -116,7 +121,7 @@ test:contracts
 ## 规范与状态
 
 - [治理规范 SSOT](docs/specification.md)
+- [四域模型术语与规则](docs/harness-sdd-governance-terminology.md)
 - [使用者快速上手](docs/quickstart.md)
 - [仓库结构](docs/repository-structure.md)
-- [可观察用户用例](uc.md)
-- [实施状态](plan.md)
+- [重构 Epic #22](https://github.com/bigsmartben/harness-scaffold/issues/22)

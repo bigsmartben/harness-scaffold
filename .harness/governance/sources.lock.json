@@ -1,0 +1,273 @@
+{
+  "artifact_type": "source-facts",
+  "facts": [
+    {
+      "binding_state": "declared",
+      "fact_id": "governance:subdomain:agent-runtime",
+      "fact_type": "governance-source",
+      "source_refs": [
+        "harness://specification/1.0.0/subdomains/agent-runtime"
+      ],
+      "value": {
+        "kind": "subdomain-specification",
+        "subdomain": "agent-runtime",
+        "version": "1.0.0"
+      }
+    },
+    {
+      "binding_state": "declared",
+      "fact_id": "governance:subdomain:engineering-runtime",
+      "fact_type": "governance-source",
+      "source_refs": [
+        "harness://specification/1.0.0/subdomains/engineering-runtime"
+      ],
+      "value": {
+        "kind": "subdomain-specification",
+        "subdomain": "engineering-runtime",
+        "version": "1.0.0"
+      }
+    },
+    {
+      "binding_state": "declared",
+      "fact_id": "governance:subdomain:poc",
+      "fact_type": "governance-source",
+      "source_refs": [
+        "harness://specification/1.0.0/subdomains/poc"
+      ],
+      "value": {
+        "kind": "subdomain-specification",
+        "subdomain": "poc",
+        "version": "1.0.0"
+      }
+    },
+    {
+      "binding_state": "declared",
+      "fact_id": "governance:subdomain:source-code",
+      "fact_type": "governance-source",
+      "source_refs": [
+        "harness://specification/1.0.0/subdomains/source-code"
+      ],
+      "value": {
+        "kind": "subdomain-specification",
+        "subdomain": "source-code",
+        "version": "1.0.0"
+      }
+    },
+    {
+      "binding_state": "declared",
+      "fact_id": "governance:subdomain:test-code",
+      "fact_type": "governance-source",
+      "source_refs": [
+        "harness://specification/1.0.0/subdomains/test-code"
+      ],
+      "value": {
+        "kind": "subdomain-specification",
+        "subdomain": "test-code",
+        "version": "1.0.0"
+      }
+    },
+    {
+      "binding_state": "declared",
+      "fact_id": "governance:subdomain:other-tools",
+      "fact_type": "governance-source",
+      "source_refs": [
+        "harness://specification/1.0.0/subdomains/other-tools"
+      ],
+      "value": {
+        "kind": "subdomain-specification",
+        "subdomain": "other-tools",
+        "version": "1.0.0"
+      }
+    },
+    {
+      "binding_state": "declared",
+      "fact_id": "manifest:python-root",
+      "fact_type": "manifest",
+      "source_refs": [
+        "pyproject.toml"
+      ],
+      "value": {
+        "root": ".",
+        "runtime": "python",
+        "unit_id": "python-root"
+      }
+    },
+    {
+      "binding_state": "bound",
+      "fact_id": "binding:test:python-root:test",
+      "fact_type": "action-binding",
+      "source_refs": [
+        "pyproject.toml#pytest-dependency"
+      ],
+      "value": {
+        "action_id": "test:python-root:test",
+        "argv": [
+          "uv",
+          "run",
+          "pytest"
+        ],
+        "cwd": ".",
+        "environment": {},
+        "semantics": "test"
+      }
+    },
+    {
+      "binding_state": "declared",
+      "fact_id": "binding:test:github:github-workflows-delivery-gate-evidence-yml:authorize",
+      "fact_type": "action-binding",
+      "source_refs": [
+        ".github/workflows/delivery-gate-evidence.yml#jobs.authorize"
+      ],
+      "value": {
+        "action_id": "test:github:github-workflows-delivery-gate-evidence-yml:authorize",
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "authorize",
+        "semantics": "test",
+        "workflow": ".github/workflows/delivery-gate-evidence.yml"
+      }
+    },
+    {
+      "binding_state": "declared",
+      "fact_id": "binding:ci:github:github-workflows-delivery-gate-evidence-yml:production-gate",
+      "fact_type": "action-binding",
+      "source_refs": [
+        ".github/workflows/delivery-gate-evidence.yml#jobs.production-gate"
+      ],
+      "value": {
+        "action_id": "ci:github:github-workflows-delivery-gate-evidence-yml:production-gate",
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "production-gate",
+        "semantics": "ci",
+        "workflow": ".github/workflows/delivery-gate-evidence.yml"
+      }
+    },
+    {
+      "binding_state": "declared",
+      "fact_id": "binding:merge:github:github-workflows-harness-yml:authorize",
+      "fact_type": "action-binding",
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.authorize"
+      ],
+      "value": {
+        "action_id": "merge:github:github-workflows-harness-yml:authorize",
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "authorize",
+        "semantics": "merge",
+        "workflow": ".github/workflows/harness.yml"
+      }
+    },
+    {
+      "binding_state": "declared",
+      "fact_id": "binding:ci:github:github-workflows-harness-yml:full-ci",
+      "fact_type": "action-binding",
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.full-ci"
+      ],
+      "value": {
+        "action_id": "ci:github:github-workflows-harness-yml:full-ci",
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "full-ci",
+        "semantics": "ci",
+        "workflow": ".github/workflows/harness.yml"
+      }
+    },
+    {
+      "binding_state": "declared",
+      "fact_id": "binding:merge:github:github-workflows-harness-yml:merge",
+      "fact_type": "action-binding",
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.merge"
+      ],
+      "value": {
+        "action_id": "merge:github:github-workflows-harness-yml:merge",
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "merge",
+        "semantics": "merge",
+        "workflow": ".github/workflows/harness.yml"
+      }
+    },
+    {
+      "binding_state": "declared",
+      "fact_id": "binding:release:github:github-workflows-harness-yml:package-wheel",
+      "fact_type": "action-binding",
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.package-wheel"
+      ],
+      "value": {
+        "action_id": "release:github:github-workflows-harness-yml:package-wheel",
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "package-wheel",
+        "semantics": "release",
+        "workflow": ".github/workflows/harness.yml"
+      }
+    },
+    {
+      "binding_state": "declared",
+      "fact_id": "binding:merge:github:github-workflows-harness-yml:pull-request",
+      "fact_type": "action-binding",
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.pull-request"
+      ],
+      "value": {
+        "action_id": "merge:github:github-workflows-harness-yml:pull-request",
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "pull-request",
+        "semantics": "merge",
+        "workflow": ".github/workflows/harness.yml"
+      }
+    },
+    {
+      "binding_state": "declared",
+      "fact_id": "binding:release:github:github-workflows-harness-yml:release",
+      "fact_type": "action-binding",
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.release"
+      ],
+      "value": {
+        "action_id": "release:github:github-workflows-harness-yml:release",
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "release",
+        "semantics": "release",
+        "workflow": ".github/workflows/harness.yml"
+      }
+    },
+    {
+      "binding_state": "declared",
+      "fact_id": "binding:test:github:github-workflows-routine-contracts-yml:contracts",
+      "fact_type": "action-binding",
+      "source_refs": [
+        ".github/workflows/routine-contracts.yml#jobs.contracts"
+      ],
+      "value": {
+        "action_id": "test:github:github-workflows-routine-contracts-yml:contracts",
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "contracts",
+        "semantics": "test",
+        "workflow": ".github/workflows/routine-contracts.yml"
+      }
+    },
+    {
+      "binding_state": "declared",
+      "fact_id": "governance:agents-entry",
+      "fact_type": "governance-source",
+      "source_refs": [
+        "AGENTS.md"
+      ],
+      "value": {
+        "kind": "agents-entry"
+      }
+    }
+  ],
+  "facts_digest": "sha256:bb35878e8232e31f97d18929667f884e2c28e29442422b7d8e870a6eb9cbad12",
+  "schema_version": "1.0.0",
+  "snapshot_digest": "sha256:1614d15d93c591dadd157d9207c74cdff378ebfdb8d3bc258c4532561993ba6f"
+}

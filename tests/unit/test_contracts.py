@@ -70,8 +70,7 @@ def test_all_committed_schemas_are_valid_draft_2020_12() -> None:
     for schema_path in SCHEMAS.glob("*.schema.json"):
         schema = yaml.safe_load(schema_path.read_text("utf-8"))
         Draft202012Validator.check_schema(schema)
-        expected = "1.0.0" if schema_path.name == "governance.schema.json" else "0.3.0"
-        assert schema["x-harness-schema-version"] == expected
+        assert schema["x-harness-schema-version"] == "1.0.0"
 
 
 def test_repository_self_configuration_uses_same_contracts() -> None:
