@@ -107,6 +107,170 @@ def _catalogs(
             "constraints": ["read-only"],
         }
     ]
+    github_issue_tools = [
+        {
+            "id": "github-search-issues",
+            "purpose": "search-github-issues",
+            "capability": "github-issue-read",
+            "method": "search_issues",
+            "use_when": ["find or inspect issues in an exact GitHub repository"],
+            "inputs": {"repository_full_name": "owner/name", "query": "string"},
+            "outputs": {"issues": "normalized-issue-list"},
+            "constraints": ["read-only", "exact repository required"],
+        },
+        {
+            "id": "github-create-issue",
+            "purpose": "create-confirmed-github-issue",
+            "capability": "github-issue-create",
+            "method": "create_issue",
+            "use_when": ["create one issue in an exact GitHub repository"],
+            "inputs": {
+                "repository_full_name": "owner/name",
+                "title": "string",
+                "body": "markdown",
+                "labels": "string-list",
+                "assignees": "github-user-list",
+                "milestone": "positive-integer",
+            },
+            "outputs": {"issue": "normalized-issue"},
+            "constraints": ["restate exact target", "current user confirmation required"],
+        },
+        {
+            "id": "github-update-issue",
+            "purpose": "update-confirmed-github-issue",
+            "capability": "github-issue-update",
+            "method": "update_issue",
+            "use_when": [
+                "update title, body, state, labels, assignees, or milestone",
+                "close or reopen one exact issue",
+            ],
+            "inputs": {
+                "repository_full_name": "owner/name",
+                "issue_number": "positive-integer",
+                "patch": "issue-fields",
+            },
+            "outputs": {"issue": "normalized-issue"},
+            "constraints": [
+                "restate exact issue and replacement fields",
+                "current user confirmation required",
+            ],
+        },
+        {
+            "id": "github-add-issue-comment",
+            "purpose": "add-confirmed-github-issue-comment",
+            "capability": "github-issue-comment-create",
+            "method": "add_comment_to_issue",
+            "use_when": ["add one top-level comment to an exact issue"],
+            "inputs": {
+                "repository_full_name": "owner/name",
+                "issue_number": "positive-integer",
+                "comment": "markdown",
+            },
+            "outputs": {"comment": "normalized-issue-comment"},
+            "constraints": ["restate exact target", "current user confirmation required"],
+        },
+        {
+            "id": "github-update-issue-comment",
+            "purpose": "update-confirmed-github-issue-comment",
+            "capability": "github-issue-comment-update",
+            "method": "update_issue_comment",
+            "use_when": ["replace one exact top-level issue comment"],
+            "inputs": {
+                "repository_full_name": "owner/name",
+                "comment_id": "positive-integer",
+                "comment": "markdown",
+            },
+            "outputs": {"comment": "normalized-issue-comment"},
+            "constraints": ["restate exact target", "current user confirmation required"],
+        },
+        {
+            "id": "github-add-issue-labels",
+            "purpose": "add-confirmed-github-issue-labels",
+            "capability": "github-issue-label-add",
+            "method": "add_issue_labels",
+            "use_when": ["add labels without replacing the existing label set"],
+            "inputs": {
+                "repository_full_name": "owner/name",
+                "issue_number": "positive-integer",
+                "labels": "string-list",
+            },
+            "outputs": {"issue": "normalized-issue"},
+            "constraints": ["restate exact target", "current user confirmation required"],
+        },
+        {
+            "id": "github-remove-issue-label",
+            "purpose": "remove-confirmed-github-issue-label",
+            "capability": "github-issue-label-remove",
+            "method": "remove_issue_label",
+            "use_when": ["remove one exact label from one exact issue"],
+            "inputs": {
+                "repository_full_name": "owner/name",
+                "issue_number": "positive-integer",
+                "label": "string",
+            },
+            "outputs": {"issue": "normalized-issue"},
+            "constraints": ["restate exact target", "current user confirmation required"],
+        },
+        {
+            "id": "github-add-issue-assignees",
+            "purpose": "add-confirmed-github-issue-assignees",
+            "capability": "github-issue-assignee-add",
+            "method": "add_issue_assignees",
+            "use_when": ["add assignees without replacing the existing assignee set"],
+            "inputs": {
+                "repository_full_name": "owner/name",
+                "issue_number": "positive-integer",
+                "assignees": "github-user-list",
+            },
+            "outputs": {"issue": "normalized-issue"},
+            "constraints": ["restate exact target", "current user confirmation required"],
+        },
+        {
+            "id": "github-remove-issue-assignees",
+            "purpose": "remove-confirmed-github-issue-assignees",
+            "capability": "github-issue-assignee-remove",
+            "method": "remove_issue_assignees",
+            "use_when": ["remove assignees from one exact issue"],
+            "inputs": {
+                "repository_full_name": "owner/name",
+                "issue_number": "positive-integer",
+                "assignees": "github-user-list",
+            },
+            "outputs": {"issue": "normalized-issue"},
+            "constraints": ["restate exact target", "current user confirmation required"],
+        },
+    ]
+    tools.append(
+        {
+            "id": "github-server",
+            "type": "mcp-server",
+            "purpose": "index-github-capabilities",
+            "capability": "github",
+            "action_semantics": "ordinary",
+            "entrypoint": "github-connector",
+            "invocation_mode": "direct",
+            "version_source": "connector-manifest",
+            "working_directory": "repository-root",
+            "use_when": ["discover registered GitHub tools"],
+            "do_not_use_when": ["infer authorization from connector availability"],
+            "inputs": {},
+            "outputs": {"tools": "connector-tools"},
+            "constraints": ["registry entry is not authorization"],
+        }
+    )
+    tools.extend(
+        {
+            **tool,
+            "type": "mcp-tool",
+            "action_semantics": "ordinary",
+            "server_ref": "github-server",
+            "invocation_mode": "direct",
+            "version_source": "connector-manifest",
+            "working_directory": "repository-root",
+            "do_not_use_when": ["the repository or issue target is ambiguous"],
+        }
+        for tool in github_issue_tools
+    )
     tasks: list[dict[str, Any]] = [
         {
             "id": "push:branch",
@@ -563,7 +727,7 @@ def _preservation_drift(root: Path, relative_path: str) -> list[dict[str, str]]:
             "path": relative_path,
             "field": field,
             "decision": "preserve",
-            "reason": "valid 0.3 custom configuration is authoritative",
+            "reason": "valid 1.0 custom configuration is authoritative",
         }
         for field in fields
     ]
@@ -661,7 +825,7 @@ def build_plan(
                         "path": ".harness/harness.yaml",
                         "field": "schema_version",
                         "decision": "block",
-                        "reason": "Update does not migrate pre-0.3 configuration; run Adopt or Bootstrap",
+                        "reason": "Update does not migrate pre-1.0 configuration; run Adopt or Bootstrap",
                     }
                 )
         elif mode == "update":
@@ -690,7 +854,7 @@ def build_plan(
                         "path": path,
                         "field": "*",
                         "decision": "update" if exists else "create",
-                        "reason": f"{mode} establishes the complete 0.3 contract",
+                        "reason": f"{mode} establishes the complete 1.0 contract",
                     }
                 )
             actions.append(

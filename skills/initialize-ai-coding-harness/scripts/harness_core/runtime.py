@@ -1,10 +1,10 @@
-"""Build and verify 0.3 runtime artifacts and their digest chain."""
+"""Build and verify 1.0 runtime artifacts and their digest chain."""
 
 from __future__ import annotations
 
 from typing import Any
 
-from .artifacts import SCHEMA_VERSION, attach_digest, canonical_digest, verify_digest
+from .artifacts import SCHEMA_VERSION, attach_digest, canonical_digest, digest_matches
 from .automation import CRITICAL_CATEGORIES, effective_automation
 from .contracts import runtime_artifact_is_valid
 from .platform import platform_evidence_complete
@@ -48,7 +48,7 @@ def create_change_manifest(
     build_config_changed: bool = False,
     recommended_tasks: list[str] | None = None,
 ) -> dict[str, Any]:
-    if not verify_digest(grant, "grant_digest") or grant.get("status") != "active":
+    if not digest_matches(grant, "grant_digest") or grant.get("status") != "active":
         raise ValueError("GRANT_STALE: active grant digest is required")
     return attach_digest(
         {
@@ -75,7 +75,7 @@ def create_selection_artifact(
     *,
     selection_id: str,
 ) -> dict[str, Any]:
-    if not verify_digest(manifest, "manifest_digest"):
+    if not digest_matches(manifest, "manifest_digest"):
         raise ValueError("EVIDENCE_BINDING_MISMATCH: manifest digest is invalid")
     selected_tasks = [
         {
@@ -208,7 +208,7 @@ def create_confirmation_artifact(
     *,
     confirmed_at: str,
 ) -> dict[str, Any]:
-    if not verify_digest(request, "request_digest"):
+    if not digest_matches(request, "request_digest"):
         raise ValueError("EVIDENCE_BINDING_MISMATCH: request digest is invalid")
     return {
         "artifact_type": "confirmation",
@@ -234,7 +234,7 @@ def create_platform_evidence_artifact(
     protected_ref: str | None = None,
     platform: str = "github-actions",
 ) -> dict[str, Any]:
-    if not verify_digest(request, "request_digest"):
+    if not digest_matches(request, "request_digest"):
         raise ValueError("EVIDENCE_BINDING_MISMATCH: request digest is invalid")
     return attach_digest(
         {
@@ -377,7 +377,7 @@ def validate_binding_chain(
         or grant.get("artifact_type") != "work-grant"
         or grant.get("schema_version") != SCHEMA_VERSION
         or grant.get("status") != "active"
-        or not verify_digest(grant, "grant_digest")
+        or not digest_matches(grant, "grant_digest")
     ):
         return ["GRANT_STALE", "HANDOFF_REQUIRED"]
     digest_pairs = [
@@ -385,14 +385,14 @@ def validate_binding_chain(
             runtime_artifact_is_valid(manifest)
             and manifest.get("artifact_type") == "change-manifest"
             and manifest.get("schema_version") == SCHEMA_VERSION
-            and verify_digest(manifest, "manifest_digest"),
+            and digest_matches(manifest, "manifest_digest"),
             manifest.get("grant_digest") == grant.get("grant_digest"),
         ),
         (
             runtime_artifact_is_valid(selection)
             and selection.get("artifact_type") == "selection"
             and selection.get("schema_version") == SCHEMA_VERSION
-            and verify_digest(selection, "selection_digest"),
+            and digest_matches(selection, "selection_digest"),
             selection.get("manifest_digest") == manifest.get("manifest_digest"),
         ),
         (
@@ -417,7 +417,7 @@ def validate_binding_chain(
                 runtime_artifact_is_valid(request)
                 and request.get("artifact_type") == "task-request"
                 and request.get("schema_version") == SCHEMA_VERSION
-                and verify_digest(request, "request_digest"),
+                and digest_matches(request, "request_digest"),
                 request.get("grant_digest") == grant.get("grant_digest")
                 and request.get("manifest_digest") == manifest.get("manifest_digest")
                 and request.get("selection_digest")
@@ -439,7 +439,7 @@ def validate_binding_chain(
                 runtime_artifact_is_valid(platform)
                 and platform.get("artifact_type") == "platform-evidence"
                 and platform.get("schema_version") == SCHEMA_VERSION
-                and verify_digest(platform, "platform_evidence_digest"),
+                and digest_matches(platform, "platform_evidence_digest"),
                 request is not None
                 and platform.get("request_digest") == request.get("request_digest")
                 and platform.get("commit_sha") == request.get("commit_sha")
@@ -461,7 +461,7 @@ def validate_binding_chain(
                 runtime_artifact_is_valid(evidence)
                 and evidence.get("artifact_type") == "evidence"
                 and evidence.get("schema_version") == SCHEMA_VERSION
-                and verify_digest(evidence, "evidence_digest"),
+                and digest_matches(evidence, "evidence_digest"),
                 evidence.get("grant_digest") == grant.get("grant_digest")
                 and evidence.get("manifest_digest") == manifest.get("manifest_digest")
                 and evidence.get("diff_digest") == selection.get("diff_digest")

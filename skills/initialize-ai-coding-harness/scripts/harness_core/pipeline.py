@@ -43,7 +43,7 @@ def _confirmation_matches(
         isinstance(confirmation, dict)
         and runtime_artifact_is_valid(confirmation)
         and confirmation.get("artifact_type") == "confirmation"
-        and confirmation.get("schema_version") == "0.3.0"
+        and confirmation.get("schema_version") == "1.0.0"
         and confirmation.get("confirmation_status") == "confirmed"
         and confirmation.get("request_digest") == request.get("request_digest")
     )
@@ -69,10 +69,10 @@ def evaluate_pipeline_readiness(
         not isinstance(request, dict)
         or not runtime_artifact_is_valid(request)
         or request.get("artifact_type") != "task-request"
-        or request.get("schema_version") != "0.3.0"
+        or request.get("schema_version") != "1.0.0"
         or request.get("action_semantics") != kind
         or request.get("automation_level") != "critical"
-        or request.get("policy_version") != "0.3.0"
+        or request.get("policy_version") != "1.0.0"
         or not request.get("target")
         or request_digest(request) != request.get("request_digest")
     ):

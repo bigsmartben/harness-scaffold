@@ -10,7 +10,7 @@ from .artifacts import (
     GOVERNANCE_SCHEMA_VERSION,
     attach_digest,
     canonical_digest,
-    verify_digest,
+    digest_matches,
 )
 
 
@@ -62,7 +62,7 @@ def create_action_request(
     """Create a typed request; arbitrary invocation overrides are rejected."""
 
     if (
-        not verify_digest(grant, "grant_digest")
+        not digest_matches(grant, "grant_digest")
         or grant.get("projection_id") != projection_id
         or audience not in grant.get("audiences", [])
     ):
@@ -180,9 +180,9 @@ def evaluate_gates(
         )
     )
     projection_artifacts_valid = (
-        verify_digest(projection_lock, "projection_lock_digest")
-        and verify_digest(action_graph, "action_graph_digest")
-        and verify_digest(rules, "rules_digest")
+        digest_matches(projection_lock, "projection_lock_digest")
+        and digest_matches(action_graph, "action_graph_digest")
+        and digest_matches(rules, "rules_digest")
     )
     g0 = (
         projection_artifacts_valid
@@ -214,8 +214,8 @@ def evaluate_gates(
         _in_scope(path, grant_scope) for path in request_scope
     )
     grant_valid = (
-        verify_digest(grant, "grant_digest")
-        and verify_digest(request, "request_digest")
+        digest_matches(grant, "grant_digest")
+        and digest_matches(request, "request_digest")
         and request.get("grant_digest") == grant.get("grant_digest")
         and request.get("audience") in grant.get("audiences", [])
     )
@@ -225,7 +225,7 @@ def evaluate_gates(
     confirmation_required = not scope_valid or semantics in _DELIVERY_ACTIONS
     confirmation_matches = bool(
         confirmation
-        and verify_digest(confirmation, "confirmation_digest")
+        and digest_matches(confirmation, "confirmation_digest")
         and confirmation.get("projection_id") == projection_id
         and request.get("request_digest") in confirmation.get("request_digests", [])
         and confirmation.get("decision") == "approved"

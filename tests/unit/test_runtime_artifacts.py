@@ -127,11 +127,21 @@ def _runtime_chain() -> dict[str, dict]:
     }
 
 
-def test_runtime_artifacts_validate_against_0_3_contract() -> None:
+def test_runtime_artifacts_validate_against_1_0_contract() -> None:
     chain = _runtime_chain()
 
     for artifact in chain.values():
         assert validate_runtime_artifact(artifact, SCHEMAS) == []
+
+
+def test_runtime_artifacts_reject_unsupported_protocol_without_migration() -> None:
+    artifact = _runtime_chain()["grant"]
+    artifact["schema_version"] = ".".join(("0", "3", "0"))
+    artifact = attach_digest(artifact, "grant_digest")
+
+    issues = validate_runtime_artifact(artifact, SCHEMAS)
+
+    assert any(issue.code == "SCHEMA_INVALID" for issue in issues)
 
 
 def test_runtime_chain_detects_grant_staleness() -> None:

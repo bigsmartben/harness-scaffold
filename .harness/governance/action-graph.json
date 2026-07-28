@@ -1,0 +1,201 @@
+{
+  "action_graph_digest": "sha256:58994b2e976aa2ca53417fb08560a92529c3173c1492425846bac37db14d754a",
+  "actions": [
+    {
+      "action_id": "ci:github:github-workflows-delivery-gate-evidence-yml:production-gate",
+      "binding_state": "declared",
+      "invocation": {
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "production-gate",
+        "workflow": ".github/workflows/delivery-gate-evidence.yml"
+      },
+      "mutates_repository": false,
+      "semantics": "ci",
+      "source_refs": [
+        ".github/workflows/delivery-gate-evidence.yml#jobs.production-gate"
+      ],
+      "subdomains": [
+        "engineering-runtime",
+        "test-code"
+      ]
+    },
+    {
+      "action_id": "ci:github:github-workflows-harness-yml:full-ci",
+      "binding_state": "declared",
+      "invocation": {
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "full-ci",
+        "workflow": ".github/workflows/harness.yml"
+      },
+      "mutates_repository": false,
+      "semantics": "ci",
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.full-ci"
+      ],
+      "subdomains": [
+        "engineering-runtime",
+        "test-code"
+      ]
+    },
+    {
+      "action_id": "merge:github:github-workflows-harness-yml:authorize",
+      "binding_state": "declared",
+      "invocation": {
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "authorize",
+        "workflow": ".github/workflows/harness.yml"
+      },
+      "mutates_repository": true,
+      "semantics": "merge",
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.authorize"
+      ],
+      "subdomains": [
+        "engineering-runtime",
+        "source-code"
+      ]
+    },
+    {
+      "action_id": "merge:github:github-workflows-harness-yml:merge",
+      "binding_state": "declared",
+      "invocation": {
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "merge",
+        "workflow": ".github/workflows/harness.yml"
+      },
+      "mutates_repository": true,
+      "semantics": "merge",
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.merge"
+      ],
+      "subdomains": [
+        "engineering-runtime",
+        "source-code"
+      ]
+    },
+    {
+      "action_id": "merge:github:github-workflows-harness-yml:pull-request",
+      "binding_state": "declared",
+      "invocation": {
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "pull-request",
+        "workflow": ".github/workflows/harness.yml"
+      },
+      "mutates_repository": true,
+      "semantics": "merge",
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.pull-request"
+      ],
+      "subdomains": [
+        "engineering-runtime",
+        "source-code"
+      ]
+    },
+    {
+      "action_id": "release:github:github-workflows-harness-yml:package-wheel",
+      "binding_state": "declared",
+      "invocation": {
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "package-wheel",
+        "workflow": ".github/workflows/harness.yml"
+      },
+      "mutates_repository": true,
+      "semantics": "release",
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.package-wheel"
+      ],
+      "subdomains": [
+        "engineering-runtime"
+      ]
+    },
+    {
+      "action_id": "release:github:github-workflows-harness-yml:release",
+      "binding_state": "declared",
+      "invocation": {
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "release",
+        "workflow": ".github/workflows/harness.yml"
+      },
+      "mutates_repository": true,
+      "semantics": "release",
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.release"
+      ],
+      "subdomains": [
+        "engineering-runtime"
+      ]
+    },
+    {
+      "action_id": "test:github:github-workflows-delivery-gate-evidence-yml:authorize",
+      "binding_state": "declared",
+      "invocation": {
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "authorize",
+        "workflow": ".github/workflows/delivery-gate-evidence.yml"
+      },
+      "mutates_repository": false,
+      "semantics": "test",
+      "source_refs": [
+        ".github/workflows/delivery-gate-evidence.yml#jobs.authorize"
+      ],
+      "subdomains": [
+        "engineering-runtime",
+        "test-code"
+      ]
+    },
+    {
+      "action_id": "test:github:github-workflows-routine-contracts-yml:contracts",
+      "binding_state": "declared",
+      "invocation": {
+        "adapter": "github-actions",
+        "cwd": ".",
+        "job": "contracts",
+        "workflow": ".github/workflows/routine-contracts.yml"
+      },
+      "mutates_repository": false,
+      "semantics": "test",
+      "source_refs": [
+        ".github/workflows/routine-contracts.yml#jobs.contracts"
+      ],
+      "subdomains": [
+        "engineering-runtime",
+        "test-code"
+      ]
+    },
+    {
+      "action_id": "test:python-root:test",
+      "binding_state": "bound",
+      "invocation": {
+        "argv": [
+          "uv",
+          "run",
+          "pytest"
+        ],
+        "cwd": ".",
+        "environment": {}
+      },
+      "mutates_repository": false,
+      "semantics": "test",
+      "source_refs": [
+        "pyproject.toml#pytest-dependency"
+      ],
+      "subdomains": [
+        "engineering-runtime",
+        "test-code"
+      ]
+    }
+  ],
+  "artifact_type": "action-graph",
+  "blockers": [],
+  "facts_digest": "sha256:bb35878e8232e31f97d18929667f884e2c28e29442422b7d8e870a6eb9cbad12",
+  "schema_version": "1.0.0",
+  "snapshot_digest": "sha256:1614d15d93c591dadd157d9207c74cdff378ebfdb8d3bc258c4532561993ba6f"
+}

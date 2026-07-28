@@ -68,6 +68,39 @@ def test_python_test_command_uses_only_a_source_backed_runner() -> None:
     assert command["source"] == "pyproject.toml#pytest-dependency"
 
 
+def test_generated_registry_covers_github_issue_lifecycle() -> None:
+    plan = build_plan(discover_repository(FIXTURES / "python-project"), "adopt")
+    tools = {
+        tool["id"]: tool
+        for tool in yaml.safe_load(plan["render_context"]["tools_yaml"])["tools"]
+    }
+
+    issue_tool_ids = {
+        "github-search-issues",
+        "github-create-issue",
+        "github-update-issue",
+        "github-add-issue-comment",
+        "github-update-issue-comment",
+        "github-add-issue-labels",
+        "github-remove-issue-label",
+        "github-add-issue-assignees",
+        "github-remove-issue-assignees",
+    }
+    assert issue_tool_ids <= tools.keys()
+    assert all(
+        tools[tool_id]["server_ref"] == "github-server"
+        and tools[tool_id]["action_semantics"] == "ordinary"
+        and tools[tool_id]["invocation_mode"] == "direct"
+        for tool_id in issue_tool_ids
+    )
+    assert "current user confirmation required" in tools["github-create-issue"][
+        "constraints"
+    ]
+    assert "current user confirmation required" in tools["github-update-issue"][
+        "constraints"
+    ]
+
+
 def test_delivery_semantics_inside_a_misleading_script_name_fail_closed(
     tmp_path: Path,
 ) -> None:
@@ -446,7 +479,7 @@ def test_update_preserves_custom_configuration_mode_and_adapter(
     assert all(item["field"] != "*" for item in update["drift"])
 
 
-def test_update_rejects_legacy_configuration_without_migration(
+def test_update_rejects_unsupported_protocol_without_migration(
     tmp_path: Path,
 ) -> None:
     repository = _copy_fixture(tmp_path, "node-project")
@@ -457,8 +490,9 @@ def test_update_rejects_legacy_configuration_without_migration(
         create_plan_approval(bootstrap, "2026-07-24T00:00:00Z"),
     )
     harness_path = repository / ".harness" / "harness.yaml"
+    unsupported_version = ".".join(("0", "3", "0"))
     harness_path.write_text(
-        harness_path.read_text("utf-8").replace("0.3.0", "0.2.0"),
+        harness_path.read_text("utf-8").replace("1.0.0", unsupported_version),
         encoding="utf-8",
     )
 

@@ -135,7 +135,7 @@ def main() -> int:
 
         first = json.loads(
             _run(
-                [str(executable), "init", "--yes", "--json"],
+                [str(executable), "init", "--json"],
                 cwd=fixture,
                 env=environment,
             ).stdout
@@ -143,7 +143,7 @@ def main() -> int:
         after_first = _tree_digest(fixture)
         second = json.loads(
             _run(
-                [str(executable), "init", "--yes", "--json"],
+                [str(executable), "init", "--json"],
                 cwd=fixture,
                 env=environment,
             ).stdout

@@ -1,7 +1,7 @@
-schema_version: 0.3.0
-run_id: p3-0.3-rebaseline-20260724-r2
+schema_version: 1.0.0
+run_id: p3-1.0-rebaseline-20260724-r2
 captured_at: "2026-07-24T12:54:00Z"
-purpose: P2/P3 0.3 contract and Skill regression gate
+purpose: P2/P3 1.0 contract and Skill regression gate
 does_not_advance:
   - P4 real GitHub platform acceptance
   - P5 installation or release
@@ -26,13 +26,13 @@ rubric:
   path: evals/rubrics/harness-quality.md
   passing_score: 14
   maximum_score: 16
-results_root: evals/results/p3-0.3-rebaseline-20260724-r2
+results_root: evals/results/p3-1.0-rebaseline-20260724-r2
 superseded_attempts:
-  - path: evals/results/p3-0.3-rebaseline-20260724-r1/bootstrap-empty-project
+  - path: evals/results/p3-1.0-rebaseline-20260724-r1/bootstrap-empty-project
     status: invalid
     reason: The evaluator created an unapproved target .venv before removing it, which is a mandatory write-boundary failure.
     resolution: The entire suite was rerun with the source repository interpreter and no package-manager operation in a target fixture.
-  - path: evals/results/p3-0.3-rebaseline-20260724-r1
+  - path: evals/results/p3-1.0-rebaseline-20260724-r1
     status: diagnostic
     reason: Inspect and expensive cases exposed that digest-valid but runtime-Schema-incomplete binding artifacts could reach execution checks.
     resolution: Runtime Schema validation became mandatory at Selection, authorization, binding, Pipeline, and platform boundaries before the fixed-source rerun.

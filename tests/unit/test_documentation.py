@@ -8,20 +8,14 @@ import yaml
 
 
 ROOT = Path(__file__).parents[2]
-SPEC = ROOT / "docs" / "specification.md"
-USER_CASES = ROOT / "uc.md"
 SKILL = ROOT / "skills" / "initialize-ai-coding-harness"
 MARKDOWN_LINK = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 HEADING = re.compile(r"^#{1,6}\s+(.+?)\s*#*\s*$", re.MULTILINE)
-RULE = re.compile(r"\b(?:GG|AG|GE|CF)-\d{3}\b")
-USER_CASE = re.compile(r"^## (UC-\d{3})[：:]", re.MULTILINE)
 
 
 def _documentation_files() -> list[Path]:
     return [
         ROOT / "README.md",
-        ROOT / "plan.md",
-        USER_CASES,
         *sorted((ROOT / "docs").glob("*.md")),
         ROOT / "evals" / "README.md",
     ]
@@ -79,31 +73,19 @@ def test_all_internal_markdown_links_resolve() -> None:
     assert failures == []
 
 
-def test_every_normative_rule_is_covered_by_a_user_case() -> None:
-    normative_rules = set(RULE.findall(SPEC.read_text("utf-8")))
-    user_case_text = USER_CASES.read_text("utf-8")
-    covered_rules = set(RULE.findall(user_case_text))
+def test_issue_tracking_has_no_repository_mirror() -> None:
+    readme = (ROOT / "README.md").read_text("utf-8")
 
-    assert normative_rules
-    assert normative_rules <= covered_rules
-    assert set(USER_CASE.findall(user_case_text)) == {
-        f"UC-{index:03d}" for index in range(1, 13)
-    }
-
-    sections = USER_CASE.split(user_case_text)
-    for index in range(1, len(sections), 2):
-        case_id = sections[index]
-        body = sections[index + 1]
-        assert RULE.search(body), case_id
+    assert not (ROOT / "plan.md").exists()
+    assert not (ROOT / "uc.md").exists()
+    assert "https://github.com/bigsmartben/harness-scaffold/issues" in readme
+    assert "唯一权威来源" in readme
 
 
-def test_public_status_projections_match_plan() -> None:
-    plan = (ROOT / "plan.md").read_text("utf-8")
+def test_public_status_projections_match_runtime() -> None:
     readme = (ROOT / "README.md").read_text("utf-8")
     quickstart = (ROOT / "docs" / "quickstart.md").read_text("utf-8")
 
-    assert "H01–H13" in plan
-    assert "1.0.0" in plan
     assert "1.0.0" in readme
     assert "$harness" in readme
     assert "1.0.0" in quickstart
@@ -128,7 +110,7 @@ def test_readme_and_quickstart_have_distinct_audiences() -> None:
     )
     assert "sdd-harness --version" in quickstart
     assert "sdd-harness init" in quickstart
-    assert "sdd-harness init --yes" in quickstart
+    assert "sdd-harness init ." in quickstart
     assert "$harness" in quickstart
 
 

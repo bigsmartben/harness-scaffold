@@ -12,7 +12,7 @@ import yaml
 from jsonschema import Draft202012Validator
 from referencing import Registry, Resource
 
-from .artifacts import verify_digest
+from .artifacts import digest_matches
 
 
 CONFIG_SCHEMAS = {
@@ -97,7 +97,7 @@ def _schema_registry(schema_dir: Path) -> Registry:
 def validate_runtime_artifact(
     document: Any, schema_dir: Path
 ) -> list[ValidationIssue]:
-    """Validate one 0.3 runtime artifact, including its canonical digest."""
+    """Validate one 1.0 runtime artifact, including its canonical digest."""
 
     registry = _schema_registry(schema_dir)
     issues = _validate_document(
@@ -119,7 +119,7 @@ def validate_runtime_artifact(
         "evidence": "evidence_digest",
     }
     digest_field = digest_fields.get(document.get("artifact_type"))
-    if digest_field and not verify_digest(document, digest_field):
+    if digest_field and not digest_matches(document, digest_field):
         issues.append(
             ValidationIssue(
                 "DIGEST_INVALID",
@@ -161,7 +161,7 @@ def validate_governance_artifact(
         "reconciliation-result": "result_digest",
     }
     digest_field = digest_fields.get(document.get("artifact_type"))
-    if digest_field and digest_field in document and not verify_digest(document, digest_field):
+    if digest_field and digest_field in document and not digest_matches(document, digest_field):
         issues.append(
             ValidationIssue(
                 "DIGEST_INVALID",
@@ -350,7 +350,7 @@ def validate_governance_bundle(
 
 
 def runtime_artifact_is_valid(document: Any) -> bool:
-    """Validate a runtime artifact against the Skill's bundled 0.3 schema."""
+    """Validate a runtime artifact against the Skill's bundled 1.0 schema."""
 
     return not validate_runtime_artifact(document, DEFAULT_SCHEMA_DIR)
 

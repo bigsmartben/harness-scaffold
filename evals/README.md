@@ -11,5 +11,7 @@
 模型与 Skill 摘要、Case 分数及原始产物摘要。
 
 [`runs/p3-forward-eval-20260724.yaml`](runs/p3-forward-eval-20260724.yaml) 是迁移前的
-历史基线，只用于回归对照，不是 1.0 规范来源或当前验收结论。1.0 的权威可观察行为
-来自 `uc.md`，自动化覆盖映射保存在 `coverage.yaml`。
+历史基线，只用于回归对照，不是当前规范来源或验收结论。权威目标行为来自
+[`docs/specification.md`](../docs/specification.md)；详细术语和使用者示例来自
+[`docs/harness-sdd-governance-terminology.md`](../docs/harness-sdd-governance-terminology.md)；
+自动化覆盖映射保存在 `coverage.yaml`。

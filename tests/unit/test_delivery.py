@@ -94,7 +94,7 @@ def _chain(
 ) -> dict[str, dict]:
     grant = create_work_grant(
         grant_id="grant:test",
-        goal="verify 0.3 execution",
+        goal="verify 1.0 execution",
         write_scope=["src/**"],
         merge_target="main",
         delivery_target=target,
@@ -343,7 +343,7 @@ def test_selection_rejects_schema_incomplete_manifest_even_with_valid_digest() -
     incomplete_manifest = attach_digest(
         {
             "artifact_type": "change-manifest",
-            "schema_version": "0.3.0",
+            "schema_version": "1.0.0",
             "manifest_id": "manifest:incomplete",
             "changed_paths": ["src/api.py"],
             "public_contract_changed": False,
@@ -1254,7 +1254,7 @@ def test_pipeline_rejects_schema_incomplete_request_before_dispatch() -> None:
     request = attach_digest(request, "request_digest")
     confirmation = {
         "artifact_type": "confirmation",
-        "schema_version": "0.3.0",
+        "schema_version": "1.0.0",
         "request_digest": request["request_digest"],
         "confirmation_status": "confirmed",
         "confirmed_at": "2026-07-24T00:00:00Z",

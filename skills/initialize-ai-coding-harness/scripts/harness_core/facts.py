@@ -1,4 +1,4 @@
-"""Normalize legacy discovery output into source-backed governance facts."""
+"""Normalize repository discovery output into source-backed governance facts."""
 
 from __future__ import annotations
 

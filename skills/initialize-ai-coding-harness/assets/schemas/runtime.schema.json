@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://ai-coding-harness.local/schemas/runtime.schema.json",
   "title": "AI Coding Harness runtime artifacts",
-  "x-harness-schema-version": "0.3.0",
+  "x-harness-schema-version": "1.0.0",
   "oneOf": [
     { "$ref": "#/$defs/plan" },
     { "$ref": "#/$defs/planApproval" },
@@ -16,7 +16,7 @@
   ],
   "$defs": {
     "schemaVersion": {
-      "const": "0.3.0"
+      "const": "1.0.0"
     },
     "digest": {
       "$ref": "common.schema.json#/$defs/digest"
@@ -358,7 +358,7 @@
         "artifact_digest": { "$ref": "#/$defs/nullableDigest" },
         "environment": { "$ref": "#/$defs/nullableString" },
         "automation_level": { "enum": ["routine", "expensive", "critical"] },
-        "policy_version": { "const": "0.3.0" },
+        "policy_version": { "const": "1.0.0" },
         "grant_digest": { "$ref": "#/$defs/digest" },
         "manifest_digest": { "$ref": "#/$defs/digest" },
         "selection_digest": { "$ref": "#/$defs/digest" },

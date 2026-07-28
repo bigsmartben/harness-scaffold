@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://ai-coding-harness.local/schemas/pipeline.schema.json",
   "title": "Merge or publish pipeline",
-  "x-harness-schema-version": "0.3.0",
+  "x-harness-schema-version": "1.0.0",
   "type": "object",
   "additionalProperties": false,
   "required": ["id", "kind", "requires_independent_confirmation", "stages"],

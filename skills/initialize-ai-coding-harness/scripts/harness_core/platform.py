@@ -87,7 +87,7 @@ def normalize_github_platform_evidence(
     request: dict[str, Any],
     confirmation: dict[str, Any] | None,
 ) -> dict[str, Any]:
-    """Normalize a polled GitHub run into the 0.3 Platform Evidence contract."""
+    """Normalize a polled GitHub run into the 1.0 Platform Evidence contract."""
 
     confirmation_matches = (
         isinstance(confirmation, dict)

@@ -52,7 +52,7 @@ def select_validation(
     blockers: set[str] = set()
     if not runtime_artifact_is_valid(change_manifest):
         blockers.update({"EVIDENCE_BINDING_MISMATCH", "HANDOFF_REQUIRED"})
-        reasons.append("Change Manifest does not satisfy the 0.3 runtime schema")
+        reasons.append("Change Manifest does not satisfy the 1.0 runtime schema")
     if not digest_matches(change_manifest, "manifest_digest"):
         blockers.update({"EVIDENCE_BINDING_MISMATCH", "HANDOFF_REQUIRED"})
         reasons.append("Change Manifest digest is invalid")

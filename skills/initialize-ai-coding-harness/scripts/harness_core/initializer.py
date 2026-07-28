@@ -11,7 +11,6 @@ from typing import Any
 
 from .action_graph import build_action_graph
 from .artifacts import (
-    CORE_VERSION,
     GOVERNANCE_SCHEMA_VERSION,
     attach_digest,
     canonical_json,
@@ -347,17 +346,11 @@ def build_initialization_plan(repository: Path) -> dict[str, Any]:
             if "hooks_path" in locals() and hooks_path.is_file()
             else ""
         )
-    compatibility = {
-        "core_version": CORE_VERSION,
-        "schema_version": GOVERNANCE_SCHEMA_VERSION,
-        "plugin_version": CORE_VERSION,
-    }
     files: dict[str, str] = {
         ".harness/governance/sources.lock.json": _json_text(bundle["sources"]),
         ".harness/governance/action-graph.json": _json_text(bundle["action_graph"]),
         ".harness/governance/rules.json": _json_text(bundle["rules"]),
         ".harness/governance/projection.lock.json": _json_text(bundle["projection_lock"]),
-        ".harness/governance/compatibility.json": _json_text(compatibility),
         "AGENTS.md": agents_content,
         ".codex/config.toml": config,
         ".codex/hooks.json": hooks,
