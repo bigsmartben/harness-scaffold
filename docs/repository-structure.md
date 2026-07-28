@@ -9,7 +9,6 @@ harness/
 ├── src/harness_core/
 │   ├── resources/schemas/           2.0 JSON Schema
 │   ├── resources/repo_skill/harness 唯一规范仓库 Skill
-│   ├── compat/v1/                   只读迁移检测
 │   └── *.py                         确定性内核和 CLI Adapter
 ├── plugins/harness/                 可选 Plugin；Skill 为生成副本
 ├── tests/                           单元、集成与分发契约

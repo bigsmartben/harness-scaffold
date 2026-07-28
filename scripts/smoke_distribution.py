@@ -98,7 +98,7 @@ def main() -> int:
         tools = workspace / "tools"
         binaries = workspace / "bin"
         fixture = workspace / "fixture"
-        migration = workspace / "migration"
+        unsupported = workspace / "unsupported"
         environment = os.environ.copy()
         environment.pop("PYTHONPATH", None)
         environment.pop("PYTHONHOME", None)
@@ -110,10 +110,10 @@ def main() -> int:
             }
         )
         _fixture(fixture, environment)
-        _fixture(migration, environment)
-        legacy = migration / ".harness"
-        legacy.mkdir()
-        (legacy / "harness.yaml").write_text(
+        _fixture(unsupported, environment)
+        unsupported_harness = unsupported / ".harness"
+        unsupported_harness.mkdir()
+        (unsupported_harness / "harness.yaml").write_text(
             "schema_version: 1.0.0\n"
             "mode: adopt\n"
             "standing_policy: {}\n",
@@ -219,35 +219,23 @@ def main() -> int:
         if hook_state["status"] != "active":
             raise RuntimeError("Hook defense changed governance authority")
 
-        before_migration = _tree_digest(migration)
-        required = json.loads(
+        before_unsupported = _tree_digest(unsupported)
+        rejected = json.loads(
             _run(
                 [str(executable), "init", ".", "--yes", "--json"],
-                cwd=migration,
+                cwd=unsupported,
                 env=environment,
                 expected=(2,),
             ).stdout
         )
-        if required["status"] != "migration-required":
-            raise RuntimeError("legacy --yes did not require an exact plan")
-        if before_migration != _tree_digest(migration):
-            raise RuntimeError("legacy migration planning wrote repository files")
-        migrated = json.loads(
-            _run(
-                [
-                    str(executable),
-                    "init",
-                    ".",
-                    "--approve-plan",
-                    required["plan_digest"],
-                    "--json",
-                ],
-                cwd=migration,
-                env=environment,
-            ).stdout
-        )
-        if migrated["status"] != "applied":
-            raise RuntimeError(f"approved migration failed: {migrated}")
+        if rejected["status"] != "blocked" or rejected[
+            "blocker_codes"
+        ] != ["HARNESS_RUNTIME_INCOMPATIBLE"]:
+            raise RuntimeError(
+                f"unsupported configuration was not rejected: {rejected}"
+            )
+        if before_unsupported != _tree_digest(unsupported):
+            raise RuntimeError("unsupported configuration changed repository files")
 
         python_path = _run(
             ["uv", "python", "find", "3.12"],
@@ -285,7 +273,7 @@ def main() -> int:
                     "skill_bytes": "exact",
                     "base_hooks": "disabled",
                     "optional_hooks": "configured",
-                    "migration": "digest-approved",
+                    "historical_config": "rejected-without-write",
                     "target_python_import": "unavailable",
                 },
                 indent=2,

@@ -89,7 +89,7 @@ Issue、Push、PR 分别需要决定，不得扩散授权。
 - T0：文档、只读检查；
 - T1：单个窄实现或测试；
 - T2：公共 Schema、组件级或多文件变化；
-- T3：Core、迁移、依赖、安全、CI/CD。
+- T3：Core、依赖、安全、CI/CD。
 
 Action Graph 可提高验证下限，但不能降低由路径影响得到的层级。
 
@@ -109,14 +109,14 @@ Private Branch 可直接进行仓库内动作。Controlled 或 Unclassified Bran
 Commit、Issue Write 和交付动作返回 `CONTROLLED_BRANCH_GATE_REQUIRED` 与
 `HANDOFF_REQUIRED`，并要求上游平台门禁。
 
-## 7. 初始化与迁移
+## 7. 初始化与版本边界
 
-新仓库使用 `sdd-harness init .`；自动化可使用 `--yes`。1.0 仓库首次调用只返回
-零写入迁移计划、Drift Report 和 `plan_digest`。只有
-`--approve-plan <plan_digest>` 可以应用，1.0 迁移拒绝 `--yes`。
+新仓库使用 `sdd-harness init .`；自动化可使用 `--yes`，也可用
+`--approve-plan <plan_digest>` 接受一份未变化的精确计划。
 
-旧六类模型只作为只读迁移输入，不做字段级静默映射。2.0 从当前仓库事实重新
-编译。旧代码不得由默认包入口导出或执行。
+Harness 2.0 不提供历史版本兼容、字段映射或迁移工具。目标仓库存在非 2.0
+配置时，初始化必须零写入返回 `HARNESS_RUNTIME_INCOMPATIBLE`。无效的 2.0 配置
+返回 `CONFIG_INVALID`，不得静默替换。
 
 ## 8. 完成定义
 

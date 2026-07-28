@@ -17,11 +17,9 @@ sdd-harness init .
 sdd-harness init . --yes
 ```
 
-1.0 仓库例外：第一次调用只报告迁移范围，且拒绝 `--yes`。确认摘要未变化后：
-
-```text
-sdd-harness init . --approve-plan sha256:<plan-digest>
-```
+Harness 2.0 不兼容历史配置。如果目标仓库已有非 2.0
+`.harness/harness.yaml`，初始化零写入返回
+`HARNESS_RUNTIME_INCOMPATIBLE`；需要用户自行移除或重建旧控制面。
 
 初始化生成：
 
@@ -61,7 +59,7 @@ sdd-harness inspect . --json
 | 文档或惰性文本 | T0 | `docs/quickstart.md` |
 | 窄实现或单测试 | T1 | `src/widget.py` |
 | 公共 Schema 或多文件组件 | T2 | `schemas/public.schema.json` |
-| 核心、迁移、依赖、CI/CD | T3 | `src/harness_core/projection.py` |
+| 核心、依赖、安全、CI/CD | T3 | `src/harness_core/projection.py` |
 
 ## 3. 项目策略与本次决定
 

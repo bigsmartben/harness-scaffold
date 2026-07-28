@@ -61,17 +61,18 @@ def test_with_hooks_is_explicit_and_does_not_change_runtime_authority(
     assert state["hook_defense"] == "configured"
 
 
-def test_v1_migration_is_zero_write_then_digest_approved(
+def test_unsupported_config_is_rejected_without_writes(
     private_repository: Path,
+    capsys,
 ) -> None:
     harness = private_repository / ".harness"
     harness.mkdir()
-    legacy = (
+    unsupported = (
         "schema_version: 1.0.0\n"
         "mode: adopt\n"
         "standing_policy: {}\n"
     )
-    (harness / "harness.yaml").write_text(legacy, encoding="utf-8")
+    (harness / "harness.yaml").write_text(unsupported, encoding="utf-8")
     before = {
         path.relative_to(private_repository).as_posix(): path.read_bytes()
         for path in private_repository.rglob("*")
@@ -84,37 +85,39 @@ def test_v1_migration_is_zero_write_then_digest_approved(
         if path.is_file() and ".git" not in path.parts
     }
     assert before == after_plan
-    assert plan["migration_from"] == "1.0.0"
-    assert plan["drift_report"]
-
-    refused = apply_initialization_plan(
-        private_repository, plan, approved_plan_digest=None
-    )
-    assert refused["blocker_codes"] == ["MIGRATION_REQUIRED"]
-    applied = apply_initialization_plan(
+    assert plan["blocker_codes"] == ["HARNESS_RUNTIME_INCOMPATIBLE"]
+    blocked = apply_initialization_plan(
         private_repository,
         plan,
         approved_plan_digest=plan["plan_digest"],
     )
-    assert applied["status"] == "applied"
-    assert runtime_state(private_repository)["status"] == "active"
+    assert blocked["blocker_codes"] == ["HARNESS_RUNTIME_INCOMPATIBLE"]
+    assert main(
+        ["init", str(private_repository), "--yes", "--json"]
+    ) == 2
+    output = json.loads(capsys.readouterr().out)
+    assert output["status"] == "blocked"
+    assert output["blocker_codes"] == ["HARNESS_RUNTIME_INCOMPATIBLE"]
 
 
-def test_migration_yes_is_refused_and_changed_plan_is_stale(
+def test_invalid_current_config_is_not_replaced(
     private_repository: Path,
-    capsys,
 ) -> None:
     harness = private_repository / ".harness"
     harness.mkdir()
     (harness / "harness.yaml").write_text(
-        "schema_version: 1.0.0\nmode: adopt\n",
+        "schema_version: 2.0.0\nmode: adopt\n",
         encoding="utf-8",
     )
     plan = build_initialization_plan(private_repository)
-    assert main(
-        ["init", str(private_repository), "--yes", "--json"]
-    ) == 2
-    assert json.loads(capsys.readouterr().out)["status"] == "migration-required"
+    assert plan["blocker_codes"] == ["CONFIG_INVALID"]
+
+
+def test_changed_initialization_plan_is_stale(
+    private_repository: Path,
+) -> None:
+    plan = build_initialization_plan(private_repository)
+    assert plan["blocker_codes"] == []
     (private_repository / "pyproject.toml").write_text(
         "[project]\nname='changed'\nversion='0.2.0'\n",
         encoding="utf-8",
@@ -124,4 +127,4 @@ def test_migration_yes_is_refused_and_changed_plan_is_stale(
         plan,
         approved_plan_digest=plan["plan_digest"],
     )
-    assert result["blocker_codes"] == ["MIGRATION_PLAN_STALE"]
+    assert result["blocker_codes"] == ["INITIALIZATION_PLAN_STALE"]

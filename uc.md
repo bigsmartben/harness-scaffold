@@ -14,5 +14,5 @@
 | UC-008 Local Issue | Consumer 默认 Provider | 写入 `.harness/issues` |
 | UC-009 Remote Issue | 精确 Repo / Title / Body | 只准备 Provider Request；失败不回退 |
 | UC-010 Controlled Branch | `refs/heads/main` 直接写/Commit | `CONTROLLED_BRANCH_GATE_REQUIRED` |
-| UC-011 1.0 迁移 | 首次 `init --yes` | 零写入计划；必须用精确摘要批准 |
+| UC-011 历史配置 | 非 2.0 `harness.yaml` | 零写入返回 `HARNESS_RUNTIME_INCOMPATIBLE` |
 | UC-012 可选 Hook | `init --with-hooks` | 增加纵深防御，治理 SSOT 不变 |

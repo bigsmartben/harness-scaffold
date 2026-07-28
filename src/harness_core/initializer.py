@@ -1,4 +1,4 @@
-"""Plan-bound Harness 2.0 initialization and explicit migration."""
+"""Plan-bound Harness 2.0 initialization."""
 
 from __future__ import annotations
 
@@ -11,6 +11,8 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 from .action_graph import build_action_graph
 from .artifacts import (
     CORE_VERSION,
@@ -18,7 +20,6 @@ from .artifacts import (
     attach_digest,
     path_digest,
 )
-from .compat.v1 import detect_harness_version, migration_drift_report
 from .contracts import validate_governance_bundle, validate_project_config
 from .discovery import discover_repository
 from .facts import extract_source_facts
@@ -321,16 +322,23 @@ def build_initialization_plan(
     with_hooks: bool = False,
 ) -> dict[str, Any]:
     root = repository.resolve()
-    legacy_version = detect_harness_version(root)
-    migration_from = (
-        legacy_version
-        if legacy_version is not None and legacy_version != SCHEMA_VERSION
-        else None
-    )
     existing = load_project_config(root)
     config_blockers: list[str] = []
-    if legacy_version == SCHEMA_VERSION and existing is None:
-        config_blockers.append("CONFIG_INVALID")
+    config_path = root / ".harness" / "harness.yaml"
+    if config_path.is_file() and existing is None:
+        try:
+            raw_config = yaml.safe_load(
+                config_path.read_text(encoding="utf-8")
+            )
+        except (OSError, yaml.YAMLError):
+            raw_config = None
+        if (
+            isinstance(raw_config, dict)
+            and raw_config.get("schema_version") != SCHEMA_VERSION
+        ):
+            config_blockers.append("HARNESS_RUNTIME_INCOMPATIBLE")
+        else:
+            config_blockers.append("CONFIG_INVALID")
     mode = _target_mode(root)
     config = existing or default_project_config(
         mode=mode, hooks_enabled=with_hooks
@@ -404,13 +412,7 @@ def build_initialization_plan(
     plan = {
         "artifact_type": "initialization-plan",
         "schema_version": SCHEMA_VERSION,
-        "mode": "migrate" if migration_from else (
-            "update" if existing else mode
-        ),
-        "migration_from": migration_from,
-        "drift_report": (
-            migration_drift_report(root) if migration_from else []
-        ),
+        "mode": "update" if existing else mode,
         "preflight_snapshot_digest": preflight["snapshot_digest"],
         "projection_id": bundle["projection_lock"]["projection_id"],
         "with_hooks": hooks_enabled,
@@ -437,22 +439,17 @@ def apply_initialization_plan(
     )["plan_digest"]:
         return {
             "status": "blocked",
-            "blocker_codes": ["MIGRATION_PLAN_STALE"],
+            "blocker_codes": ["INITIALIZATION_PLAN_STALE"],
         }
     if approved_plan_digest != plan["plan_digest"]:
-        code = (
-            "MIGRATION_REQUIRED"
-            if plan.get("migration_from")
-            else "HANDOFF_REQUIRED"
-        )
-        return {"status": "blocked", "blocker_codes": [code]}
+        return {"status": "blocked", "blocker_codes": ["HANDOFF_REQUIRED"]}
     if plan.get("blocker_codes"):
         return {"status": "blocked", "blocker_codes": plan["blocker_codes"]}
     current = create_repository_snapshot(root)
     if current["snapshot_digest"] != plan.get("preflight_snapshot_digest"):
         return {
             "status": "blocked",
-            "blocker_codes": ["MIGRATION_PLAN_STALE"],
+            "blocker_codes": ["INITIALIZATION_PLAN_STALE"],
         }
 
     resolved: list[tuple[Path, str | None, bool, str]] = []
@@ -469,7 +466,7 @@ def apply_initialization_plan(
         if path_digest(target) != action["expected_digest"]:
             return {
                 "status": "blocked",
-                "blocker_codes": ["MIGRATION_PLAN_STALE"],
+                "blocker_codes": ["INITIALIZATION_PLAN_STALE"],
             }
         resolved.append(
             (
@@ -538,7 +535,6 @@ def apply_initialization_plan(
     return {
         "status": "applied",
         "mode": plan["mode"],
-        "migration_from": plan["migration_from"],
         "projection_id": plan["projection_id"],
         "plan_digest": plan["plan_digest"],
         "with_hooks": plan["with_hooks"],

@@ -12,7 +12,7 @@ tools:
     version_source: pyproject.toml#project.version
     working_directory: repository-root
     use_when:
-      - inspect, initialize, migrate, or run a registered local task_ref
+      - inspect, initialize, or run a registered local task_ref
     do_not_use_when:
       - bypass a controlled delivery boundary
     inputs:

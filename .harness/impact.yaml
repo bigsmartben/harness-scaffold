@@ -36,4 +36,4 @@ rules:
     tasks:
       - test:contracts
       - test:distribution-smoke
-    reason: core, dependency, migration, and CI/CD changes require full local evidence
+    reason: core, dependency, security, and CI/CD changes require full local evidence

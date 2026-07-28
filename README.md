@@ -27,7 +27,7 @@ $harness 修改解析器并运行最低充分验证
 ```mermaid
 flowchart LR
     A["uv tool install"] --> B["隔离的 sdd-harness"]
-    B --> C["init / migrate"]
+    B --> C["init"]
     C --> D["AGENTS.md"]
     C --> E[".agents/skills/harness"]
     C --> F[".harness/harness.yaml"]

@@ -10,10 +10,10 @@
 | T0–T3 | `selection.py` | 文档、实现、Schema、Core/CI 表驱动测试 |
 | Commit | `commit.py` | 临时 Index、无关暂存、部分暂存、受控分支 |
 | Issue Provider | `issues.py` | Local / GitHub 分离、精确 receipt、无回退 |
-| 1.0 迁移 | `compat/v1`、`initializer.py` | 首次零写入、摘要批准、变化拒绝 |
+| 版本边界 | `initializer.py` | 非 2.0 配置零写入拒绝，不提供历史迁移 |
 | 分发 | `pyproject.toml`、`scripts/smoke_distribution.py` | `uv tool install` 隔离环境验收 |
 
 Issue 回写只引用通过的自动化 Evidence；本地未通过或未执行的检查不得标记完成。
 
-当前本地结果：`test:contracts` 22 项通过，`test:distribution-smoke` 通过。GitHub
+当前本地结果：`test:contracts` 23 项通过，`test:distribution-smoke` 通过。GitHub
 Full CI 与远端 Issue 回写尚未执行。

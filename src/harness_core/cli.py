@@ -75,59 +75,33 @@ def _init(args: argparse.Namespace) -> int:
             compact=args.json,
         )
         return 2
-    if plan["migration_from"]:
-        if args.yes or args.approve_plan is None:
-            _print(
-                {
-                    "status": "migration-required",
-                    "migration_from": plan["migration_from"],
-                    "plan_digest": plan["plan_digest"],
-                    "write_scope": plan["write_scope"],
-                    "drift_report": plan["drift_report"],
-                    "blocker_codes": ["MIGRATION_REQUIRED"],
-                },
-                compact=args.json,
-            )
-            return 2
-        if args.approve_plan != plan["plan_digest"]:
-            _print(
-                {
-                    "status": "blocked",
-                    "plan_digest": plan["plan_digest"],
-                    "blocker_codes": ["MIGRATION_PLAN_STALE"],
-                },
-                compact=args.json,
-            )
-            return 2
-        approval = args.approve_plan
-    else:
-        approval = args.approve_plan or (
-            plan["plan_digest"] if args.yes else None
+    approval = args.approve_plan or (
+        plan["plan_digest"] if args.yes else None
+    )
+    if approval is None:
+        _print(
+            {
+                "status": "confirmation-required",
+                "mode": plan["mode"],
+                "plan_digest": plan["plan_digest"],
+                "projection_id": plan["projection_id"],
+                "write_scope": plan["write_scope"],
+                "with_hooks": plan["with_hooks"],
+                "blocker_codes": ["HANDOFF_REQUIRED"],
+            },
+            compact=args.json,
         )
-        if approval is None:
-            _print(
-                {
-                    "status": "confirmation-required",
-                    "mode": plan["mode"],
-                    "plan_digest": plan["plan_digest"],
-                    "projection_id": plan["projection_id"],
-                    "write_scope": plan["write_scope"],
-                    "with_hooks": plan["with_hooks"],
-                    "blocker_codes": ["HANDOFF_REQUIRED"],
-                },
-                compact=args.json,
-            )
-            return 2
-        if approval != plan["plan_digest"]:
-            _print(
-                {
-                    "status": "blocked",
-                    "plan_digest": plan["plan_digest"],
-                    "blocker_codes": ["MIGRATION_PLAN_STALE"],
-                },
-                compact=args.json,
-            )
-            return 2
+        return 2
+    if approval != plan["plan_digest"]:
+        _print(
+            {
+                "status": "blocked",
+                "plan_digest": plan["plan_digest"],
+                "blocker_codes": ["INITIALIZATION_PLAN_STALE"],
+            },
+            compact=args.json,
+        )
+        return 2
     result = apply_initialization_plan(
         repository, plan, approved_plan_digest=approval
     )
