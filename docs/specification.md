@@ -1,165 +1,125 @@
-# Harness 治理规范（SSOT）
+# Harness 2.0 规范
 
-版本：`1.0.0`
+版本：`2.0.0`
 
-本文件是 Harness 的唯一规范来源（SSOT, Single Source of Truth）。其他文档只能解释或演示本规范，不得建立平行政策。
+## 1. 产品边界
 
-## 1. 产品定义
+Harness 是仓库脚手架，不是常驻 Agent 平台。公共闭环是：
 
-Harness 是运行在 Codex App / Codex CLI 中、绑定仓库的 Agent 治理框架。它只有两个顶层职责：
+```text
+uv tool install → sdd-harness init → repository Skill → Codex App / CLI
+```
 
-| 职责 | 中文 | 可验证结果 |
+Python Core 是唯一确定性权威。Skill 解释工作流；Hook、Plugin、MCP 只提供可选
+加固，并通过 PATH 上的 `sdd-harness` 和 JSON 契约调用 Core。
+
+## 2. 公共契约
+
+| 契约项 | 规则 | 失败语义 |
 |---|---|---|
-| `generate` | 生成治理规范 | 从固定仓库快照编译出可追溯的治理投影 |
-| `enforce` | 确保规范执行 | 以投影驱动 Action 解析、G0–G7 与 Evidence |
+| 输入 | 仓库快照、来源事实、版本化项目策略 | 来源缺失时失败关闭 |
+| 输出 | Action Graph、16 Cell Projection、Coverage、精确动作结果 | Schema 或摘要不符不得接受 |
+| 边界 | 模型可解释与修改业务代码，但不能生成权威 Projection、Coverage、Gate Decision | 返回稳定 blocker code |
+| 版本 | Core、Schema、Skill 必须都是 `2.0.0` | `HARNESS_RUNTIME_INCOMPATIBLE` |
 
-Audit、仓库发现、Tool Registry、Task Catalog、边界和平台门禁都是这两个职责的实现机制，不是第三个产品模式。
+### 2.1 四域
 
-正式入口是项目级 `$harness` Skill。`uv tool install` 与 `sdd-harness init` 是分发和初始化兼容入口；CLI、Plugin、Hook、MCP 和常驻服务都不是基础运行前提。
+每个 Action 只有一个主域：
 
-## 2. Contract-first 契约
-
-### 2.1 输入
-
-- 具有稳定摘要的 Repository Snapshot（仓库快照）；
-- Manifest、Lockfile、Package Script、Workflow、仓库脚本和既有治理声明中的 source-backed facts（有来源事实）；
-- `maintainer`、`consumer` 两类 Audience（适用用户）；
-- 六类 Subdomain（治理子域）的规范来源；
-- 当前任务、Work Grant（工作授权）和执行上下文。
-
-环境中偶然存在的工具、模型推测、默认习惯和未验证命令都不是仓库事实。
-
-### 2.2 输出
-
-- `.harness/governance/sources.lock.json`：事实与来源锁；
-- `.harness/governance/action-graph.json`：行为及调用关系；
-- `.harness/governance/rules.json`：规范化规则 SSOT；
-- `.harness/governance/projection.lock.json`：投影输入和 `projection_id`；
-- `AGENTS.md`、`.codex/`、`.agents/skills/harness/`：Codex 运行时发布面；
-- Gate Decision、Postcondition 结果和摘要链 Evidence；
-- 失败时的稳定 blocker code（阻断码）与 Handoff（移交）状态。
-
-### 2.3 边界条件
-
-- Harness 只治理仓库内 Agent 行为，不定义产品需求或业务事实。
-- 工具存在不等于仓库使用；仓库使用不等于允许调用；执行成功不等于治理结论有效。
-- 生成器不能把“已生成”当作“已执行”；验证器不能静默修复输入。
-- Agent 只能提交 `projection_id`、Work Grant、`action_id`、Audience、Scope 和类型化参数，不能覆盖 `command`、`argv`、`cwd`、环境变量或后置条件。
-- 治理状态只存在于仓库 Artifact；Session、Memory、Transcript 和持久化 Agent 不得保存授权。
-- 无法证明旁路被阻断时，规则最多是 `verified`，不得标为 `enforced`。
-
-### 2.4 失败语义
-
-所有失败都必须失败关闭（fail closed）并返回以下封闭枚举之一：
-
-| 分类 | 阻断码 |
+| Domain | Action 实例 |
 |---|---|
-| 来源与投影 | `GOVERNANCE_SOURCE_MISSING`, `GOVERNANCE_CONFLICT`, `GOVERNANCE_SCOPE_UNRESOLVED`, `GOVERNANCE_INHERITANCE_INVALID`, `GOVERNANCE_PROJECTION_STALE`, `GOVERNANCE_COVERAGE_INCOMPLETE` |
-| 行为与调用 | `TOOL_ACTION_UNCLASSIFIED`, `TOOL_BINDING_AMBIGUOUS`, `GOVERNANCE_PRECONDITION_FAILED`, `INVOCATION_BYPASS_ATTEMPT` |
-| 结论与漂移 | `GOVERNANCE_NOT_ENFORCEABLE`, `GOVERNANCE_EVIDENCE_INCOMPLETE`, `GOVERNANCE_DRIFT_DETECTED` |
-| Agent 绑定 | `AGENT_BINDING_UNAVAILABLE`, `AGENT_ROLE_CONTRACT_INVALID`, `AGENT_CONFIGURATION_UNTRUSTED` |
-| 移交 | `HANDOFF_REQUIRED` |
+| `specification` | 更新需求、生成 Issue Plan |
+| `implementation` | 编辑源码、代码生成、Build |
+| `verification` | Test、类型检查、契约验证、CI |
+| `delivery` | Commit、Remote Issue、Push、PR、Merge、Release |
 
-## 3. 治理模型
+### 2.2 16 Cell
 
-每条规则同时具有三个正交维度：
-
-| 维度 | 封闭枚举 | 回答 |
-|---|---|---|
-| Audience | `maintainer`, `consumer` | 规则约束谁 |
-| Subdomain | `agent-runtime`, `engineering-runtime`, `poc`, `source-code`, `test-code`, `other-tools` | 规则约束哪类活动 |
-| Responsibility | `generate`, `enforce` | 如何产生并落实规则 |
-
-`maintainer` 维护仓库本身；`consumer` 使用仓库提供的产品。例如本脚手架仓库的维护者修改 Core，而消费者用 `$harness` 初始化自己的项目。六个子域独立适用于两类用户，因此必须覆盖 2 × 6 矩阵。
-
-### 3.1 Rule 最小结构
-
-每条 Rule（规则）必须包含：`rule_id`、可空的 `action_id`、`audience`、`subdomains`、`projection_id`、`source_refs`、单一 `directive`、`scope`、`inheritance`、`invocation`、`preconditions`、`postconditions`、`enforcement_level`、`confirmation_policy`、`evidence` 和 `failure`。
-
-### 3.2 确定性投影
+Cell ID 固定为：
 
 ```text
-projection_id = SHA256(
-  repository_snapshot
-  + governance_relevant_files_digest
-  + governance_schema_version
-  + projection_compiler_version
-  + maintainer_declarations_digest
-)
+<audience>.<responsibility>.<domain>
 ```
 
-相同输入必须得到语义稳定、摘要相同的输出；任何治理输入变化都会使旧投影失效。
+其中 Audience 为 `maintainer | consumer`，Responsibility 为
+`generate | enforce`。每个 Cell 独立包含来源、单一 directive、scope、
+可空 action binding、前后置条件、Evidence、失败语义和 Coverage。
 
-## 4. 规范规则
-
-### 4.1 生成（generate）
-
-- **GG-001**：发现器 MUST 只输出带 `source_ref` 与内容摘要的仓库事实。
-- **GG-002**：投影器 MUST 构建 Action Graph（行为图），不能用工具清单代替行为分类。
-- **GG-003**：编译器 MUST 为 `maintainer` 与 `consumer` 生成完整 2 × 6 覆盖；无来源或缺少绑定的格子必须成为阻断性缺口。
-- **GG-004**：Bootstrap、Adopt、Update MUST 先完成零写入预检，再按精确 Plan 由单写者发布；相同输入重复运行必须为空 Diff。
-- **GG-005**：候选归并 MUST 保留冲突，不能静默选择；Schema 或跨文件校验失败时必须零写入。
-
-### 4.2 Agent 绑定
-
-- **AG-001**：主 Agent MUST 读取 `AGENTS.md`、项目 TOML 和当前投影，并等待所有必需只读 Subagent 后再发布。
-- **AG-002**：六个角色 MUST 使用机器可校验的单一职责契约；缺失、无效或不受信时不得回退到通用 Agent。
-- **AG-003**：Subagent MUST 继承父会话权限；TOML 的 Sandbox 默认值不能扩大父权限。
-- **AG-004**：并行写入 MUST 有互不重叠的 ownership；无法证明时使用单一 `governed_worker`。
-
-### 4.3 执行（enforce）
-
-- **GE-001**：所有修改状态或产生权威结论的 Action MUST 通过 G0–G7，Gate Decision 只能由确定性内核产生。
-- **GE-002**：Action Resolver MUST 从 `action_id` 唯一解析 `argv`、`cwd`、Scope、环境约束和 Postconditions。
-- **GE-003**：Narrow Runner（窄执行器） MUST 拒绝任意命令字符串和任何绑定覆盖。
-- **GE-004**：只有 Schema、Postcondition 和摘要链全部通过的 Evidence 才能支撑“测试通过”“构建成功”或“允许交付”等结论。
-- **GE-005**：未知、未分类、过期、绑定歧义、证据不全或执行后漂移 MUST 失败关闭并返回完整阻断包。
-
-### 4.4 确认
-
-- **CF-001**：常规只读、已登记测试和 Work Grant 范围内修改不逐工具确认。
-- **CF-002**：扩大范围按变更集确认一次；关键外部动作按交付包确认一次；确认不能替代分类、Gate 或 Evidence。
-
-## 5. G0–G7
-
-| Gate | 检查 | 典型失败 |
-|---|---|---|
-| G0 快照 | 当前仓库仍匹配 `projection_id` | `GOVERNANCE_PROJECTION_STALE` |
-| G1 来源 | 规则来源存在且摘要有效 | `GOVERNANCE_SOURCE_MISSING` |
-| G2 覆盖 | 行为已发现、分类并覆盖 | `GOVERNANCE_COVERAGE_INCOMPLETE` |
-| G3 绑定 | 解析到唯一调用 | `TOOL_BINDING_AMBIGUOUS` |
-| G4 前置 | 用户、范围、分支、成本和权限满足 | `GOVERNANCE_PRECONDITION_FAILED` |
-| G5 调用 | 经过 Harness Dispatcher | `INVOCATION_BYPASS_ATTEMPT` |
-| G6 结论 | Schema、后置条件和 Evidence 完整 | `GOVERNANCE_EVIDENCE_INCOMPLETE` |
-| G7 漂移 | 执行后治理输入未意外变化 | `GOVERNANCE_DRIFT_DETECTED` |
-
-## 6. Codex-native 编排
+Coverage 机器枚举只有：
 
 ```text
-主 Agent
-├─ repo_mapper                 只读事实
-├─ governance_projector × 2×6 只读候选
-├─ projection_reconciler      只读归并
-├─ governance_validator       只读裁决
-├─ governed_worker            单写者执行
-└─ evidence_verifier          只读验收
+missing | documented | verified | enforced | not_applicable
 ```
 
-生成链为 Snapshot → Facts → Action Graph → 2 × 6 Candidates → Reconciliation → Validation → 一次 Plan → 单点发布。执行链为 Action Request → Resolver → G0–G5 → Narrow Runner → Postconditions → G6–G7 → Evidence。
+若展示 C0–C4，它们只能是固定别名，不能参与判断。`not_applicable` 必须同时有
+来源和理由；缺失、重复、无来源 N/A 都返回
+`GOVERNANCE_COVERAGE_INCOMPLETE`。
 
-## 7. 旧规则迁移决议
+## 3. 确定性编译
 
-| 旧 0.3 构件 | 决议 | 1.0 定位 |
-|---|---|---|
-| Workspace / Branch Policy | 迁移 | Rule 的 G4 前置条件 |
-| Tool Registry / Task Catalog | 迁移 | source-backed Action Binding |
-| CI/CD Router / Adapter | 迁移 | Narrow Runner 与外部平台 Gate |
-| Plan / Approval 摘要链 | 替换 | Projection-bound Work Grant、Confirmation Package、Evidence |
-| Audit 独立模式 | 删除 | `generate` / `enforce` 的只读诊断视图 |
-| 通用 Agent 回退 | 删除 | `AGENT_BINDING_UNAVAILABLE` |
-| 每工具确认 | 删除 | Standing Policy + Work Grant |
-| 0.3 Schema | 兼容适配器 | 非规范 SSOT；只服务旧执行 Artifact 的内部读取 |
+```mermaid
+flowchart LR
+    A["Repository Snapshot"] --> B["Source Facts"]
+    B --> C["Action Graph"]
+    C --> D["16 Cell Rules"]
+    D --> E["Projection Lock"]
+```
+
+`projection_id` 绑定 Snapshot、Facts、Action Graph、项目策略、Schema 和编译器
+版本。项目策略、Issue 配置或治理来源变化后，旧投影和旧本次决定立即失效。
+
+## 4. 项目策略与本次决定
+
+项目策略写入版本化 `.harness/harness.yaml`，包含本地执行、最低充分验证、
+Issue Provider、Hook 选项和分支边界。
+
+本次决定只写入被 Git 忽略的 `.harness/runtime/<task_id>/decision.json`，并绑定：
+
+```text
+task_id + projection_id + workspace_digest + exact_action + target_digest
+```
+
+新任务、投影变化、工作区变化或精确目标变化都会使决定失效。Commit、Remote
+Issue、Push、PR 分别需要决定，不得扩散授权。
+
+## 5. 本地工作与 T0–T3
+
+普通本地修改不逐工具询问。选择器按变化面给出最低验证：
+
+- T0：文档、只读检查；
+- T1：单个窄实现或测试；
+- T2：公共 Schema、组件级或多文件变化；
+- T3：Core、迁移、依赖、安全、CI/CD。
+
+Action Graph 可提高验证下限，但不能降低由路径影响得到的层级。
+
+## 6. Commit、Issue 与受控边界
+
+Commit Planner 分离 Workspace Impact Scope 与 Commit Scope。执行器使用临时 Git
+Index 提交确认路径；无关暂存保持不变。目标文件部分暂存且无法保持分块语义时
+阻断，不扩大为整文件。
+
+Local Issue 和 Remote Issue 共用 Issue Plan：
+
+- Consumer 默认写 `.harness/issues`；
+- Maintainer 可把 GitHub 配成唯一 SSOT；
+- 远端写入失败不回退本地。
+
+Private Branch 可直接进行仓库内动作。Controlled 或 Unclassified Branch 的写入、
+Commit、Issue Write 和交付动作返回 `CONTROLLED_BRANCH_GATE_REQUIRED` 与
+`HANDOFF_REQUIRED`，并要求上游平台门禁。
+
+## 7. 初始化与迁移
+
+新仓库使用 `sdd-harness init .`；自动化可使用 `--yes`。1.0 仓库首次调用只返回
+零写入迁移计划、Drift Report 和 `plan_digest`。只有
+`--approve-plan <plan_digest>` 可以应用，1.0 迁移拒绝 `--yes`。
+
+旧六类模型只作为只读迁移输入，不做字段级静默映射。2.0 从当前仓库事实重新
+编译。旧代码不得由默认包入口导出或执行。
 
 ## 8. 完成定义
 
-只有当前投影可追溯、六个 Agent 契约有效、2 × 6 覆盖完整、写入满足单写者、Action 通过 G0–G7 且 Evidence 摘要链完整时，Harness 才能声明治理闭环有效。
+只有 Core / Schema / Skill 版本一致、投影摘要有效、16 Cell 各一条、Action
+绑定唯一、当前分支与精确决定有效、最低验证和必要平台 Evidence 完整时，Harness
+才能声明对应结果成立。

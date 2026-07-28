@@ -1,0 +1,644 @@
+{
+  "artifact_type": "governance-rules",
+  "cells": [
+    {
+      "action_bindings": [
+        "delivery:commit",
+        "delivery:push",
+        "delivery:remote-issue",
+        "merge:workflow:authorize",
+        "merge:workflow:merge",
+        "merge:workflow:pull-request"
+      ],
+      "audience": "consumer",
+      "cell_id": "consumer.enforce.delivery",
+      "coverage_status": "enforced",
+      "directive": "Enforce delivery actions through exact scope, binding, decision, and evidence.",
+      "domain": "delivery",
+      "evidence": [
+        "workspace-snapshot",
+        "action-result"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_COVERAGE_INCOMPLETE",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "not_applicable_reason": null,
+      "postconditions": [
+        "binding-unchanged",
+        "minimum-validation-complete",
+        "platform-evidence-complete"
+      ],
+      "preconditions": [
+        "projection-current",
+        "scope-current",
+        "project-policy-current",
+        "exact-action-decision",
+        "branch-policy-satisfied"
+      ],
+      "responsibility": "enforce",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.authorize",
+        ".github/workflows/harness.yml#jobs.merge",
+        ".github/workflows/harness.yml#jobs.pull-request",
+        "harness://specification/2.0.0/actions/commit",
+        "harness://specification/2.0.0/actions/push",
+        "harness://specification/2.0.0/actions/remote-issue",
+        "harness://specification/2.0.0/domains/delivery"
+      ]
+    },
+    {
+      "action_bindings": [],
+      "audience": "consumer",
+      "cell_id": "consumer.enforce.implementation",
+      "coverage_status": "verified",
+      "directive": "Enforce implementation actions through exact scope, binding, decision, and evidence.",
+      "domain": "implementation",
+      "evidence": [
+        "workspace-snapshot",
+        "action-result"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_COVERAGE_INCOMPLETE",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "not_applicable_reason": null,
+      "postconditions": [
+        "binding-unchanged",
+        "minimum-validation-complete"
+      ],
+      "preconditions": [
+        "projection-current",
+        "scope-current",
+        "project-policy-current"
+      ],
+      "responsibility": "enforce",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        "harness://specification/2.0.0/domains/implementation"
+      ]
+    },
+    {
+      "action_bindings": [
+        "specification:issue-plan"
+      ],
+      "audience": "consumer",
+      "cell_id": "consumer.enforce.specification",
+      "coverage_status": "verified",
+      "directive": "Enforce specification actions through exact scope, binding, decision, and evidence.",
+      "domain": "specification",
+      "evidence": [
+        "workspace-snapshot",
+        "action-result"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_COVERAGE_INCOMPLETE",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "not_applicable_reason": null,
+      "postconditions": [
+        "binding-unchanged",
+        "minimum-validation-complete"
+      ],
+      "preconditions": [
+        "projection-current",
+        "scope-current",
+        "project-policy-current"
+      ],
+      "responsibility": "enforce",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        "harness://specification/2.0.0/actions/issue-plan",
+        "harness://specification/2.0.0/domains/specification"
+      ]
+    },
+    {
+      "action_bindings": [
+        "ci:workflow:full-ci",
+        "ci:workflow:production-gate",
+        "test:python-root:test",
+        "test:workflow:authorize",
+        "test:workflow:contracts"
+      ],
+      "audience": "consumer",
+      "cell_id": "consumer.enforce.verification",
+      "coverage_status": "verified",
+      "directive": "Enforce verification actions through exact scope, binding, decision, and evidence.",
+      "domain": "verification",
+      "evidence": [
+        "workspace-snapshot",
+        "action-result"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_COVERAGE_INCOMPLETE",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "not_applicable_reason": null,
+      "postconditions": [
+        "binding-unchanged",
+        "minimum-validation-complete"
+      ],
+      "preconditions": [
+        "projection-current",
+        "scope-current",
+        "project-policy-current"
+      ],
+      "responsibility": "enforce",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        ".github/workflows/delivery-gate-evidence.yml#jobs.authorize",
+        ".github/workflows/delivery-gate-evidence.yml#jobs.production-gate",
+        ".github/workflows/harness.yml#jobs.full-ci",
+        ".github/workflows/routine-contracts.yml#jobs.contracts",
+        "harness://specification/2.0.0/domains/verification",
+        "pyproject.toml#pytest-dependency"
+      ]
+    },
+    {
+      "action_bindings": [],
+      "audience": "consumer",
+      "cell_id": "consumer.generate.delivery",
+      "coverage_status": "verified",
+      "directive": "Generate delivery governance only from the bound snapshot, policy, and sources.",
+      "domain": "delivery",
+      "evidence": [
+        "source-facts",
+        "projection-lock"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_COVERAGE_INCOMPLETE",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "not_applicable_reason": null,
+      "postconditions": [
+        "coverage-record-valid",
+        "projection-bound"
+      ],
+      "preconditions": [
+        "snapshot-bound",
+        "sources-present"
+      ],
+      "responsibility": "generate",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.authorize",
+        ".github/workflows/harness.yml#jobs.merge",
+        ".github/workflows/harness.yml#jobs.pull-request",
+        "harness://specification/2.0.0/actions/commit",
+        "harness://specification/2.0.0/actions/push",
+        "harness://specification/2.0.0/actions/remote-issue",
+        "harness://specification/2.0.0/domains/delivery"
+      ]
+    },
+    {
+      "action_bindings": [],
+      "audience": "consumer",
+      "cell_id": "consumer.generate.implementation",
+      "coverage_status": "verified",
+      "directive": "Generate implementation governance only from the bound snapshot, policy, and sources.",
+      "domain": "implementation",
+      "evidence": [
+        "source-facts",
+        "projection-lock"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_COVERAGE_INCOMPLETE",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "not_applicable_reason": null,
+      "postconditions": [
+        "coverage-record-valid",
+        "projection-bound"
+      ],
+      "preconditions": [
+        "snapshot-bound",
+        "sources-present"
+      ],
+      "responsibility": "generate",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        "harness://specification/2.0.0/domains/implementation"
+      ]
+    },
+    {
+      "action_bindings": [],
+      "audience": "consumer",
+      "cell_id": "consumer.generate.specification",
+      "coverage_status": "verified",
+      "directive": "Generate specification governance only from the bound snapshot, policy, and sources.",
+      "domain": "specification",
+      "evidence": [
+        "source-facts",
+        "projection-lock"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_COVERAGE_INCOMPLETE",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "not_applicable_reason": null,
+      "postconditions": [
+        "coverage-record-valid",
+        "projection-bound"
+      ],
+      "preconditions": [
+        "snapshot-bound",
+        "sources-present"
+      ],
+      "responsibility": "generate",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        "harness://specification/2.0.0/actions/issue-plan",
+        "harness://specification/2.0.0/domains/specification"
+      ]
+    },
+    {
+      "action_bindings": [],
+      "audience": "consumer",
+      "cell_id": "consumer.generate.verification",
+      "coverage_status": "verified",
+      "directive": "Generate verification governance only from the bound snapshot, policy, and sources.",
+      "domain": "verification",
+      "evidence": [
+        "source-facts",
+        "projection-lock"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_COVERAGE_INCOMPLETE",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "not_applicable_reason": null,
+      "postconditions": [
+        "coverage-record-valid",
+        "projection-bound"
+      ],
+      "preconditions": [
+        "snapshot-bound",
+        "sources-present"
+      ],
+      "responsibility": "generate",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        ".github/workflows/delivery-gate-evidence.yml#jobs.authorize",
+        ".github/workflows/delivery-gate-evidence.yml#jobs.production-gate",
+        ".github/workflows/harness.yml#jobs.full-ci",
+        ".github/workflows/routine-contracts.yml#jobs.contracts",
+        "harness://specification/2.0.0/domains/verification",
+        "pyproject.toml#pytest-dependency"
+      ]
+    },
+    {
+      "action_bindings": [
+        "delivery:commit",
+        "delivery:push",
+        "delivery:remote-issue",
+        "merge:workflow:authorize",
+        "merge:workflow:merge",
+        "merge:workflow:pull-request"
+      ],
+      "audience": "maintainer",
+      "cell_id": "maintainer.enforce.delivery",
+      "coverage_status": "enforced",
+      "directive": "Enforce delivery actions through exact scope, binding, decision, and evidence.",
+      "domain": "delivery",
+      "evidence": [
+        "workspace-snapshot",
+        "action-result"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_COVERAGE_INCOMPLETE",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "not_applicable_reason": null,
+      "postconditions": [
+        "binding-unchanged",
+        "minimum-validation-complete",
+        "platform-evidence-complete"
+      ],
+      "preconditions": [
+        "projection-current",
+        "scope-current",
+        "project-policy-current",
+        "exact-action-decision",
+        "branch-policy-satisfied"
+      ],
+      "responsibility": "enforce",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.authorize",
+        ".github/workflows/harness.yml#jobs.merge",
+        ".github/workflows/harness.yml#jobs.pull-request",
+        "harness://specification/2.0.0/actions/commit",
+        "harness://specification/2.0.0/actions/push",
+        "harness://specification/2.0.0/actions/remote-issue",
+        "harness://specification/2.0.0/domains/delivery"
+      ]
+    },
+    {
+      "action_bindings": [],
+      "audience": "maintainer",
+      "cell_id": "maintainer.enforce.implementation",
+      "coverage_status": "verified",
+      "directive": "Enforce implementation actions through exact scope, binding, decision, and evidence.",
+      "domain": "implementation",
+      "evidence": [
+        "workspace-snapshot",
+        "action-result"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_COVERAGE_INCOMPLETE",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "not_applicable_reason": null,
+      "postconditions": [
+        "binding-unchanged",
+        "minimum-validation-complete"
+      ],
+      "preconditions": [
+        "projection-current",
+        "scope-current",
+        "project-policy-current"
+      ],
+      "responsibility": "enforce",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        "harness://specification/2.0.0/domains/implementation"
+      ]
+    },
+    {
+      "action_bindings": [
+        "specification:issue-plan"
+      ],
+      "audience": "maintainer",
+      "cell_id": "maintainer.enforce.specification",
+      "coverage_status": "verified",
+      "directive": "Enforce specification actions through exact scope, binding, decision, and evidence.",
+      "domain": "specification",
+      "evidence": [
+        "workspace-snapshot",
+        "action-result"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_COVERAGE_INCOMPLETE",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "not_applicable_reason": null,
+      "postconditions": [
+        "binding-unchanged",
+        "minimum-validation-complete"
+      ],
+      "preconditions": [
+        "projection-current",
+        "scope-current",
+        "project-policy-current"
+      ],
+      "responsibility": "enforce",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        "harness://specification/2.0.0/actions/issue-plan",
+        "harness://specification/2.0.0/domains/specification"
+      ]
+    },
+    {
+      "action_bindings": [
+        "ci:workflow:full-ci",
+        "ci:workflow:production-gate",
+        "test:python-root:test",
+        "test:workflow:authorize",
+        "test:workflow:contracts"
+      ],
+      "audience": "maintainer",
+      "cell_id": "maintainer.enforce.verification",
+      "coverage_status": "verified",
+      "directive": "Enforce verification actions through exact scope, binding, decision, and evidence.",
+      "domain": "verification",
+      "evidence": [
+        "workspace-snapshot",
+        "action-result"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_COVERAGE_INCOMPLETE",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "not_applicable_reason": null,
+      "postconditions": [
+        "binding-unchanged",
+        "minimum-validation-complete"
+      ],
+      "preconditions": [
+        "projection-current",
+        "scope-current",
+        "project-policy-current"
+      ],
+      "responsibility": "enforce",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        ".github/workflows/delivery-gate-evidence.yml#jobs.authorize",
+        ".github/workflows/delivery-gate-evidence.yml#jobs.production-gate",
+        ".github/workflows/harness.yml#jobs.full-ci",
+        ".github/workflows/routine-contracts.yml#jobs.contracts",
+        "harness://specification/2.0.0/domains/verification",
+        "pyproject.toml#pytest-dependency"
+      ]
+    },
+    {
+      "action_bindings": [],
+      "audience": "maintainer",
+      "cell_id": "maintainer.generate.delivery",
+      "coverage_status": "verified",
+      "directive": "Generate delivery governance only from the bound snapshot, policy, and sources.",
+      "domain": "delivery",
+      "evidence": [
+        "source-facts",
+        "projection-lock"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_COVERAGE_INCOMPLETE",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "not_applicable_reason": null,
+      "postconditions": [
+        "coverage-record-valid",
+        "projection-bound"
+      ],
+      "preconditions": [
+        "snapshot-bound",
+        "sources-present"
+      ],
+      "responsibility": "generate",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.authorize",
+        ".github/workflows/harness.yml#jobs.merge",
+        ".github/workflows/harness.yml#jobs.pull-request",
+        "harness://specification/2.0.0/actions/commit",
+        "harness://specification/2.0.0/actions/push",
+        "harness://specification/2.0.0/actions/remote-issue",
+        "harness://specification/2.0.0/domains/delivery"
+      ]
+    },
+    {
+      "action_bindings": [],
+      "audience": "maintainer",
+      "cell_id": "maintainer.generate.implementation",
+      "coverage_status": "verified",
+      "directive": "Generate implementation governance only from the bound snapshot, policy, and sources.",
+      "domain": "implementation",
+      "evidence": [
+        "source-facts",
+        "projection-lock"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_COVERAGE_INCOMPLETE",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "not_applicable_reason": null,
+      "postconditions": [
+        "coverage-record-valid",
+        "projection-bound"
+      ],
+      "preconditions": [
+        "snapshot-bound",
+        "sources-present"
+      ],
+      "responsibility": "generate",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        "harness://specification/2.0.0/domains/implementation"
+      ]
+    },
+    {
+      "action_bindings": [],
+      "audience": "maintainer",
+      "cell_id": "maintainer.generate.specification",
+      "coverage_status": "verified",
+      "directive": "Generate specification governance only from the bound snapshot, policy, and sources.",
+      "domain": "specification",
+      "evidence": [
+        "source-facts",
+        "projection-lock"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_COVERAGE_INCOMPLETE",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "not_applicable_reason": null,
+      "postconditions": [
+        "coverage-record-valid",
+        "projection-bound"
+      ],
+      "preconditions": [
+        "snapshot-bound",
+        "sources-present"
+      ],
+      "responsibility": "generate",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        "harness://specification/2.0.0/actions/issue-plan",
+        "harness://specification/2.0.0/domains/specification"
+      ]
+    },
+    {
+      "action_bindings": [],
+      "audience": "maintainer",
+      "cell_id": "maintainer.generate.verification",
+      "coverage_status": "verified",
+      "directive": "Generate verification governance only from the bound snapshot, policy, and sources.",
+      "domain": "verification",
+      "evidence": [
+        "source-facts",
+        "projection-lock"
+      ],
+      "failure": {
+        "blocker_codes": [
+          "GOVERNANCE_COVERAGE_INCOMPLETE",
+          "HANDOFF_REQUIRED"
+        ]
+      },
+      "not_applicable_reason": null,
+      "postconditions": [
+        "coverage-record-valid",
+        "projection-bound"
+      ],
+      "preconditions": [
+        "snapshot-bound",
+        "sources-present"
+      ],
+      "responsibility": "generate",
+      "scope": [
+        "."
+      ],
+      "source_refs": [
+        ".github/workflows/delivery-gate-evidence.yml#jobs.authorize",
+        ".github/workflows/delivery-gate-evidence.yml#jobs.production-gate",
+        ".github/workflows/harness.yml#jobs.full-ci",
+        ".github/workflows/routine-contracts.yml#jobs.contracts",
+        "harness://specification/2.0.0/domains/verification",
+        "pyproject.toml#pytest-dependency"
+      ]
+    }
+  ],
+  "projection_id": "sha256:c88c9db7d49c9c229cabb3a1a83e93823e63f4b570402328dd9d6a7fc83912d4",
+  "rules_digest": "sha256:4bc5b331616e564846c230cd50ba9fd9ecb6101688474108a924e4d9b6e415e9",
+  "schema_version": "2.0.0"
+}

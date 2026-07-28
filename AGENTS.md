@@ -1,10 +1,12 @@
 <!-- ai-coding-harness:start -->
-# AI Coding Harness
+# AI Coding Harness 2.0
 
-- Treat this marked block as the Harness governance entrypoint; preserve every instruction outside the markers.
-- Read workspace and branch policy from `.harness/`, and query `.harness/tools.yaml` before invoking a Runtime, CLI, Shell, MCP, API, or repository script.
-- Limit Harness-managed execution to the local workspace and branches classified as `private` by `.harness/boundaries.yaml`.
-- Treat controlled and unclassified branches as outside direct Harness execution. Require a strong, current confirmation and CI/CD platform gates; otherwise stop with `CONTROLLED_BRANCH_GATE_REQUIRED` and `HANDOFF_REQUIRED`.
-- Route Test, Build, CI, Push, Pull Request, Merge, Publish, Release, and Deploy semantics through `task_ref`; run only explicitly auto-allowed `routine` Tasks automatically.
-- Stop with the configured blocker codes when scope, bindings, branch classification, or platform Evidence do not match.
+- Treat this marked block as the repository Harness entrypoint.
+- Use `$harness` for governed local work, explicit `git commit`, Issue operations, Test, Build, CI, and controlled delivery.
+- Read `.harness/harness.yaml` and run `sdd-harness inspect --json` before a governed action.
+- Keep ordinary local work continuous and use only the minimum sufficient T0-T3 validation.
+- Call actions by their source-backed `action_id`; do not invent or override an invocation.
+- Treat project policy as versioned behavior and a task decision as one task or one exact action only.
+- Require an independent task decision and upstream platform gates for every controlled action.
+- Stop with stable blocker codes when runtime, projection, source, scope, binding, branch, target, or evidence cannot be verified.
 <!-- ai-coding-harness:end -->

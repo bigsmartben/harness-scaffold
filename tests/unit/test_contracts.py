@@ -1,335 +1,126 @@
 from __future__ import annotations
 
-import shutil
+import copy
+import json
+from itertools import product
 from pathlib import Path
 
-import yaml
-from jsonschema import Draft202012Validator
-
-from harness_core.contracts import blocker_codes, validate_config
-
-
-ROOT = Path(__file__).parents[2]
-SKILL = ROOT / "skills" / "initialize-ai-coding-harness"
-SCHEMAS = SKILL / "assets" / "schemas"
-FIXTURES = ROOT / "tests" / "fixtures"
-
-EXPECTED_BLOCKER_CODES = {
-    "WRITE_SCOPE_EXPANDED",
-    "TOOL_NOT_REGISTERED",
-    "TOOL_ENTRY_STALE",
-    "IMPACT_UNRESOLVED",
-    "TASK_BYPASS_ATTEMPT",
-    "ACTION_CLASSIFICATION_UNRESOLVED",
-    "HANDOFF_REQUIRED",
-    "CONTROLLED_BRANCH_GATE_REQUIRED",
-    "PUBLISH_CONFIRMATION_REQUIRED",
-    "PROTECTED_TRIGGER_UNCONTROLLED",
-    "CONFIG_INVALID",
-    "BACKEND_UNAVAILABLE",
-    "EVIDENCE_INCOMPLETE",
-    "PLAN_STALE",
-    "GRANT_STALE",
-    "EVIDENCE_BINDING_MISMATCH",
-    "GOVERNANCE_SOURCE_MISSING",
-    "GOVERNANCE_CONFLICT",
-    "GOVERNANCE_SCOPE_UNRESOLVED",
-    "GOVERNANCE_INHERITANCE_INVALID",
-    "GOVERNANCE_PROJECTION_STALE",
-    "GOVERNANCE_COVERAGE_INCOMPLETE",
-    "TOOL_ACTION_UNCLASSIFIED",
-    "TOOL_BINDING_AMBIGUOUS",
-    "GOVERNANCE_PRECONDITION_FAILED",
-    "INVOCATION_BYPASS_ATTEMPT",
-    "GOVERNANCE_NOT_ENFORCEABLE",
-    "GOVERNANCE_EVIDENCE_INCOMPLETE",
-    "GOVERNANCE_DRIFT_DETECTED",
-    "AGENT_BINDING_UNAVAILABLE",
-    "AGENT_ROLE_CONTRACT_INVALID",
-    "AGENT_CONFIGURATION_UNTRUSTED",
-}
+from harness_core.artifacts import attach_digest
+from harness_core.codex_adapter import load_projection_bundle
+from harness_core.contracts import (
+    AUDIENCES,
+    DOMAINS,
+    RESPONSIBILITIES,
+    blocker_codes,
+    validate_governance_bundle,
+    validate_runtime_artifact,
+)
+from harness_core.initializer import (
+    apply_initialization_plan,
+    build_initialization_plan,
+)
+from harness_core.projection import COVERAGE_STATUSES
 
 
-def _configured_fixture(tmp_path: Path, overlay: str | None = None) -> Path:
-    target = tmp_path / ".harness"
-    shutil.copytree(FIXTURES / "valid" / ".harness", target)
-    if overlay is not None:
-        shutil.copytree(
-            FIXTURES / overlay / ".harness", target, dirs_exist_ok=True
+def _initialized_bundle(tmp_path: Path) -> dict:
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    (tmp_path / "pyproject.toml").write_text(
+        "[project]\nname='fixture'\nversion='0.1.0'\n",
+        encoding="utf-8",
+    )
+    plan = build_initialization_plan(tmp_path)
+    assert plan["blocker_codes"] == []
+    assert apply_initialization_plan(
+        tmp_path, plan, approved_plan_digest=plan["plan_digest"]
+    )["status"] == "applied"
+    bundle = load_projection_bundle(tmp_path)
+    assert bundle is not None
+    return bundle
+
+
+def test_four_domain_projection_has_exactly_sixteen_records(
+    tmp_path: Path,
+) -> None:
+    bundle = _initialized_bundle(tmp_path)
+    cells = bundle["rules"]["cells"]
+    expected = {
+        f"{audience}.{responsibility}.{domain}"
+        for audience, responsibility, domain in product(
+            AUDIENCES, RESPONSIBILITIES, DOMAINS
         )
-    return target
-
-
-def test_valid_fixture_passes_schema_and_cross_file_validation(tmp_path: Path) -> None:
-    config = _configured_fixture(tmp_path)
-
-    assert validate_config(config, SCHEMAS) == []
-
-
-def test_all_committed_schemas_are_valid_draft_2020_12() -> None:
-    for schema_path in SCHEMAS.glob("*.schema.json"):
-        schema = yaml.safe_load(schema_path.read_text("utf-8"))
-        Draft202012Validator.check_schema(schema)
-        expected = "1.0.0" if schema_path.name == "governance.schema.json" else "0.3.0"
-        assert schema["x-harness-schema-version"] == expected
-
-
-def test_repository_self_configuration_uses_same_contracts() -> None:
-    assert validate_config(ROOT / ".harness", SCHEMAS) == []
-
-
-def test_missing_required_field_has_stable_failure(tmp_path: Path) -> None:
-    config = _configured_fixture(tmp_path, "invalid-missing-field")
-
-    issues = validate_config(config, SCHEMAS)
-
-    assert any(
-        issue.code == "SCHEMA_INVALID"
-        and issue.path == "harness.yaml"
-        and "'delivery_authority' is a required property" in issue.message
-        for issue in issues
-    )
-
-
-def test_unknown_identity_authorization_field_is_rejected(tmp_path: Path) -> None:
-    config = _configured_fixture(tmp_path, "invalid-unknown-field")
-
-    issues = validate_config(config, SCHEMAS)
-
-    assert any(
-        issue.code == "SCHEMA_INVALID"
-        and issue.path == "tools.yaml#tools/0"
-        and "allowed_agents" in issue.message
-        for issue in issues
-    )
-
-
-def test_cross_file_task_and_mcp_server_references_are_checked(
-    tmp_path: Path,
-) -> None:
-    config = _configured_fixture(tmp_path, "invalid-references")
-
-    issues = validate_config(config, SCHEMAS)
-    issue_pairs = {(issue.code, issue.path) for issue in issues}
-
-    assert ("TASK_REF_UNRESOLVED", "tools.yaml#tools/0/task_ref") in issue_pairs
-    assert ("TOOL_REF_UNRESOLVED", "tools.yaml#tools/1/server_ref") in issue_pairs
-    assert ("TASK_REF_UNRESOLVED", "impact.yaml#rules/0/tasks") in issue_pairs
-
-
-def test_managed_tool_requires_task_ref(tmp_path: Path) -> None:
-    config = _configured_fixture(tmp_path)
-    tools_path = config / "tools.yaml"
-    document = yaml.safe_load(tools_path.read_text("utf-8"))
-    managed_tool = next(
-        tool for tool in document["tools"] if tool["invocation_mode"] == "managed"
-    )
-    del managed_tool["task_ref"]
-    tools_path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
-
-    issues = validate_config(config, SCHEMAS)
-
-    assert any(
-        issue.code == "SCHEMA_INVALID"
-        and "'task_ref' is a required property" in issue.message
-        for issue in issues
-    )
-
-
-def test_every_tool_requires_action_semantics(tmp_path: Path) -> None:
-    config = _configured_fixture(tmp_path)
-    tools_path = config / "tools.yaml"
-    document = yaml.safe_load(tools_path.read_text("utf-8"))
-    del document["tools"][0]["action_semantics"]
-    tools_path.write_text(
-        yaml.safe_dump(document, sort_keys=False), encoding="utf-8"
-    )
-
-    issues = validate_config(config, SCHEMAS)
-
-    assert any(
-        issue.code == "SCHEMA_INVALID"
-        and "'action_semantics' is a required property" in issue.message
-        for issue in issues
-    )
-    assert {
-        "ACTION_CLASSIFICATION_UNRESOLVED",
-        "HANDOFF_REQUIRED",
-    }.issubset({issue.code for issue in issues})
-
-
-def test_direct_publish_entry_is_rejected_as_task_bypass(
-    tmp_path: Path,
-) -> None:
-    config = _configured_fixture(tmp_path)
-    tools_path = config / "tools.yaml"
-    document = yaml.safe_load(tools_path.read_text("utf-8"))
-    publish = next(
-        tool
-        for tool in document["tools"]
-        if tool["action_semantics"] == "publish"
-    )
-    publish["invocation_mode"] = "direct"
-    publish["entrypoint"] = "publish-now"
-    publish.pop("task_ref")
-    tools_path.write_text(
-        yaml.safe_dump(document, sort_keys=False), encoding="utf-8"
-    )
-
-    issues = validate_config(config, SCHEMAS)
-
-    assert {"TASK_BYPASS_ATTEMPT", "HANDOFF_REQUIRED"}.issubset(
-        {issue.code for issue in issues}
-    )
-
-
-def test_action_semantics_must_match_task_category(tmp_path: Path) -> None:
-    config = _configured_fixture(tmp_path)
-    tools_path = config / "tools.yaml"
-    document = yaml.safe_load(tools_path.read_text("utf-8"))
-    managed = next(
-        tool for tool in document["tools"] if tool["invocation_mode"] == "managed"
-    )
-    managed["action_semantics"] = "build"
-    tools_path.write_text(
-        yaml.safe_dump(document, sort_keys=False), encoding="utf-8"
-    )
-
-    issues = validate_config(config, SCHEMAS)
-
-    assert any(
-        issue.code == "CONFIG_INVALID"
-        and "must match the referenced Task category" in issue.message
-        for issue in issues
-    )
-
-
-def test_blocker_codes_have_one_complete_machine_source() -> None:
-    codes = blocker_codes(SCHEMAS)
-
-    assert len(codes) == len(set(codes))
-    assert set(codes) == EXPECTED_BLOCKER_CODES
-
-
-def test_scaffold_snapshot_excludes_runtime_and_skill_development_files() -> None:
-    scaffold = SKILL / "assets" / "scaffold"
-    relative_files = {
-        path.relative_to(scaffold).as_posix()
-        for path in scaffold.rglob("*")
-        if path.is_file()
     }
-
-    snapshot = {
-        line
-        for line in (
-            ROOT / "tests" / "snapshots" / "scaffold-files.txt"
-        ).read_text("utf-8").splitlines()
-        if line
-    }
-
-    assert relative_files == snapshot
-    assert {
-        ".harness/runs",
-        ".harness/reports",
-        ".harness/cache",
-    }.isdisjoint(relative_files)
-    assert not any(path.startswith("skills/") for path in relative_files)
-    assert not any(
-        Path(path).name.lower() in {"readme.md", "quickstart.md", "changelog.md"}
-        for path in relative_files
-    )
-
-
-def test_scaffold_gitignore_excludes_runtime_directories() -> None:
-    ignored = {
-        line.strip()
-        for line in (
-            SKILL / "assets" / "scaffold" / ".harness" / ".gitignore"
-        ).read_text("utf-8").splitlines()
-        if line.strip()
-    }
-
-    assert ignored == {"runs/", "reports/", "cache/"}
-
-
-def test_p2_assets_are_the_only_contract_and_template_source() -> None:
-    assert not (ROOT / "contracts" / "schemas").exists()
-    assert not (ROOT / "templates" / "scaffold").exists()
-    assert not (ROOT / "templates" / "backends").exists()
-
-
-def test_valid_fixture_covers_required_tool_kinds_and_invocation_modes() -> None:
-    document = yaml.safe_load(
-        (FIXTURES / "valid" / ".harness" / "tools.yaml").read_text("utf-8")
-    )
-    tool_types = {tool["type"] for tool in document["tools"]}
-
-    assert {"runtime", "cli", "shell", "mcp-server", "mcp-tool"} <= tool_types
-    assert {tool["invocation_mode"] for tool in document["tools"]} == {
-        "direct",
-        "managed",
-    }
+    assert len(cells) == 16
+    assert {cell["cell_id"] for cell in cells} == expected
     assert all(
-        "task_ref" in tool
-        for tool in document["tools"]
-        if tool["invocation_mode"] == "managed"
+        cell["coverage_status"] in COVERAGE_STATUSES for cell in cells
     )
+    assert validate_governance_bundle(bundle) == []
 
 
-def test_backend_templates_cover_local_github_actions_and_git_remote() -> None:
-    assert (SKILL / "assets" / "backends" / "local" / "adapter.yaml").is_file()
-    assert (
-        SKILL / "assets" / "backends" / "github-actions" / "adapter.yaml"
-    ).is_file()
-    git_remote = (
-        SKILL / "assets" / "backends" / "git-remote" / "adapter.yaml"
+def test_duplicate_and_unsourced_not_applicable_fail_closed(
+    tmp_path: Path,
+) -> None:
+    duplicate = copy.deepcopy(_initialized_bundle(tmp_path))
+    duplicate["rules"]["cells"][1]["cell_id"] = (
+        duplicate["rules"]["cells"][0]["cell_id"]
     )
-    assert git_remote.is_file()
-    git_remote_document = yaml.safe_load(git_remote.read_text("utf-8"))
-    assert git_remote_document["type"] == "git-remote"
-    assert git_remote_document["execution"] == {
-        "shell": False,
-        "force": False,
-        "operation": "push-ref",
+    duplicate["rules"] = attach_digest(duplicate["rules"], "rules_digest")
+    duplicate["projection_lock"]["rules_digest"] = duplicate["rules"][
+        "rules_digest"
+    ]
+    duplicate["projection_lock"] = attach_digest(
+        duplicate["projection_lock"], "projection_lock_digest"
+    )
+    assert "GOVERNANCE_COVERAGE_INCOMPLETE" in {
+        issue.code for issue in validate_governance_bundle(duplicate)
     }
-    workflow = (
-        SKILL
-        / "assets"
-        / "backends"
-        / "github-actions"
-        / ".github"
-        / "workflows"
-        / "harness.yml"
+
+    not_applicable = copy.deepcopy(_initialized_bundle(tmp_path / "other"))
+    cell = not_applicable["rules"]["cells"][0]
+    cell["coverage_status"] = "not_applicable"
+    cell["source_refs"] = []
+    cell["not_applicable_reason"] = None
+    not_applicable["rules"] = attach_digest(
+        not_applicable["rules"], "rules_digest"
     )
-    assert workflow.is_file()
-    assert "workflow_dispatch" in workflow.read_text("utf-8")
-    for backend in ("local", "github-actions"):
-        for runtime in ("python", "node"):
-            adapter = (
-                SKILL / "assets" / "backends" / backend / f"{runtime}.yaml"
-            )
-            assert adapter.is_file()
-            document = yaml.safe_load(adapter.read_text("utf-8"))
-            assert document["runtime"] == runtime
-            assert document["type"] == backend
-
-
-def test_task_contract_requires_explicit_automation_policy() -> None:
-    document = yaml.safe_load(
-        (FIXTURES / "valid" / ".harness" / "tasks.yaml").read_text("utf-8")
+    not_applicable["projection_lock"]["rules_digest"] = not_applicable[
+        "rules"
+    ]["rules_digest"]
+    not_applicable["projection_lock"] = attach_digest(
+        not_applicable["projection_lock"], "projection_lock_digest"
     )
+    assert "GOVERNANCE_COVERAGE_INCOMPLETE" in {
+        issue.code for issue in validate_governance_bundle(not_applicable)
+    }
 
-    for task in document["tasks"]:
-        assert task["automation_level"] in {"routine", "expensive", "critical"}
-        assert isinstance(task["auto_allowed"], bool)
-        if task["automation_level"] in {"expensive", "critical"}:
-            assert task["auto_allowed"] is False
-        if task["category"] in {
-            "push",
-            "pull-request",
-            "merge",
-            "publish",
-            "release",
-            "deploy",
-        }:
-            assert task["automation_level"] == "critical"
+
+def test_runtime_schema_and_blockers_use_explicit_2_0_contract(
+    tmp_path: Path,
+) -> None:
+    bundle = _initialized_bundle(tmp_path)
+    impact = {
+        "artifact_type": "impact-analysis",
+        "schema_version": "2.0.0",
+        "base_commit": "unborn",
+        "workspace_digest": bundle["sources"]["snapshot_digest"],
+        "changed_paths": [],
+        "domains": [],
+        "validation_level": "T0",
+        "reasons": [],
+    }
+    impact = attach_digest(impact, "impact_digest")
+    assert validate_runtime_artifact(impact) == []
+    assert {
+        "missing",
+        "documented",
+        "verified",
+        "enforced",
+        "not_applicable",
+    } == set(COVERAGE_STATUSES)
+    assert "GOVERNANCE_PRECONDITION_FAILED" in blocker_codes()
+    assert json.loads(
+        (
+            Path(__file__).parents[2]
+            / "src/harness_core/resources/schemas/common.schema.json"
+        ).read_text(encoding="utf-8")
+    )["x-harness-schema-version"] == "2.0.0"

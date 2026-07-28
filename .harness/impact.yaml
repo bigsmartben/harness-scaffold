@@ -2,44 +2,38 @@ rules:
   - id: docs-only
     paths:
       - "**/*.md"
-    validation_level: inspect
+    validation_level: T0
     reason: documentation-only changes have no runtime effect
 
-  - id: contract-code
+  - id: implementation
     paths:
-      - skills/initialize-ai-coding-harness/assets/schemas/**
-      - skills/initialize-ai-coding-harness/assets/scaffold/**
+      - src/**
       - tests/**
+    validation_level: T1
+    tasks:
+      - test:contracts
+    reason: implementation and tests require contract validation
+
+  - id: public-contract
+    paths:
+      - src/harness_core/resources/schemas/**
+      - src/harness_core/resources/repo_skill/**
+      - plugins/**
+    validation_level: T2
+    tasks:
+      - test:contracts
+      - test:distribution-smoke
+    reason: public contracts and generated copies require integration validation
+
+  - id: core-and-delivery
+    paths:
+      - src/harness_core/**
       - pyproject.toml
       - uv.lock
-    validation_level: contract
-    tasks:
-      - test:contracts
-    reason: machine contracts, templates, or tests require contract validation
-
-  - id: harness-semantics
-    paths:
-      - AGENTS.md
-      - .harness/*.yaml
-      - .harness/pipelines/**
-      - .harness/adapters/**
-      - skills/initialize-ai-coding-harness/SKILL.md
-      - skills/initialize-ai-coding-harness/agents/**
-      - skills/initialize-ai-coding-harness/references/**
-      - skills/initialize-ai-coding-harness/scripts/**
-      - evals/**
-    validation_level: full
-    tasks:
-      - test:contracts
-      - ci:full
-    reason: Skill routing, execution semantics, or eval behavior requires a Full fact and full validation
-
-  - id: ci-platform
-    paths:
       - .github/**
-      - .harness/adapters/github-actions.yaml
-    validation_level: full
+      - .harness/**
+    validation_level: T3
     tasks:
-      - test:contracts-ci
-      - ci:full
-    reason: CI/CD platform behavior requires a Full fact and platform checks
+      - test:contracts
+      - test:distribution-smoke
+    reason: core, dependency, migration, and CI/CD changes require full local evidence

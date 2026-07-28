@@ -1,0 +1,15 @@
+{
+  "action_graph_digest": "sha256:2b52402907f629ca0a2d3b005eacaf09e1538ccbd4f353211cbecdc429fa95e0",
+  "artifact_type": "projection-lock",
+  "blockers": [],
+  "facts_digest": "sha256:6aceea0c7ffb97bbc74692f9d668fdd31f67ce5a786eeaf2df24c8c46a749006",
+  "governance_schema_version": "2.0.0",
+  "policy_digest": "sha256:5b3736d3d764cbafb8e870888e3245f279aa7e29cdd9421048852bfa9b4e29ea",
+  "projection_compiler_version": "2.0.0",
+  "projection_id": "sha256:c88c9db7d49c9c229cabb3a1a83e93823e63f4b570402328dd9d6a7fc83912d4",
+  "projection_lock_digest": "sha256:401728cc3852b665a881431f25ad44783bc1eaa892654237372106e441f07c1a",
+  "ready": true,
+  "rules_digest": "sha256:4bc5b331616e564846c230cd50ba9fd9ecb6101688474108a924e4d9b6e415e9",
+  "schema_version": "2.0.0",
+  "snapshot_digest": "sha256:309cbb6dad3bd72358ece248ffee2e49edb121f2bb7971cf65621af073e5ba26"
+}

@@ -1,0 +1,183 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sdd-harness.dev/schemas/2.0/runtime.schema.json",
+  "x-harness-schema-version": "2.0.0",
+  "oneOf": [
+    {"$ref": "#/$defs/taskDecision"},
+    {"$ref": "#/$defs/impactAnalysis"},
+    {"$ref": "#/$defs/commitPlan"},
+    {"$ref": "#/$defs/pushPlan"},
+    {"$ref": "#/$defs/issuePlan"}
+  ],
+  "$defs": {
+    "digest": {
+      "$ref": "https://sdd-harness.dev/schemas/2.0/common.schema.json#/$defs/digest"
+    },
+    "stringList": {
+      "$ref": "https://sdd-harness.dev/schemas/2.0/common.schema.json#/$defs/stringList"
+    },
+    "taskDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_type",
+        "schema_version",
+        "task_id",
+        "projection_id",
+        "workspace_digest",
+        "exact_action",
+        "target_digest",
+        "status",
+        "decision_digest"
+      ],
+      "properties": {
+        "artifact_type": {"const": "task-decision"},
+        "schema_version": {"const": "2.0.0"},
+        "task_id": {"type": "string", "minLength": 1},
+        "projection_id": {"$ref": "#/$defs/digest"},
+        "workspace_digest": {"$ref": "#/$defs/digest"},
+        "exact_action": {"type": "string", "minLength": 1},
+        "target_digest": {"$ref": "#/$defs/digest"},
+        "status": {"enum": ["active", "expired"]},
+        "decision_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "impactAnalysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_type",
+        "schema_version",
+        "base_commit",
+        "workspace_digest",
+        "changed_paths",
+        "domains",
+        "validation_level",
+        "reasons",
+        "impact_digest"
+      ],
+      "properties": {
+        "artifact_type": {"const": "impact-analysis"},
+        "schema_version": {"const": "2.0.0"},
+        "base_commit": {"type": "string", "minLength": 1},
+        "workspace_digest": {"$ref": "#/$defs/digest"},
+        "changed_paths": {"$ref": "#/$defs/stringList"},
+        "domains": {
+          "type": "array",
+          "items": {
+            "$ref": "https://sdd-harness.dev/schemas/2.0/common.schema.json#/$defs/domain"
+          },
+          "uniqueItems": true
+        },
+        "validation_level": {
+          "$ref": "https://sdd-harness.dev/schemas/2.0/common.schema.json#/$defs/validationLevel"
+        },
+        "reasons": {"$ref": "#/$defs/stringList"},
+        "impact_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "commitPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_type",
+        "schema_version",
+        "base_commit",
+        "workspace_digest",
+        "workspace_impact_scope",
+        "commit_scope",
+        "message",
+        "partial_paths",
+        "blocker_codes",
+        "plan_digest"
+      ],
+      "properties": {
+        "artifact_type": {"const": "commit-plan"},
+        "schema_version": {"const": "2.0.0"},
+        "base_commit": {"type": "string", "minLength": 1},
+        "workspace_digest": {"$ref": "#/$defs/digest"},
+        "workspace_impact_scope": {"$ref": "#/$defs/stringList"},
+        "commit_scope": {"$ref": "#/$defs/stringList"},
+        "message": {"type": "string", "minLength": 1},
+        "partial_paths": {"$ref": "#/$defs/stringList"},
+        "blocker_codes": {
+          "type": "array",
+          "items": {
+            "$ref": "https://sdd-harness.dev/schemas/2.0/common.schema.json#/$defs/blockerCode"
+          },
+          "uniqueItems": true
+        },
+        "plan_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "issuePlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_type",
+        "schema_version",
+        "provider",
+        "repository",
+        "local_path",
+        "title",
+        "body",
+        "labels",
+        "assignee",
+        "controlled",
+        "target_digest",
+        "plan_digest"
+      ],
+      "properties": {
+        "artifact_type": {"const": "issue-plan"},
+        "schema_version": {"const": "2.0.0"},
+        "provider": {"enum": ["local", "github"]},
+        "repository": {"type": ["string", "null"]},
+        "local_path": {"type": ["string", "null"]},
+        "title": {"type": "string", "minLength": 1},
+        "body": {"type": "string", "minLength": 1},
+        "labels": {"$ref": "#/$defs/stringList"},
+        "assignee": {"type": ["string", "null"]},
+        "controlled": {"type": "boolean"},
+        "target_digest": {"$ref": "#/$defs/digest"},
+        "plan_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "pushPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_type",
+        "schema_version",
+        "workspace_digest",
+        "remote",
+        "remote_url_digest",
+        "branch",
+        "commit_sha",
+        "blocker_codes",
+        "plan_digest"
+      ],
+      "properties": {
+        "artifact_type": {"const": "push-plan"},
+        "schema_version": {"const": "2.0.0"},
+        "workspace_digest": {"$ref": "#/$defs/digest"},
+        "remote": {"type": "string", "minLength": 1},
+        "remote_url_digest": {
+          "oneOf": [
+            {"$ref": "#/$defs/digest"},
+            {"type": "null"}
+          ]
+        },
+        "branch": {"type": "string", "minLength": 1},
+        "commit_sha": {"type": "string", "minLength": 1},
+        "blocker_codes": {
+          "type": "array",
+          "items": {
+            "$ref": "https://sdd-harness.dev/schemas/2.0/common.schema.json#/$defs/blockerCode"
+          },
+          "uniqueItems": true
+        },
+        "plan_digest": {"$ref": "#/$defs/digest"}
+      }
+    }
+  }
+}

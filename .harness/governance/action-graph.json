@@ -1,0 +1,264 @@
+{
+  "action_graph_digest": "sha256:2b52402907f629ca0a2d3b005eacaf09e1538ccbd4f353211cbecdc429fa95e0",
+  "actions": [
+    {
+      "action_id": "ci:workflow:full-ci",
+      "binding": {
+        "adapter": "github-actions",
+        "job": "full-ci",
+        "workflow": ".github/workflows/harness.yml"
+      },
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "verification",
+      "semantics": "ci",
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.full-ci"
+      ],
+      "validation_floor": "T3"
+    },
+    {
+      "action_id": "ci:workflow:production-gate",
+      "binding": {
+        "adapter": "github-actions",
+        "job": "production-gate",
+        "workflow": ".github/workflows/delivery-gate-evidence.yml"
+      },
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "verification",
+      "semantics": "ci",
+      "source_refs": [
+        ".github/workflows/delivery-gate-evidence.yml#jobs.production-gate"
+      ],
+      "validation_floor": "T3"
+    },
+    {
+      "action_id": "delivery:commit",
+      "binding": {
+        "adapter": "harness-core",
+        "operation": "commit"
+      },
+      "binding_state": "bound",
+      "boundary": "local",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding"
+      ],
+      "domain": "delivery",
+      "semantics": "commit",
+      "source_refs": [
+        "harness://specification/2.0.0/actions/commit"
+      ],
+      "validation_floor": "T0"
+    },
+    {
+      "action_id": "delivery:push",
+      "binding": {
+        "adapter": "harness-core",
+        "operation": "push"
+      },
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "delivery",
+      "semantics": "push",
+      "source_refs": [
+        "harness://specification/2.0.0/actions/push"
+      ],
+      "validation_floor": "T3"
+    },
+    {
+      "action_id": "delivery:remote-issue",
+      "binding": {
+        "adapter": "provider",
+        "operation": "issue-write"
+      },
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "delivery",
+      "semantics": "issue-write",
+      "source_refs": [
+        "harness://specification/2.0.0/actions/remote-issue"
+      ],
+      "validation_floor": "T0"
+    },
+    {
+      "action_id": "merge:workflow:authorize",
+      "binding": {
+        "adapter": "github-actions",
+        "job": "authorize",
+        "workflow": ".github/workflows/harness.yml"
+      },
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "delivery",
+      "semantics": "merge",
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.authorize"
+      ],
+      "validation_floor": "T3"
+    },
+    {
+      "action_id": "merge:workflow:merge",
+      "binding": {
+        "adapter": "github-actions",
+        "job": "merge",
+        "workflow": ".github/workflows/harness.yml"
+      },
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "delivery",
+      "semantics": "merge",
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.merge"
+      ],
+      "validation_floor": "T3"
+    },
+    {
+      "action_id": "merge:workflow:pull-request",
+      "binding": {
+        "adapter": "github-actions",
+        "job": "pull-request",
+        "workflow": ".github/workflows/harness.yml"
+      },
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "delivery",
+      "semantics": "merge",
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.pull-request"
+      ],
+      "validation_floor": "T3"
+    },
+    {
+      "action_id": "specification:issue-plan",
+      "binding": {
+        "adapter": "harness-core",
+        "operation": "issue-plan"
+      },
+      "binding_state": "bound",
+      "boundary": "local",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding"
+      ],
+      "domain": "specification",
+      "semantics": "issue-plan",
+      "source_refs": [
+        "harness://specification/2.0.0/actions/issue-plan"
+      ],
+      "validation_floor": "T0"
+    },
+    {
+      "action_id": "test:python-root:test",
+      "binding": {
+        "adapter": "local",
+        "argv": [
+          "uv",
+          "run",
+          "pytest"
+        ],
+        "cwd": "."
+      },
+      "binding_state": "bound",
+      "boundary": "local",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding"
+      ],
+      "domain": "verification",
+      "semantics": "test",
+      "source_refs": [
+        "pyproject.toml#pytest-dependency"
+      ],
+      "validation_floor": "T1"
+    },
+    {
+      "action_id": "test:workflow:authorize",
+      "binding": {
+        "adapter": "github-actions",
+        "job": "authorize",
+        "workflow": ".github/workflows/delivery-gate-evidence.yml"
+      },
+      "binding_state": "bound",
+      "boundary": "local",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding"
+      ],
+      "domain": "verification",
+      "semantics": "test",
+      "source_refs": [
+        ".github/workflows/delivery-gate-evidence.yml#jobs.authorize"
+      ],
+      "validation_floor": "T1"
+    },
+    {
+      "action_id": "test:workflow:contracts",
+      "binding": {
+        "adapter": "github-actions",
+        "job": "contracts",
+        "workflow": ".github/workflows/routine-contracts.yml"
+      },
+      "binding_state": "bound",
+      "boundary": "local",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding"
+      ],
+      "domain": "verification",
+      "semantics": "test",
+      "source_refs": [
+        ".github/workflows/routine-contracts.yml#jobs.contracts"
+      ],
+      "validation_floor": "T1"
+    }
+  ],
+  "artifact_type": "action-graph",
+  "blockers": [],
+  "facts_digest": "sha256:6aceea0c7ffb97bbc74692f9d668fdd31f67ce5a786eeaf2df24c8c46a749006",
+  "schema_version": "2.0.0",
+  "snapshot_digest": "sha256:309cbb6dad3bd72358ece248ffee2e49edb121f2bb7971cf65621af073e5ba26"
+}

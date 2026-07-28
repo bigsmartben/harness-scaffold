@@ -1,4 +1,0 @@
-interface:
-  display_name: "Harness"
-  short_description: "Generate and enforce repository Agent governance"
-  default_prompt: "Use $harness to compile the repository governance projection and execute the requested Action through G0-G7."

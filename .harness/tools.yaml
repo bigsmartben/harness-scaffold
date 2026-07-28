@@ -1,4 +1,27 @@
 tools:
+  - id: harness-cli
+    type: cli
+    purpose: invoke-the-deterministic-harness-core
+    capability: harness-runtime
+    action_semantics: ordinary
+    entrypoint: uv
+    arguments:
+      - run
+      - sdd-harness
+    invocation_mode: direct
+    version_source: pyproject.toml#project.version
+    working_directory: repository-root
+    use_when:
+      - inspect, initialize, migrate, or run a registered local task_ref
+    do_not_use_when:
+      - bypass a controlled delivery boundary
+    inputs:
+      arguments: argv
+    outputs:
+      format: json-or-text
+    constraints:
+      - use machine JSON for adapters
+
   - id: repository-search
     type: cli
     purpose: repository-text-search
@@ -192,6 +215,10 @@ tools:
     capability: project-push
     action_semantics: push
     invocation_mode: managed
+    entrypoint: sdd-harness
+    arguments:
+      - push-apply
+    version_source: pyproject.toml#project.version
     task_ref: push:branch
     working_directory: repository-root
     use_when:

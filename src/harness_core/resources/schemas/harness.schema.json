@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sdd-harness.dev/schemas/2.0/harness.schema.json",
+  "x-harness-schema-version": "2.0.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "project_policy",
+    "issue_planning",
+    "branch_policy"
+  ],
+  "properties": {
+    "schema_version": {"const": "2.0.0"},
+    "mode": {"enum": ["bootstrap", "adopt"]},
+    "project_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["local_execution", "validation", "hooks"],
+      "properties": {
+        "local_execution": {"const": "continuous"},
+        "validation": {"const": "minimum-sufficient"},
+        "hooks": {"enum": ["optional", "enabled"]},
+        "declarations": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "issue_planning": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["default_provider", "local_directory"],
+      "properties": {
+        "default_provider": {"enum": ["local", "github"]},
+        "local_directory": {
+          "type": "string",
+          "pattern": "^\\.harness/issues(?:/.*)?$"
+        },
+        "remote": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["provider", "repository"],
+          "properties": {
+            "provider": {"const": "github"},
+            "repository": {
+              "type": "string",
+              "pattern": "^[^/\\s]+/[^/\\s]+$"
+            }
+          }
+        }
+      }
+    },
+    "branch_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["private", "controlled", "unmatched", "actions"],
+      "properties": {
+        "private": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "controlled": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "unmatched": {"const": "controlled"},
+        "actions": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "write",
+              "commit",
+              "issue-write",
+              "push",
+              "pull-request",
+              "merge",
+              "publish",
+              "release",
+              "deploy"
+            ]
+          },
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}
+

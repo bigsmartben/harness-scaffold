@@ -1,64 +1,83 @@
 # SDD Harness
 
-Harness 是 Codex App / Codex CLI 中的仓库内 Agent 治理框架：它从仓库事实生成治理规范，并确保规范通过 Action、Gate 和 Evidence 被执行。当前规范版本为 `1.0.0`。
+Harness 是面向 Codex App / Codex CLI 的仓库脚手架（repository
+scaffold）。它通过一个隔离安装的确定性程序，把仓库级 Skill、项目策略和
+可验证治理投影发布到目标仓库。当前契约版本为 `2.0.0`。
 
 ## 快速开始
 
 ```text
 uv tool install <source-or-package>
-sdd-harness init --yes
+cd <target-repository>
+sdd-harness init . --yes
 ```
 
-随后在目标仓库的 Codex App 或 Codex CLI 中显式调用：
+随后直接在 Codex App 或 CLI 中描述任务，或显式使用：
 
 ```text
-$harness
+$harness 修改解析器并运行最低充分验证
 ```
 
-`sdd-harness init` 是确定性初始化入口，`$harness` 是正式工作入口。Plugin、Hook 和 MCP 只提供可选纵深防御，不保存治理状态，也不是基础前置条件。
+`sdd-harness init` 是确定性初始化入口；仓库内
+`.agents/skills/harness` 是正式用户入口。Plugin、Hook 和 MCP 都是显式
+启用的纵深防御（defense in depth），不是基础依赖。
 
-## 工作方式
+## 2.0 架构
 
-```text
-Repository Snapshot
-  → source-backed facts
-  → Action Graph
-  → Governance Projection (maintainer/consumer × 6 subdomains)
-  → AGENTS.md + .codex + .agents + .harness/governance
-  → Work Grant + G0–G7
-  → accepted Evidence / stable blocker codes
+```mermaid
+flowchart LR
+    A["uv tool install"] --> B["隔离的 sdd-harness"]
+    B --> C["init / migrate"]
+    C --> D["AGENTS.md"]
+    C --> E[".agents/skills/harness"]
+    C --> F[".harness/harness.yaml"]
+    C --> G["四域、16 Cell 投影"]
+    E --> H["Codex App / CLI"]
+    I["Hook / Plugin / MCP"] -. "可选加固" .-> H
 ```
 
-| 层 | 作用 | 例子 |
+| 层 | 职责 | 实例 |
 |---|---|---|
-| Agent 编排 | 理解目标、分解阶段、解释缺口 | `repo_mapper` 提取事实，`governed_worker` 单写 |
-| 确定性 Core | 摘要、Schema、Resolver、Gate、Evidence | 相同快照产生相同 `projection_id` |
-| 仓库 Artifact | 保存唯一治理状态 | `.harness/governance/rules.json` |
+| 分发（distribution） | 隔离安装和版本握手 | `uv tool install` 后 PATH 上有 `sdd-harness` |
+| 确定性内核（deterministic core） | 编译事实、Action Graph、Coverage、决定与证据 | 同一输入产生同一 `projection_id` |
+| 仓库 Skill | 告诉 Codex 如何完成任务 | `$harness` 路由本地工作、Commit、Issue、交付 |
+| 可选加固 | 提前发现旁路或漂移 | `sdd-harness init . --with-hooks` |
 
-## 固定治理维度
+## 四个治理域
 
-- Audience：`maintainer`、`consumer`
-- Subdomain：`agent-runtime`、`engineering-runtime`、`poc`、`source-code`、`test-code`、`other-tools`
-- Responsibility：`generate`、`enforce`
+| Domain（域） | 处理什么 | 实例 |
+|---|---|---|
+| `specification` | 需求和 Issue Plan | 更新验收标准 |
+| `implementation` | 源码和生成物 | 修改 Python 模块 |
+| `verification` | Test、类型和契约验证 | `test:contracts` |
+| `delivery` | Commit、远端 Issue、Push、PR、Release | 选择性 Commit |
 
-例如 `uv run pytest` 是一个行为，不只是一个已安装工具：它同时受 `engineering-runtime` 和 `test-code` 约束，必须由仓库来源给出唯一调用绑定。
+`maintainer / consumer × generate / enforce × 四域` 固定形成 16 个 Cell。
+它们由 Python 编译器一次生成，不依赖 16 次 Agent 推理。
+
+## 用户只需理解两个决定
+
+- 项目策略（Project policy）：写入 `.harness/harness.yaml`，供后续任务复用。
+- 本次决定（Task decision）：只绑定当前任务或一个精确动作，工作区、投影或目标变化后立即失效。
+
+例如，“以后 Issue 都写 GitHub”是项目策略；“现在提交 `src/a.py`”是本次决定。
+Commit、Remote Issue、Push、PR 互不共享决定。
 
 ## 安全边界
 
-- Harness 不发明技术栈、命令、权限或验证结论。
-- Agent Request 不能携带任意 `command`，也不能覆盖 `argv`、`cwd`、Scope 或 Postconditions。
-- 治理控制面写入先零写入预检，再按精确 Plan 单点发布。
-- 常规行为在 Standing Policy + Work Grant 下自动过门禁；只有范围或外部权限跃迁才集中确认。
-- 未分类、来源缺失、绑定歧义、投影过期、证据不全和执行漂移都会失败关闭。
+- 普通本地修改连续执行，使用 T0–T3 最低充分验证。
+- Action 只有一个主域，调用只能来自仓库事实，不能由模型发明命令。
+- Controlled / Unclassified Branch 的直接写入、Commit 和交付失败关闭。
+- Remote Issue 失败不会回退为本地 Issue。
+- 临时 Git Index 只提交确认路径，并保留无关暂存状态。
+- Coverage 缺失、重复或无来源的 `not_applicable` 都会阻断。
 
-## 文档
+## 文档与验证
 
-- [治理规范 SSOT](docs/specification.md)
+- [2.0 规范](docs/specification.md)
 - [快速上手](docs/quickstart.md)
 - [仓库结构](docs/repository-structure.md)
-- [可观察用户用例](uc.md)
+- [可观察用例](uc.md)
 - [实施状态](plan.md)
 
-## 开发验证
-
-本仓库的 Test / Build / CI 等语义必须通过 `.harness/tools.yaml` 中登记的 `task_ref` 路由；不要绕过 Harness 直接运行项目验证命令。
+本仓库的验证必须通过 `.harness/tools.yaml` 登记的 `task_ref` 执行。

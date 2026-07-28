@@ -1,0 +1,190 @@
+{
+  "artifact_type": "source-facts",
+  "facts": [
+    {
+      "fact_id": "fact:action-binding:ci-workflow-full-ci",
+      "fact_type": "action-binding",
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.full-ci"
+      ],
+      "value": {
+        "action_id": "ci:workflow:full-ci",
+        "adapter": "github-actions",
+        "job": "full-ci",
+        "semantics": "ci",
+        "workflow": ".github/workflows/harness.yml"
+      }
+    },
+    {
+      "fact_id": "fact:action-binding:ci-workflow-production-gate",
+      "fact_type": "action-binding",
+      "source_refs": [
+        ".github/workflows/delivery-gate-evidence.yml#jobs.production-gate"
+      ],
+      "value": {
+        "action_id": "ci:workflow:production-gate",
+        "adapter": "github-actions",
+        "job": "production-gate",
+        "semantics": "ci",
+        "workflow": ".github/workflows/delivery-gate-evidence.yml"
+      }
+    },
+    {
+      "fact_id": "fact:action-binding:merge-workflow-authorize",
+      "fact_type": "action-binding",
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.authorize"
+      ],
+      "value": {
+        "action_id": "merge:workflow:authorize",
+        "adapter": "github-actions",
+        "job": "authorize",
+        "semantics": "merge",
+        "workflow": ".github/workflows/harness.yml"
+      }
+    },
+    {
+      "fact_id": "fact:action-binding:merge-workflow-merge",
+      "fact_type": "action-binding",
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.merge"
+      ],
+      "value": {
+        "action_id": "merge:workflow:merge",
+        "adapter": "github-actions",
+        "job": "merge",
+        "semantics": "merge",
+        "workflow": ".github/workflows/harness.yml"
+      }
+    },
+    {
+      "fact_id": "fact:action-binding:merge-workflow-pull-request",
+      "fact_type": "action-binding",
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.pull-request"
+      ],
+      "value": {
+        "action_id": "merge:workflow:pull-request",
+        "adapter": "github-actions",
+        "job": "pull-request",
+        "semantics": "merge",
+        "workflow": ".github/workflows/harness.yml"
+      }
+    },
+    {
+      "fact_id": "fact:action-binding:test-python-root-test",
+      "fact_type": "action-binding",
+      "source_refs": [
+        "pyproject.toml#pytest-dependency"
+      ],
+      "value": {
+        "action_id": "test:python-root:test",
+        "adapter": "local",
+        "argv": [
+          "uv",
+          "run",
+          "pytest"
+        ],
+        "cwd": ".",
+        "semantics": "test"
+      }
+    },
+    {
+      "fact_id": "fact:action-binding:test-workflow-authorize",
+      "fact_type": "action-binding",
+      "source_refs": [
+        ".github/workflows/delivery-gate-evidence.yml#jobs.authorize"
+      ],
+      "value": {
+        "action_id": "test:workflow:authorize",
+        "adapter": "github-actions",
+        "job": "authorize",
+        "semantics": "test",
+        "workflow": ".github/workflows/delivery-gate-evidence.yml"
+      }
+    },
+    {
+      "fact_id": "fact:action-binding:test-workflow-contracts",
+      "fact_type": "action-binding",
+      "source_refs": [
+        ".github/workflows/routine-contracts.yml#jobs.contracts"
+      ],
+      "value": {
+        "action_id": "test:workflow:contracts",
+        "adapter": "github-actions",
+        "job": "contracts",
+        "semantics": "test",
+        "workflow": ".github/workflows/routine-contracts.yml"
+      }
+    },
+    {
+      "fact_id": "fact:governance-source:delivery",
+      "fact_type": "governance-source",
+      "source_refs": [
+        "harness://specification/2.0.0/domains/delivery"
+      ],
+      "value": {
+        "directive": "Apply the Harness SDD delivery contract from source-backed facts.",
+        "domain": "delivery"
+      }
+    },
+    {
+      "fact_id": "fact:governance-source:implementation",
+      "fact_type": "governance-source",
+      "source_refs": [
+        "harness://specification/2.0.0/domains/implementation"
+      ],
+      "value": {
+        "directive": "Apply the Harness SDD implementation contract from source-backed facts.",
+        "domain": "implementation"
+      }
+    },
+    {
+      "fact_id": "fact:governance-source:specification",
+      "fact_type": "governance-source",
+      "source_refs": [
+        "harness://specification/2.0.0/domains/specification"
+      ],
+      "value": {
+        "directive": "Apply the Harness SDD specification contract from source-backed facts.",
+        "domain": "specification"
+      }
+    },
+    {
+      "fact_id": "fact:governance-source:verification",
+      "fact_type": "governance-source",
+      "source_refs": [
+        "harness://specification/2.0.0/domains/verification"
+      ],
+      "value": {
+        "directive": "Apply the Harness SDD verification contract from source-backed facts.",
+        "domain": "verification"
+      }
+    },
+    {
+      "fact_id": "fact:project-policy:project",
+      "fact_type": "project-policy",
+      "source_refs": [
+        ".harness/harness.yaml#project_policy"
+      ],
+      "value": {
+        "policy": {
+          "declarations": {
+            "distribution": "uv-tool",
+            "runtime_surfaces": [
+              "codex-app",
+              "codex-cli"
+            ]
+          },
+          "hooks": "optional",
+          "local_execution": "continuous",
+          "validation": "minimum-sufficient"
+        },
+        "policy_digest": "sha256:5b3736d3d764cbafb8e870888e3245f279aa7e29cdd9421048852bfa9b4e29ea"
+      }
+    }
+  ],
+  "facts_digest": "sha256:6aceea0c7ffb97bbc74692f9d668fdd31f67ce5a786eeaf2df24c8c46a749006",
+  "schema_version": "2.0.0",
+  "snapshot_digest": "sha256:309cbb6dad3bd72358ece248ffee2e49edb121f2bb7971cf65621af073e5ba26"
+}

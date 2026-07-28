@@ -1,91 +1,104 @@
 # Harness 快速上手
 
-版本：`1.0.0`
+版本：`2.0.0`
 
 ## 1. 安装与初始化
 
 ```text
 uv tool install <source-or-package>
 cd <target-repository>
-sdd-harness init
+sdd-harness --version
+sdd-harness init .
 ```
 
-`init` 先读取仓库事实并展示 Plan。使用 `--yes` 可在自动化场景接受这一份精确 Plan：
+`init` 首先返回零写入计划（plan）和 `plan_digest`。交互外的自动化可用：
 
 ```text
-sdd-harness init --yes
+sdd-harness init . --yes
 ```
 
-成功后会生成或更新：
+1.0 仓库例外：第一次调用只报告迁移范围，且拒绝 `--yes`。确认摘要未变化后：
+
+```text
+sdd-harness init . --approve-plan sha256:<plan-digest>
+```
+
+初始化生成：
 
 ```text
 AGENTS.md
-.codex/config.toml
-.codex/agents/*.toml
 .agents/skills/harness/
+.harness/harness.yaml
 .harness/governance/
 ```
 
-它不会覆盖 `AGENTS.md` 和 `.codex/config.toml` 的用户内容；只管理带 Harness marker 的区块。角色文件已存在但无法证明由 Harness 管理时，初始化零写入并返回冲突。
-
-## 2. 正式入口
-
-在 Codex App 或 Codex CLI 打开目标仓库，显式输入：
+默认不生成 Hook、Plugin 或固定 Agent TOML。需要项目 Hook 时显式执行：
 
 ```text
-$harness
+sdd-harness init . --with-hooks --yes
 ```
 
-主 Agent 会读取当前 `projection.lock.json`，按需使用六个自定义 Agent：
+项目 Hook 仍需按 Codex 的信任模型启用；没有 Hook 不影响基础流程。
 
-| Agent | 权限默认值 | 单一职责 |
+## 2. 在 Codex 中工作
+
+Codex App / CLI 会发现仓库内 Skill。可以直接描述任务，也可以显式写：
+
+```text
+$harness 修改解析器并运行最低充分验证
+```
+
+Harness 先运行：
+
+```text
+sdd-harness inspect . --json
+```
+
+状态为 `active` 后，普通本地工作连续执行。验证层级示例：
+
+| 变化 | 层级 | 实例 |
 |---|---|---|
-| `repo_mapper` | read-only | 产生有来源事实 |
-| `governance_projector` | read-only | 处理一个 Audience × Subdomain |
-| `projection_reconciler` | read-only | 归并候选并保留冲突 |
-| `governance_validator` | read-only | 调用 Schema / Validator |
-| `governed_worker` | workspace-write | 在唯一 Scope 内执行已解析 Action |
-| `evidence_verifier` | read-only | 验证结果、漂移和 Evidence |
+| 文档或惰性文本 | T0 | `docs/quickstart.md` |
+| 窄实现或单测试 | T1 | `src/widget.py` |
+| 公共 Schema 或多文件组件 | T2 | `schemas/public.schema.json` |
+| 核心、迁移、依赖、CI/CD | T3 | `src/harness_core/projection.py` |
 
-## 3. 日常任务示例
+## 3. 项目策略与本次决定
 
-用户说“修改解析器并跑受影响测试”后，主 Agent 建立一次 Work Grant：
-
-```json
-{
-  "projection_id": "sha256:...",
-  "action_id": "test:contracts",
-  "audience": "maintainer",
-  "scope": ["skills/initialize-ai-coding-harness", "tests"],
-  "parameters": {}
-}
-```
-
-Agent 没有提交 Shell 字符串。Resolver 从 Action Graph 取得唯一 `argv`、`cwd` 和 Postconditions；随后自动检查 G0–G7。投影和 Scope 未变化时，常规测试不会重复请求确认。
-
-## 4. 何时确认
-
-| 情况 | 行为 |
+| 用户意图 | 保存方式 |
 |---|---|
-| 只读分析、已登记测试、Scope 内源码修改 | 自动 Gate，不确认 |
-| 扩大多个写路径 | 聚合成一次变更集确认 |
-| Push、PR、Release 等关联动作 | 聚合成一次交付确认包 |
-| 删除、强推、生产迁移 | 独立确认或平台门禁 |
+| “以后本项目的 Issue 都发到 GitHub” | 项目策略（Project policy） |
+| “这次只提交 `src/a.py`” | 本次决定（Task decision） |
 
-确认只授权权限跃迁；不能把未知行为变成已分类行为，也不能替代 Evidence。
+本次决定绑定 `task_id + projection_id + workspace_digest + exact_action +
+target`。例如 Commit 的决定不能授权 Remote Issue，文件变化后旧决定也不能复用。
 
-## 5. 常见失败
+## 4. Commit 与 Issue
 
-| 阻断码 | 人话解释 | 下一步 |
+选择性 Commit 先生成计划：
+
+```text
+sdd-harness commit-plan . --path src/a.py --message "fix: parser"
+```
+
+确认后由临时 Git Index 创建只含 `src/a.py` 的提交。无关暂存保持原样；目标文件
+已部分暂存时返回 `PARTIAL_STAGING_UNSUPPORTED`。
+
+Issue 先生成 Provider 无关的 Issue Plan：
+
+```text
+sdd-harness issue-plan . --title "Parser error" --body "Reproduce..."
+```
+
+Consumer 默认写 `.harness/issues`。配置为 GitHub 时，Harness 只准备精确的
+Provider Request；远端失败不会创建本地副本。
+
+## 5. 常见阻断
+
+| 阻断码 | 人话解释 | 处理 |
 |---|---|---|
-| `GOVERNANCE_PROJECTION_STALE` | 仓库事实变了 | 重新运行 `$harness` 更新投影 |
-| `TOOL_ACTION_UNCLASSIFIED` | 找到工具但不知道具体行为 | 在仓库中声明 Action 来源 |
-| `TOOL_BINDING_AMBIGUOUS` | 一个行为解析出多个入口 | 消除冲突绑定 |
-| `AGENT_CONFIGURATION_UNTRUSTED` | 角色文件存在但不受 Harness 管理 | 人工核对并移交 |
-| `GOVERNANCE_EVIDENCE_INCOMPLETE` | 执行结果不足以支撑结论 | 补齐后置条件或平台证据 |
-
-缺口会一次性返回完整阻断包，不会变成连续追问。
-
-## 6. 重复初始化
-
-相同仓库快照、Schema、编译器版本和维护者声明会产生相同 `projection_id`。相同版本重复执行 `sdd-harness init --yes` 应产生空 Diff；如果治理输入改变，旧投影立即失效。
+| `HARNESS_RUNTIME_INCOMPATIBLE` | PATH 上的程序或仓库 Skill 版本不一致 | 重新安装并运行 `init` |
+| `GOVERNANCE_PROJECTION_STALE` | 项目策略或治理输入已变化 | 重新生成投影 |
+| `TASK_DECISION_STALE` | 本次决定绑定的工作区、动作或目标变了 | 重新确认精确动作 |
+| `CONTROLLED_BRANCH_GATE_REQUIRED` | 当前分支不能直接写入或交付 | 切到私有工作分支或走平台门禁 |
+| `GOVERNANCE_COVERAGE_INCOMPLETE` | 16 Cell 存在缺失、重复或无来源 N/A | 修复来源后重新编译 |
