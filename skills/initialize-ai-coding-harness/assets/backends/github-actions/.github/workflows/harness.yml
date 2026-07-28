@@ -29,7 +29,7 @@ on:
         required: false
         type: string
       pull_request_number:
-        description: Pull request number for merge:pull-request
+        description: Pull request number for merge:pull-request or branch:delete
         required: false
         type: string
       merge_method:
@@ -70,11 +70,19 @@ jobs:
                 *) exit 64 ;;
               esac
               ;;
+            branch:delete)
+              test "$CONFIRMED" = "true"
+              test -n "${{ inputs.target }}"
+              test -n "${{ inputs.pull_request_number }}"
+              test -n "${{ inputs.commit_sha }}"
+              printf '%s\n' "${{ inputs.target }}" |
+                grep -Eq '^refs/heads/(codex|agent)/[A-Za-z0-9._/-]+$'
+              ;;
             *) ;;
           esac
 
   validate:
-    if: inputs.task_id != 'pull-request:create' && inputs.task_id != 'merge:pull-request'
+    if: inputs.task_id != 'pull-request:create' && inputs.task_id != 'merge:pull-request' && inputs.task_id != 'branch:delete'
     needs: authorize
     runs-on: ubuntu-latest
     steps:
@@ -132,3 +140,57 @@ jobs:
           test "$actual_base" = "$base"
           gh pr merge "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" \
             "--${MERGE_METHOD}" --match-head-commit "$EXPECTED_HEAD_SHA"
+
+  push-delete-branch:
+    if: inputs.task_id == 'branch:delete'
+    needs: authorize
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - name: Delete exact merged private branch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET: ${{ inputs.target }}
+          PR_NUMBER: ${{ inputs.pull_request_number }}
+          EXPECTED_HEAD_SHA: ${{ inputs.commit_sha }}
+          REQUEST_DIGEST: ${{ inputs.request_digest }}
+        run: |
+          set -eu
+          printf '%s\n' "$TARGET" |
+            grep -Eq '^refs/heads/(codex|agent)/[A-Za-z0-9._/-]+$'
+          branch="${TARGET#refs/heads/}"
+          case "$branch" in
+            *..*|*//*|*/|*[\*\?\[\]\{\}\\\:\^\~\ ]*) exit 64 ;;
+          esac
+          actual_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${branch}" --jq '.object.sha')"
+          test "$actual_sha" = "$EXPECTED_HEAD_SHA"
+          pr_state="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json state --jq '.state')"
+          pr_head="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json headRefName --jq '.headRefName')"
+          pr_head_sha="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json headRefOid --jq '.headRefOid')"
+          test "$pr_state" = "MERGED"
+          test "$pr_head" = "$branch"
+          test "$pr_head_sha" = "$EXPECTED_HEAD_SHA"
+          gh api --method DELETE "repos/${GITHUB_REPOSITORY}/git/refs/heads/${branch}"
+          if gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${branch}" >/dev/null 2>&1; then
+            exit 1
+          fi
+          mkdir -p .harness/reports
+          jq -n \
+            --arg task_id "branch:delete" \
+            --arg request_digest "$REQUEST_DIGEST" \
+            --arg run_id "actions-run:${GITHUB_RUN_ID}" \
+            --arg target "$TARGET" \
+            --arg commit_sha "$EXPECTED_HEAD_SHA" \
+            --arg pull_request_number "$PR_NUMBER" \
+            '{task_id: $task_id, request_digest: $request_digest, run_id: $run_id, target: $target, commit_sha: $commit_sha, pull_request_number: $pull_request_number, postcondition: "remote-ref-absent", status: "completed"}' \
+            > .harness/reports/branch-delete.json
+      - name: Upload branch deletion evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: branch-delete-evidence
+          path: .harness/reports/branch-delete.json
+          if-no-files-found: error
+          retention-days: 30

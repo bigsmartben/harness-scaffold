@@ -89,6 +89,17 @@ tasks:
     timeout: 2m
     outputs:
       report: .harness/reports/push-branch.json
+  - id: branch:delete
+    category: push
+    automation_level: critical
+    auto_allowed: false
+    source: .github/workflows/harness.yml#jobs.push-delete-branch
+    backend: github-actions
+    working_directory: repository-root
+    supports_scope: publish
+    timeout: 10m
+    outputs:
+      report: .harness/reports/branch-delete.json
   - id: pull-request:create
     category: pull-request
     automation_level: critical

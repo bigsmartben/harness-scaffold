@@ -188,6 +188,7 @@ def test_bootstrap_python_manifest_without_commands_creates_push_only_catalog(
     tasks = yaml.safe_load(plan["render_context"]["tasks_yaml"])["tasks"]
     assert [task["id"] for task in tasks] == [
         "push:branch",
+        "branch:delete",
         "pull-request:create",
         "merge:pull-request",
     ]
@@ -353,6 +354,7 @@ def test_monorepo_generates_independent_tools_tasks_and_impact_rules() -> None:
     task_ids = {task["id"] for task in tasks}
     assert task_ids == {
         "push:branch",
+        "branch:delete",
         "pull-request:create",
         "merge:pull-request",
         "test:python-root",

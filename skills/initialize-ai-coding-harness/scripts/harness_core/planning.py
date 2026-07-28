@@ -285,6 +285,18 @@ def _catalogs(
             "outputs": {"report": ".harness/reports/push-branch.json"},
         },
         {
+            "id": "branch:delete",
+            "category": "push",
+            "automation_level": "critical",
+            "auto_allowed": False,
+            "source": ".github/workflows/harness.yml#jobs.push-delete-branch",
+            "backend": "github-actions",
+            "working_directory": "repository-root",
+            "supports_scope": "publish",
+            "timeout": "10m",
+            "outputs": {"report": ".harness/reports/branch-delete.json"},
+        },
+        {
             "id": "pull-request:create",
             "category": "pull-request",
             "automation_level": "critical",
@@ -331,6 +343,35 @@ def _catalogs(
                 "current confirmation required",
                 "no force push",
                 "git-remote backend only",
+            ],
+        }
+    )
+    tools.append(
+        {
+            "id": "github-delete-merged-private-branch",
+            "type": "project-action",
+            "purpose": "delete-confirmed-merged-private-branch",
+            "capability": "project-branch-delete",
+            "action_semantics": "push",
+            "invocation_mode": "managed",
+            "task_ref": "branch:delete",
+            "working_directory": "repository-root",
+            "use_when": ["delete one exact merged private remote branch"],
+            "do_not_use_when": [
+                "delete a controlled, unclassified, or unmerged branch"
+            ],
+            "inputs": {
+                "scope": "publish",
+                "target": "private-remote-branch-ref",
+                "pull_request_number": "positive-integer",
+                "commit_sha": "expected-head-sha",
+            },
+            "outputs": {"evidence": ".harness/reports/branch-delete.json"},
+            "constraints": [
+                "independent current confirmation required",
+                "exact refs/heads/codex or refs/heads/agent target required",
+                "merged pull request and expected head SHA must match",
+                "github-actions platform evidence required",
             ],
         }
     )
