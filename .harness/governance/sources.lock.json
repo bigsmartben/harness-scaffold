@@ -251,7 +251,7 @@
       }
     }
   ],
-  "facts_digest": "sha256:6b3354b05371b8560798e45d267ee45e01e28706c6a1b3f896bb10ec6fe32c90",
+  "facts_digest": "sha256:3b2136e7ce4b5299646b46852ecc9336dba173a95af09a50db717fa8d88cb61f",
   "schema_version": "2.0.0",
   "snapshot": {
     "artifact_type": "repository-snapshot",
@@ -305,11 +305,11 @@
         "path": "uv.lock"
       }
     ],
-    "head_ref": "refs/heads/codex/issue-22-harness-2-integrate",
+    "head_ref": "refs/heads/codex/issue-28-post-merge",
     "repository_root": "C:\\Users\\24598\\Documents\\github\\harness",
     "schema_version": "2.0.0",
-    "snapshot_digest": "sha256:856b6abeb6f75a55588e0829b31c7e52bc300832c3b0bcbefc840139a0855938",
-    "workspace_digest": "sha256:724e7d136e622013771f637c9b12ccb04e17fd9da25d9285b1df215f18fc35fa"
+    "snapshot_digest": "sha256:c365dffddb00b01257d46a8fd51196fada34757cf036452f971b5c81690e507c",
+    "workspace_digest": "sha256:881dbdbfcea780ce375039c142b9398c63119c9bea0c2382a5cbd62cdba0381d"
   },
-  "snapshot_digest": "sha256:856b6abeb6f75a55588e0829b31c7e52bc300832c3b0bcbefc840139a0855938"
+  "snapshot_digest": "sha256:c365dffddb00b01257d46a8fd51196fada34757cf036452f971b5c81690e507c"
 }
