@@ -1,15 +1,15 @@
 {
-  "action_graph_digest": "sha256:cc6dfa08bc28c19ca46a236718404aaec2b70aeabb13199f9cbc6ca959b8a29d",
+  "action_graph_digest": "sha256:0fdc4ce24b6e75b9f05134903ba03a8c236d1eea2d5293c30baec45f0b33170a",
   "artifact_type": "projection-lock",
   "blockers": [],
-  "facts_digest": "sha256:9545faca1e7ed62ef3e39eda5e16abb557037ad3c327160f8a1baa4968eaf2b8",
+  "facts_digest": "sha256:b8b8367e565d8e9d498e15182d639c7dbd8df430f6f5fe0d9c499ddf2b04154a",
   "governance_schema_version": "2.0.0",
   "policy_digest": "sha256:5b3736d3d764cbafb8e870888e3245f279aa7e29cdd9421048852bfa9b4e29ea",
   "projection_compiler_version": "2.0.0",
-  "projection_id": "sha256:a619b8bcfecdc7216cf42abdc5b7b206a6f2c7836ce559e70e8b5525bd59a2f8",
-  "projection_lock_digest": "sha256:d5032c92e867e6c59ee43828efc9117b1c202f56385d393bf931142eaa19a949",
+  "projection_id": "sha256:294df89b94aba476ed5a779888eaef905de99f5df4fe9dd62803fa6ec3d75dcc",
+  "projection_lock_digest": "sha256:af13b7c4d88159c78ba4985c735b546eadd3773639c88fc95e446ad833e72c18",
   "ready": true,
-  "rules_digest": "sha256:d70a9075c50527ebdb6cf15d863732844200e02ae9fcced2c888bafa10859482",
+  "rules_digest": "sha256:3a74dc1a0e56bdb269daf20f215c88f3b26df9ad3e96fb55a31b611bce7bcfe1",
   "schema_version": "2.0.0",
-  "snapshot_digest": "sha256:13d1a2b66f6dbd1ca281ed394d5d1333f1c8507b313a312b79dde133d04916d0"
+  "snapshot_digest": "sha256:ea3206b0c9c415cfd2926df9a0814a07d0cbde338ee9e4a6ae6b69fe07b628bc"
 }

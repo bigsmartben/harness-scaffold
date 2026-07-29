@@ -19,10 +19,10 @@
 |---|---|---|
 | E-01 安装 | S01.1、S01.2 | `scripts/smoke_distribution.py`：空目录版本检查、唯一入口、不可用源零入口 |
 | E-02 初始化 | S02.1～S02.4 | `tests/integration/test_initializer.py`、Distribution Smoke |
-| E-03 模式与计划 | S03.1～S03.4 | `test_entrypoint_and_projection_are_two_exact_phases`、`test_projection_plan_stales_when_a_source_changes`、`test_projection_is_portable_across_branches_and_clone_paths` |
+| E-03 模式与计划 | S03.1～S03.4 | `test_entrypoint_and_projection_are_two_exact_phases`、`test_projection_plan_stales_when_a_source_changes`、`test_projection_is_portable_across_branches_and_clone_paths`、`test_projection_detects_changes_hidden_by_lossy_git_clean_filter` |
 | E-04 Blue 投影 | S04.1、S04.2 | `test_entrypoint_and_projection_are_two_exact_phases`、`test_four_domain_projection_has_exactly_sixteen_records` |
 | E-05 Gray 投影 | S05.1～S05.3 | `tests/integration/test_consumer_projection.py` 的 Gray、Monorepo、冲突场景 |
-| E-06 用户核验 | S06.1～S06.4 | `test_status_reports_current_artifacts_and_exact_stale_source`、两阶段幂等场景、跨分支与克隆目录可移植性场景 |
+| E-06 用户核验 | S06.1～S06.4 | `test_status_reports_current_artifacts_and_exact_stale_source`、两阶段幂等场景、跨分支与克隆目录可移植性场景、有损 Git clean filter 仍触发精确 stale-source 的场景 |
 | E-07 本地工作 | S07.1～S07.3 | `tests/integration/test_local_action.py`：解析器真实修改、最近 Action、缺失绑定与等级拒绝 |
 | E-08 最低验证 | S08.1～S08.5 | `test_t0_t3_selector_uses_minimum_sufficient_validation`、本地 Action 成功/失败 Evidence |
 | E-09 Commit | S09.1～S09.3 | `tests/integration/test_commit.py`：临时 Index、无关暂存、部分暂存、分支门禁 |

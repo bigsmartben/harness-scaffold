@@ -9,7 +9,6 @@ from .artifacts import (
     SCHEMA_VERSION,
     attach_digest,
     content_digest,
-    path_digest,
 )
 from .workspace import run_git
 
@@ -48,30 +47,13 @@ _IGNORED_SOURCE_PREFIXES = {
 }
 
 
-def _git_normalized_digest(
-    repository: Path,
-    relative: str,
-    content: str | bytes | None = None,
-) -> str | None:
-    arguments = ["hash-object", f"--path={relative}"]
-    input_bytes: bytes | None = None
-    if content is None:
-        arguments.extend(["--", relative])
-    else:
-        arguments.append("--stdin")
-        input_bytes = (
-            content.encode("utf-8") if isinstance(content, str) else content
-        )
-    result = run_git(
-        repository,
-        arguments,
-        input_bytes=input_bytes,
-        check=False,
-    )
-    if result.returncode != 0:
-        return None
-    object_id = result.stdout.decode("ascii", errors="strict").strip()
-    return content_digest(f"git-object:{object_id}") if object_id else None
+def _portable_content_digest(content: str | bytes) -> str:
+    payload = content.encode("utf-8") if isinstance(content, str) else content
+    try:
+        text = payload.decode("utf-8")
+    except UnicodeDecodeError:
+        return content_digest(payload)
+    return content_digest(text.replace("\r\n", "\n"))
 
 
 def _tracked_and_untracked(repository: Path) -> list[str]:
@@ -148,16 +130,14 @@ def create_repository_snapshot(
             digest = (
                 ABSENT
                 if value is None
-                else _git_normalized_digest(root, relative, value)
-                or content_digest(value)
+                else _portable_content_digest(value)
             )
         else:
             target = root / relative
             digest = (
                 ABSENT
                 if not target.exists()
-                else _git_normalized_digest(root, relative)
-                or path_digest(target)
+                else _portable_content_digest(target.read_bytes())
             )
         if digest != ABSENT or relative in overrides:
             files.append({"path": relative, "digest": digest})
