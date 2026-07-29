@@ -459,11 +459,6 @@ def main() -> int:
         if before_unsupported != _tree_digest(unsupported):
             raise RuntimeError("unsupported configuration changed repository files")
 
-        python_path = _run(
-            ["uv", "python", "find", "3.12"],
-            cwd=fixture,
-            env=environment,
-        ).stdout.strip()
         probe_environment = {
             key: value
             for key, value in environment.items()
@@ -471,7 +466,12 @@ def main() -> int:
         }
         probe = _run(
             [
-                python_path,
+                "uv",
+                "run",
+                "--no-project",
+                "--python",
+                "3.12",
+                "python",
                 "-I",
                 "-c",
                 (
