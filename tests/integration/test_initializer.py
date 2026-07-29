@@ -152,7 +152,7 @@ def test_existing_unowned_documentation_skill_fails_closed(
     )
 
 
-def test_documentation_skill_manifest_rejects_path_traversal(
+def test_documentation_skill_manifest_rejects_unsafe_paths(
     private_repository: Path,
 ) -> None:
     initialize(private_repository)
@@ -162,7 +162,44 @@ def test_documentation_skill_manifest_rejects_path_traversal(
         / ".scaffold-manifest.json"
     )
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    manifest["managed_files"]["../../README.md"] = "sha256:invalid"
+    managed_files = dict(manifest["managed_files"])
+
+    for unsafe_path in (
+        "../../README.md",
+        "/absolute.md",
+        "C:/absolute.md",
+        "C:drive-relative.md",
+        "templates\\README.template.md",
+        "templates/说明.md",
+    ):
+        manifest["managed_files"] = {
+            **managed_files,
+            unsafe_path: "sha256:invalid",
+        }
+        manifest_path.write_text(
+            json.dumps(manifest),
+            encoding="utf-8",
+        )
+
+        plan = build_initialization_plan(private_repository)
+
+        assert plan["blocker_codes"] == [
+            "REPO_SKILL_MANIFEST_INVALID"
+        ]
+        assert unsafe_path not in "\n".join(plan["write_scope"])
+
+
+def test_documentation_skill_manifest_rejects_newer_major_version(
+    private_repository: Path,
+) -> None:
+    initialize(private_repository)
+    manifest_path = (
+        private_repository
+        / ".agents/skills/repo-documentation-maker"
+        / ".scaffold-manifest.json"
+    )
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["skill_version"] = "2.0.0"
     manifest_path.write_text(
         json.dumps(manifest),
         encoding="utf-8",
@@ -170,8 +207,15 @@ def test_documentation_skill_manifest_rejects_path_traversal(
 
     plan = build_initialization_plan(private_repository)
 
-    assert plan["blocker_codes"] == ["REPO_SKILL_MANIFEST_INVALID"]
-    assert "../../README.md" not in "\n".join(plan["write_scope"])
+    assert plan["blocker_codes"] == [
+        "REPO_SKILL_VERSION_INCOMPATIBLE"
+    ]
+    assert not any(
+        path.startswith(
+            ".agents/skills/repo-documentation-maker/"
+        )
+        for path in plan["write_scope"]
+    )
 
 
 def test_with_hooks_is_explicit_and_does_not_change_runtime_authority(

@@ -9,7 +9,7 @@ import re
 import shutil
 import tempfile
 import tomllib
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any
 
 import yaml
@@ -88,6 +88,24 @@ def _documentation_skill_manifest(
     )
 
 
+def _valid_managed_relative_path(value: Any) -> bool:
+    if (
+        not isinstance(value, str)
+        or not value
+        or not value.isascii()
+        or "\\" in value
+    ):
+        return False
+    posix_path = PurePosixPath(value)
+    windows_path = PureWindowsPath(value)
+    return (
+        not posix_path.is_absolute()
+        and not windows_path.is_absolute()
+        and not windows_path.drive
+        and all(part not in {"", ".", ".."} for part in value.split("/"))
+    )
+
+
 def _valid_documentation_skill_manifest(value: Any) -> bool:
     if not isinstance(value, dict):
         return False
@@ -100,11 +118,7 @@ def _valid_documentation_skill_manifest(value: Any) -> bool:
         and re.fullmatch(r"\d+\.\d+\.\d+", version) is not None
         and isinstance(managed, dict)
         and all(
-            isinstance(path, str)
-            and path
-            and "\\" not in path
-            and not path.startswith("/")
-            and all(part not in {"", ".", ".."} for part in path.split("/"))
+            _valid_managed_relative_path(path)
             and isinstance(digest, str)
             and digest.startswith("sha256:")
             for path, digest in managed.items()
