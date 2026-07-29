@@ -1,57 +1,74 @@
-# Harness 仓库结构
+# Harness 3.0 仓库结构
 
-版本：`2.0.0`
+版本：`3.0.0`
 
 ## 开发仓库
 
 ```text
 harness/
 ├── src/harness_core/
-│   ├── resources/schemas/           2.0 JSON Schema
-│   ├── resources/repo_skill/harness 唯一规范仓库 Skill
-│   └── *.py                         确定性内核和 CLI Adapter
-├── plugins/harness/                 可选 Plugin；Skill 为生成副本
-├── tests/                           单元、集成与分发契约
-├── scripts/smoke_distribution.py    隔离 uv tool 验收
-├── .harness/                        本仓库项目策略和 task_ref
-└── pyproject.toml                   wheel 与 sdd-harness 入口
+│   ├── model.py                     固定三轴、16 Cell 与版本
+│   ├── contracts.py                 配置和锁文件校验
+│   ├── projection.py                确定性编译与原子替换
+│   ├── initializer.py               最小零迁移初始化
+│   ├── cli.py                       四命令本地 CLI
+│   └── resources/
+│       ├── schemas/                 v3 输入与锁 Schema
+│       └── repo_skill/harness/      分发 Skill 唯一副本
+├── tests/
+│   ├── unit/                        契约、投影、篡改与原子写
+│   ├── integration/                 CLI 与初始化
+│   └── bdd/                         M-G / C-G 行为场景
+├── scripts/smoke_distribution.py    wheel/sdist 干净环境验收
+├── evals/manifest.yaml              场景到测试和 CI 的静态映射
+├── .harness/
+│   ├── harness.yaml                 本仓库的 v3 规则输入
+│   └── governance/model.lock.json   本仓库的单一模型锁
+└── pyproject.toml                   3.0.0 包与 CLI 入口
 ```
 
-Python 包与 Skill 资源都进入 wheel。目标仓库中的 Skill 必须与
-`resources/repo_skill/harness` 逐字节一致。
+Python 包只包含八个模块：`__init__`、`artifacts`、`cli`、`contracts`、
+`initializer`、`model`、`package_resources` 和 `projection`。
 
-## 目标仓库
+## 生成仓库
 
 ```text
 target-repository/
-├── AGENTS.md                         短路由与永久约束
-├── .agents/skills/harness/
-│   ├── SKILL.md
-│   ├── agents/openai.yaml
-│   └── references/
+├── .agents/
+│   └── skills/
+│       └── harness/
+│           └── SKILL.md
 └── .harness/
-    ├── harness.yaml                  项目策略
-    ├── governance/
-    │   ├── sources.lock.json
-    │   ├── action-graph.json
-    │   ├── rules.json
-    │   ├── projection.lock.json
-    │   └── compatibility.json
-    ├── runtime/<task_id>/            本次决定；Git 忽略
-    ├── issues/                        默认本地 Issue
-    └── reports/                       验证 Evidence；Git 忽略
+    ├── harness.yaml
+    └── governance/
+        └── model.lock.json
 ```
 
-使用 `--with-hooks` 时才额外管理 `.codex/config.toml` 的 Hooks 开关和
-`.codex/hooks.json`。Plugin / MCP 不写治理 SSOT。
-
-## 权威与写入
-
-| 路径 | 权威写者 | 约束 |
+| 路径 | 内容 | 写者 |
 |---|---|---|
-| `AGENTS.md` 中的 Harness marker | 初始化器 | 保留 marker 外用户内容 |
-| `.agents/skills/harness` | 初始化器 | 只复制 wheel 内规范资源 |
-| `.harness/harness.yaml` | 第一阶段初始化器 / 用户确认的项目策略变更 | 变化产生新 `projection_id` |
-| `.harness/governance/**` | 第二阶段确定性投影发布器 | 只按未变化的精确计划写入 5 个文件；模型不能直接生成 |
-| `.harness/runtime` | 精确动作 Adapter | 不版本化，不跨动作复用 |
-| 业务源码 | Codex / 用户工具 | 仅在私有工作边界内直接写 |
+| `.harness/harness.yaml` | 四域规则输入 | `init` 首次创建，之后由用户编辑 |
+| `.harness/governance/model.lock.json` | 固定模型、规则及摘要 | `init` / `project` 原子写入 |
+| `.agents/skills/harness/SKILL.md` | v3 使用边界 | `init` 从 wheel 资源复制 |
+
+`validate` 和 `inspect` 不写任何文件。目标仓库不会生成 Plugin、Hook、MCP、
+运行时决定、Action Graph 或多 Artifact 投影。
+
+## 权威关系
+
+```text
+model.py ──────────────┐
+harness.yaml ─────────┼─> projection.py ─> model.lock.json
+schemas ───────────────┘
+
+resources/repo_skill/harness/SKILL.md ─> init ─> target Skill
+```
+
+固定三轴和 16 个 Cell 只有 `model.py` 一个规范来源。用户规则只有
+`.harness/harness.yaml` 一个输入来源。生成 Skill 必须与 wheel 内发布副本
+逐字节一致。
+
+## 不属于 3.0 的结构
+
+3.0 不包含旧式 adapters、pipelines、tasks、tools、Plugin、Hook、MCP、运行器、
+本地 Issue 镜像或五份治理 Artifact。外部 consumer 如果仍有这些路径，需要自行
+备份并清理后重新初始化；Harness 不自动删除或迁移它们。
