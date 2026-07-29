@@ -468,6 +468,7 @@ def main() -> int:
             [
                 "uv",
                 "run",
+                "--isolated",
                 "--no-project",
                 "--python",
                 "3.12",
