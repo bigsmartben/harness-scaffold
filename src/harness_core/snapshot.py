@@ -8,9 +8,7 @@ from .artifacts import (
     ABSENT,
     SCHEMA_VERSION,
     attach_digest,
-    canonical_digest,
     content_digest,
-    path_digest,
 )
 from .workspace import run_git
 
@@ -47,6 +45,15 @@ _IGNORED_SOURCE_PREFIXES = {
     "__pycache__",
     "evals",
 }
+
+
+def _portable_content_digest(content: str | bytes) -> str:
+    payload = content.encode("utf-8") if isinstance(content, str) else content
+    try:
+        text = payload.decode("utf-8")
+    except UnicodeDecodeError:
+        return content_digest(payload)
+    return content_digest(text.replace("\r\n", "\n"))
 
 
 def _tracked_and_untracked(repository: Path) -> list[str]:
@@ -115,14 +122,6 @@ def create_repository_snapshot(
         key.replace("\\", "/"): value
         for key, value in (content_overrides or {}).items()
     }
-    head_result = run_git(
-        root, ["symbolic-ref", "-q", "HEAD"], check=False
-    )
-    head_ref = (
-        head_result.stdout.decode("utf-8", errors="replace").strip() or None
-        if head_result.returncode == 0
-        else None
-    )
     paths = set(governance_relevant_paths(root)) | set(overrides)
     files = []
     for relative in sorted(paths):
@@ -131,22 +130,21 @@ def create_repository_snapshot(
             digest = (
                 ABSENT
                 if value is None
-                else content_digest(value)
+                else _portable_content_digest(value)
             )
         else:
-            digest = path_digest(root / relative)
+            target = root / relative
+            digest = (
+                ABSENT
+                if not target.exists()
+                else _portable_content_digest(target.read_bytes())
+            )
         if digest != ABSENT or relative in overrides:
             files.append({"path": relative, "digest": digest})
-    workspace_digest = canonical_digest(
-        {"head_ref": head_ref, "files": files}
-    )
     payload = {
         "artifact_type": "repository-snapshot",
         "schema_version": SCHEMA_VERSION,
-        "repository_root": str(root),
-        "head_ref": head_ref,
         "files": files,
-        "workspace_digest": workspace_digest,
     }
     return attach_digest(payload, "snapshot_digest")
 

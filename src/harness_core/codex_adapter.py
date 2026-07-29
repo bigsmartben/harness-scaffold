@@ -12,6 +12,7 @@ from .contracts import validate_governance_bundle, validate_project_config
 from .package_resources import iter_resource_files, repo_skill_root
 from .policy import load_project_config
 from .snapshot import create_repository_snapshot
+from .workspace import run_git
 
 
 def _load_json(path: Path) -> dict[str, Any] | None:
@@ -38,7 +39,17 @@ def _skill_matches(repository: Path) -> bool:
     root = repository / ".agents" / "skills" / "harness"
     for relative, expected in iter_resource_files(repo_skill_root()):
         path = root / relative
-        if not path.is_file() or path.read_bytes() != expected:
+        if not path.is_file():
+            return False
+        actual = path.read_bytes()
+        if actual == expected:
+            continue
+        try:
+            actual_text = actual.decode("utf-8").replace("\r\n", "\n")
+            expected_text = expected.decode("utf-8").replace("\r\n", "\n")
+        except UnicodeDecodeError:
+            return False
+        if actual_text != expected_text:
             return False
     return True
 
@@ -94,6 +105,14 @@ def runtime_state(repository: Path) -> dict[str, Any]:
             )
     bundle = load_projection_bundle(root)
     current = create_repository_snapshot(root)
+    head_result = run_git(
+        root, ["symbolic-ref", "-q", "HEAD"], check=False
+    )
+    head_ref = (
+        head_result.stdout.decode("utf-8", errors="replace").strip() or None
+        if head_result.returncode == 0
+        else None
+    )
     stale_sources: list[str] = []
     if bundle is None:
         blockers.add("GOVERNANCE_SOURCE_MISSING")
@@ -179,7 +198,7 @@ def runtime_state(repository: Path) -> dict[str, Any]:
             if (config or {}).get("mode") == "adopt"
             else "Blue / Bootstrap"
         ),
-        "head_ref": current.get("head_ref"),
+        "head_ref": head_ref,
         "core_version": CORE_VERSION,
         "schema_version": SCHEMA_VERSION,
         "projection_id": projection_id,

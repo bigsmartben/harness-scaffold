@@ -145,6 +145,7 @@ def main() -> int:
         environment = os.environ.copy()
         environment.pop("PYTHONPATH", None)
         environment.pop("PYTHONHOME", None)
+        environment.pop("VIRTUAL_ENV", None)
         environment.update(
             {
                 "UV_TOOL_DIR": str(tools),
@@ -234,9 +235,35 @@ def main() -> int:
                 f"PATH resolved an unexpected Harness runtime: {resolved}"
             )
         empty_before = _tree_digest(empty)
-        version = _run(
-            [str(executable), "--version"], cwd=empty, env=environment
-        ).stdout.strip()
+        runtime_command = [str(executable)]
+        runtime_execution = "entrypoint"
+        try:
+            version_result = _run(
+                [*runtime_command, "--version"],
+                cwd=empty,
+                env=environment,
+            )
+        except OSError as exc:
+            if os.name != "nt" or getattr(exc, "winerror", None) != 4551:
+                raise
+            tool_python = tools / "sdd-harness" / "Scripts" / "python.exe"
+            if not tool_python.is_file():
+                raise RuntimeError(
+                    "application control blocked the entrypoint and the "
+                    "isolated tool Python is missing"
+                ) from exc
+            runtime_command = [
+                str(tool_python),
+                "-m",
+                "harness_core.cli",
+            ]
+            runtime_execution = "isolated-python-app-control-fallback"
+            version_result = _run(
+                [*runtime_command, "--version"],
+                cwd=empty,
+                env=environment,
+            )
+        version = version_result.stdout.strip()
         if version != f"sdd-harness {VERSION}":
             raise RuntimeError(f"unexpected version: {version}")
         if _tree_digest(empty) != empty_before:
@@ -244,7 +271,7 @@ def main() -> int:
 
         first = json.loads(
             _run(
-                [str(executable), "init", ".", "--yes", "--json"],
+                [*runtime_command, "init", ".", "--yes", "--json"],
                 cwd=fixture,
                 env=environment,
             ).stdout
@@ -252,7 +279,7 @@ def main() -> int:
         after_first = _tree_digest(fixture)
         second = json.loads(
             _run(
-                [str(executable), "init", ".", "--yes", "--json"],
+                [*runtime_command, "init", ".", "--yes", "--json"],
                 cwd=fixture,
                 env=environment,
             ).stdout
@@ -274,7 +301,7 @@ def main() -> int:
             raise RuntimeError("base init published an optional runtime surface")
         inspect = json.loads(
             _run(
-                [str(executable), "inspect", ".", "--json"],
+                [*runtime_command, "inspect", ".", "--json"],
                 cwd=fixture,
                 env=environment,
                 expected=(2,),
@@ -289,7 +316,7 @@ def main() -> int:
 
         projection_plan = json.loads(
             _run(
-                [str(executable), "projection-plan", ".", "--json"],
+                [*runtime_command, "projection-plan", ".", "--json"],
                 cwd=fixture,
                 env=environment,
             ).stdout
@@ -302,7 +329,7 @@ def main() -> int:
         projection = json.loads(
             _run(
                 [
-                    str(executable),
+                    *runtime_command,
                     "projection-apply",
                     ".",
                     "--plan",
@@ -321,7 +348,7 @@ def main() -> int:
             raise RuntimeError(f"second-phase projection failed: {projection}")
         repeated_plan = json.loads(
             _run(
-                [str(executable), "projection-plan", ".", "--json"],
+                [*runtime_command, "projection-plan", ".", "--json"],
                 cwd=fixture,
                 env=environment,
             ).stdout
@@ -333,7 +360,7 @@ def main() -> int:
             raise RuntimeError("idempotent projection produced changes")
         inspect = json.loads(
             _run(
-                [str(executable), "inspect", ".", "--json"],
+                [*runtime_command, "inspect", ".", "--json"],
                 cwd=fixture,
                 env=environment,
             ).stdout
@@ -344,7 +371,7 @@ def main() -> int:
         hooks = json.loads(
             _run(
                 [
-                    str(executable),
+                    *runtime_command,
                     "init",
                     ".",
                     "--with-hooks",
@@ -361,7 +388,7 @@ def main() -> int:
             raise RuntimeError("explicit Hook initialization did not configure hooks")
         hook_state = json.loads(
             _run(
-                [str(executable), "inspect", ".", "--json"],
+                [*runtime_command, "inspect", ".", "--json"],
                 cwd=hooks_fixture,
                 env=environment,
                 expected=(2,),
@@ -376,7 +403,7 @@ def main() -> int:
         before_unsupported = _tree_digest(unsupported)
         rejected = json.loads(
             _run(
-                [str(executable), "init", ".", "--yes", "--json"],
+                [*runtime_command, "init", ".", "--yes", "--json"],
                 cwd=unsupported,
                 env=environment,
                 expected=(2,),
@@ -439,6 +466,7 @@ def main() -> int:
             "historical_config": "rejected-without-write",
             "unavailable_source": "rejected-without-entrypoint",
             "target_python_import": "unavailable",
+            "runtime_execution": runtime_execution,
         }
         rendered = json.dumps(result, indent=2, sort_keys=True) + "\n"
         if args.report is not None:

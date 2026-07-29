@@ -251,7 +251,7 @@
       }
     }
   ],
-  "facts_digest": "sha256:6b3354b05371b8560798e45d267ee45e01e28706c6a1b3f896bb10ec6fe32c90",
+  "facts_digest": "sha256:b8b8367e565d8e9d498e15182d639c7dbd8df430f6f5fe0d9c499ddf2b04154a",
   "schema_version": "2.0.0",
   "snapshot": {
     "artifact_type": "repository-snapshot",
@@ -297,7 +297,7 @@
         "path": "pyproject.toml"
       },
       {
-        "digest": "sha256:06084e7e9228602f91f04bf9299e078c6b47f2171602c7071c1efe1aa5961339",
+        "digest": "sha256:fee21b2d45959a8acb1ca91e99a47bb334324ebacfdc11752605f6064bb41590",
         "path": "scripts/smoke_distribution.py"
       },
       {
@@ -305,11 +305,8 @@
         "path": "uv.lock"
       }
     ],
-    "head_ref": "refs/heads/codex/issue-22-harness-2-integrate",
-    "repository_root": "C:\\Users\\24598\\Documents\\github\\harness",
     "schema_version": "2.0.0",
-    "snapshot_digest": "sha256:856b6abeb6f75a55588e0829b31c7e52bc300832c3b0bcbefc840139a0855938",
-    "workspace_digest": "sha256:724e7d136e622013771f637c9b12ccb04e17fd9da25d9285b1df215f18fc35fa"
+    "snapshot_digest": "sha256:ea3206b0c9c415cfd2926df9a0814a07d0cbde338ee9e4a6ae6b69fe07b628bc"
   },
-  "snapshot_digest": "sha256:856b6abeb6f75a55588e0829b31c7e52bc300832c3b0bcbefc840139a0855938"
+  "snapshot_digest": "sha256:ea3206b0c9c415cfd2926df9a0814a07d0cbde338ee9e4a6ae6b69fe07b628bc"
 }
