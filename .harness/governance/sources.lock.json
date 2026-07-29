@@ -77,6 +77,51 @@
       }
     },
     {
+      "fact_id": "fact:action-binding:ci-workflow-push-push-delete-branch-github-workflows-harness-yml-jobs-push-delete-branch",
+      "fact_type": "action-binding",
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.push-delete-branch"
+      ],
+      "value": {
+        "action_id": "ci:workflow:push:push-delete-branch",
+        "adapter": "github-actions",
+        "job": "push-delete-branch",
+        "job_semantics": "push",
+        "semantics": "ci",
+        "workflow": ".github/workflows/harness.yml"
+      }
+    },
+    {
+      "fact_id": "fact:action-binding:ci-workflow-release-package-wheel-github-workflows-harness-yml-jobs-package-wheel",
+      "fact_type": "action-binding",
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.package-wheel"
+      ],
+      "value": {
+        "action_id": "ci:workflow:release:package-wheel",
+        "adapter": "github-actions",
+        "job": "package-wheel",
+        "job_semantics": "release",
+        "semantics": "ci",
+        "workflow": ".github/workflows/harness.yml"
+      }
+    },
+    {
+      "fact_id": "fact:action-binding:ci-workflow-release-release-github-workflows-harness-yml-jobs-release",
+      "fact_type": "action-binding",
+      "source_refs": [
+        ".github/workflows/harness.yml#jobs.release"
+      ],
+      "value": {
+        "action_id": "ci:workflow:release:release",
+        "adapter": "github-actions",
+        "job": "release",
+        "job_semantics": "release",
+        "semantics": "ci",
+        "workflow": ".github/workflows/harness.yml"
+      }
+    },
+    {
       "fact_id": "fact:action-binding:ci-workflow-test-authorize-github-workflows-delivery-gate-evidence-yml-jobs-authorize",
       "fact_type": "action-binding",
       "source_refs": [
@@ -118,6 +163,8 @@
         "argv": [
           "uv",
           "run",
+          "python",
+          "-m",
           "pytest"
         ],
         "cwd": ".",
@@ -194,7 +241,8 @@
       "fact_id": "fact:repository-model:repository",
       "fact_type": "repository-model",
       "source_refs": [
-        ".github/workflows"
+        ".github/workflows",
+        "AGENTS.md"
       ],
       "value": {
         "mode": "adopt",
@@ -203,7 +251,7 @@
       }
     }
   ],
-  "facts_digest": "sha256:74e11ff893127ee5a9e49941e3446edaf2dfd2bab826939e9513c9849c4f35cb",
+  "facts_digest": "sha256:e2fa1b121de9734ee0e0b2f407a2306f76253a4f1e80b392f1c426b74229fe12",
   "schema_version": "2.0.0",
   "snapshot": {
     "artifact_type": "repository-snapshot",
@@ -213,7 +261,7 @@
         "path": ".github/workflows/delivery-gate-evidence.yml"
       },
       {
-        "digest": "sha256:51021adb16d2c0d1057c7abb1fc2eb0dadaef4c2c297ea66a67dd8c7dbe0e350",
+        "digest": "sha256:39720f64d4c6ea8d068b61499344be89ef93c0a86554b04bb6584db65c1f862f",
         "path": ".github/workflows/harness.yml"
       },
       {
@@ -233,15 +281,15 @@
         "path": ".harness/impact.yaml"
       },
       {
-        "digest": "sha256:a27a04fe2ce4a27b7ba48bce84429bac25a55687bea764c6b81923a7ec4eb40e",
+        "digest": "sha256:10917fc210a2a26a5b1ef6344d50e8433ee0bb4cadd32ce14c848a99ca04e250",
         "path": ".harness/tasks.yaml"
       },
       {
-        "digest": "sha256:ba34da04b650bf965f8724a8f9d94a8f743c29785a83086cefb460090c723846",
+        "digest": "sha256:ea9030101c1f9d59509bd7aa4d2620569d1b3ed9b6caeb2ee409b8bc05a2acdd",
         "path": ".harness/tools.yaml"
       },
       {
-        "digest": "sha256:7d2ec4f6db7b418bdd596035cb95c26b273a37979a53f45c1ffe76b9815b49e9",
+        "digest": "sha256:f3734ebff1261c89e3dca64fd2479f2024d2e65810a3b84120ec946c0bff4273",
         "path": "AGENTS.md"
       },
       {
@@ -249,7 +297,7 @@
         "path": "pyproject.toml"
       },
       {
-        "digest": "sha256:09e843f1d84706d2bf4217ca94f3543ff3921d42f4dfb4354e310fb3a2c3293f",
+        "digest": "sha256:06084e7e9228602f91f04bf9299e078c6b47f2171602c7071c1efe1aa5961339",
         "path": "scripts/smoke_distribution.py"
       },
       {
@@ -260,8 +308,8 @@
     "head_ref": "refs/heads/codex/issue-22-harness-2-integrate",
     "repository_root": "C:\\Users\\24598\\Documents\\github\\harness",
     "schema_version": "2.0.0",
-    "snapshot_digest": "sha256:0fa02fcddd3e2ad6d2584267a29e31e325cdf7dfefc6efd4f6bcc208c9aeff48",
-    "workspace_digest": "sha256:dd75429353e31a6159ac1cb3b749dffa6c10b926373d0324716523527dabe5a6"
+    "snapshot_digest": "sha256:f500260b10bc75860619464011a0e3a17f4adb7dd18360cdfc6819e949c61c59",
+    "workspace_digest": "sha256:bc1380d40e79d85f908762ee90d6ceaf3bd590dff15a356e6ec7c76817de6edb"
   },
-  "snapshot_digest": "sha256:0fa02fcddd3e2ad6d2584267a29e31e325cdf7dfefc6efd4f6bcc208c9aeff48"
+  "snapshot_digest": "sha256:f500260b10bc75860619464011a0e3a17f4adb7dd18360cdfc6819e949c61c59"
 }

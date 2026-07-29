@@ -1,3 +1,9 @@
+# Maintainer Issue Policy
+
+- Use `bigsmartben/harness-scaffold` GitHub Issues as the only SSOT for maintainer iteration plans, status, checklists, and acceptance results.
+- Do not create or maintain editable local Issue mirrors under `.harness/issues/`; local documentation may only link to the authoritative GitHub Issue.
+- Restate the exact repository, Issue number, and intended mutation before creating, updating, commenting on, closing, or reopening a GitHub Issue.
+
 <!-- ai-coding-harness:start -->
 # AI Coding Harness 2.0
 

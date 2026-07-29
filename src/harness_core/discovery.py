@@ -244,7 +244,7 @@ def _python_unit(
         for item in dependency_values
     ):
         argv = (
-            ["uv", "run", "pytest"]
+            ["uv", "run", "python", "-m", "pytest"]
             if (manifest.parent / "uv.lock").is_file()
             else ["python", "-m", "pytest"]
         )

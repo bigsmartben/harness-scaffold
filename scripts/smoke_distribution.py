@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import os
@@ -16,6 +17,7 @@ ROOT = Path(__file__).parents[1]
 CANONICAL_SKILL = (
     ROOT / "src" / "harness_core" / "resources" / "repo_skill" / "harness"
 )
+VERSION = "2.0.0"
 
 
 def _run(
@@ -52,6 +54,36 @@ def _tree_digest(root: Path) -> str:
         digest.update(path.relative_to(root).as_posix().encode("utf-8"))
         digest.update(path.read_bytes())
     return f"sha256:{digest.hexdigest()}"
+
+
+def _file_digest(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return f"sha256:{digest.hexdigest()}"
+
+
+def _arguments() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Build and smoke-test the public sdd-harness wheel"
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        help="persist the verified wheel and SHA256SUMS in this directory",
+    )
+    parser.add_argument(
+        "--report",
+        type=Path,
+        help="write the machine-readable result to this JSON file",
+    )
+    parser.add_argument(
+        "--allow-network",
+        action="store_true",
+        help="allow dependency downloads for the isolated tool install",
+    )
+    return parser.parse_args()
 
 
 def _git(repository: Path, env: dict[str, str], *arguments: str) -> None:
@@ -93,9 +125,15 @@ def _assert_skill_exact(repository: Path) -> None:
 
 
 def main() -> int:
+    args = _arguments()
     with tempfile.TemporaryDirectory(prefix="sdd-harness-dist-smoke-") as raw:
         workspace = Path(raw)
-        distribution = workspace / "dist"
+        distribution = (
+            args.output_dir.resolve()
+            if args.output_dir is not None
+            else workspace / "dist"
+        )
+        distribution.mkdir(parents=True, exist_ok=True)
         tools = workspace / "tools"
         binaries = workspace / "bin"
         invalid_tools = workspace / "invalid-tools"
@@ -139,9 +177,9 @@ def main() -> int:
             cwd=ROOT,
             env=environment,
         )
-        wheels = list(distribution.glob("sdd_harness-2.0.0-*.whl"))
+        wheels = list(distribution.glob(f"sdd_harness-{VERSION}-*.whl"))
         if len(wheels) != 1:
-            raise RuntimeError(f"expected one 2.0.0 wheel, found {wheels}")
+            raise RuntimeError(f"expected one {VERSION} wheel, found {wheels}")
         invalid_environment = {
             **environment,
             "UV_TOOL_DIR": str(invalid_tools),
@@ -166,11 +204,11 @@ def main() -> int:
             raise RuntimeError(
                 "unavailable installation source left a runnable entrypoint"
             )
-        _run(
-            ["uv", "tool", "install", "--offline", str(wheels[0])],
-            cwd=ROOT,
-            env=environment,
-        )
+        install_command = ["uv", "tool", "install"]
+        if not args.allow_network:
+            install_command.append("--offline")
+        install_command.append(str(wheels[0]))
+        _run(install_command, cwd=ROOT, env=environment)
         executable = binaries / (
             "sdd-harness.exe" if os.name == "nt" else "sdd-harness"
         )
@@ -199,7 +237,7 @@ def main() -> int:
         version = _run(
             [str(executable), "--version"], cwd=empty, env=environment
         ).stdout.strip()
-        if version != "sdd-harness 2.0.0":
+        if version != f"sdd-harness {VERSION}":
             raise RuntimeError(f"unexpected version: {version}")
         if _tree_digest(empty) != empty_before:
             raise RuntimeError("version check wrote repository entrypoint files")
@@ -379,24 +417,35 @@ def main() -> int:
         if probe != "None":
             raise RuntimeError("target project Python can import isolated harness_core")
 
-        print(
-            json.dumps(
-                {
-                    "status": "passed",
-                    "wheel": wheels[0].name,
-                    "version": version,
-                    "projection_id": projection["projection_id"],
-                    "skill_bytes": "exact",
-                    "base_hooks": "disabled",
-                    "optional_hooks": "configured",
-                    "historical_config": "rejected-without-write",
-                    "unavailable_source": "rejected-without-entrypoint",
-                    "target_python_import": "unavailable",
-                },
-                indent=2,
-                sort_keys=True,
-            )
+        artifact_digest = _file_digest(wheels[0])
+        checksums = distribution / "SHA256SUMS"
+        checksums.write_text(
+            f"{artifact_digest.removeprefix('sha256:')}  {wheels[0].name}\n",
+            encoding="utf-8",
         )
+        result = {
+            "status": "passed",
+            "wheel": wheels[0].name,
+            "version": VERSION,
+            "cli_version": version,
+            "artifact_digest": artifact_digest,
+            "checksums": checksums.name,
+            "projection_id": projection["projection_id"],
+            "second_init_changed_paths": second["changed_paths"],
+            "tree_digest": after_first,
+            "skill_bytes": "exact",
+            "base_hooks": "disabled",
+            "optional_hooks": "configured",
+            "historical_config": "rejected-without-write",
+            "unavailable_source": "rejected-without-entrypoint",
+            "target_python_import": "unavailable",
+        }
+        rendered = json.dumps(result, indent=2, sort_keys=True) + "\n"
+        if args.report is not None:
+            report = args.report.resolve()
+            report.parent.mkdir(parents=True, exist_ok=True)
+            report.write_text(rendered, encoding="utf-8")
+        print(rendered, end="")
     return 0
 
 

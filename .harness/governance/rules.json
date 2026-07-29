@@ -136,6 +136,9 @@
         "ci:workflow:merge:authorize",
         "ci:workflow:merge:merge",
         "ci:workflow:merge:pull-request",
+        "ci:workflow:push:push-delete-branch",
+        "ci:workflow:release:package-wheel",
+        "ci:workflow:release:release",
         "ci:workflow:test:authorize",
         "ci:workflow:test:contracts",
         "test:python-root:test"
@@ -175,7 +178,10 @@
         ".github/workflows/harness.yml#jobs.authorize",
         ".github/workflows/harness.yml#jobs.full-ci",
         ".github/workflows/harness.yml#jobs.merge",
+        ".github/workflows/harness.yml#jobs.package-wheel",
         ".github/workflows/harness.yml#jobs.pull-request",
+        ".github/workflows/harness.yml#jobs.push-delete-branch",
+        ".github/workflows/harness.yml#jobs.release",
         ".github/workflows/routine-contracts.yml#jobs.contracts",
         "harness://specification/2.0.0/domains/verification",
         "pyproject.toml#pytest-dependency"
@@ -328,7 +334,10 @@
         ".github/workflows/harness.yml#jobs.authorize",
         ".github/workflows/harness.yml#jobs.full-ci",
         ".github/workflows/harness.yml#jobs.merge",
+        ".github/workflows/harness.yml#jobs.package-wheel",
         ".github/workflows/harness.yml#jobs.pull-request",
+        ".github/workflows/harness.yml#jobs.push-delete-branch",
+        ".github/workflows/harness.yml#jobs.release",
         ".github/workflows/routine-contracts.yml#jobs.contracts",
         "harness://specification/2.0.0/domains/verification",
         "pyproject.toml#pytest-dependency"
@@ -469,6 +478,9 @@
         "ci:workflow:merge:authorize",
         "ci:workflow:merge:merge",
         "ci:workflow:merge:pull-request",
+        "ci:workflow:push:push-delete-branch",
+        "ci:workflow:release:package-wheel",
+        "ci:workflow:release:release",
         "ci:workflow:test:authorize",
         "ci:workflow:test:contracts",
         "test:python-root:test"
@@ -508,7 +520,10 @@
         ".github/workflows/harness.yml#jobs.authorize",
         ".github/workflows/harness.yml#jobs.full-ci",
         ".github/workflows/harness.yml#jobs.merge",
+        ".github/workflows/harness.yml#jobs.package-wheel",
         ".github/workflows/harness.yml#jobs.pull-request",
+        ".github/workflows/harness.yml#jobs.push-delete-branch",
+        ".github/workflows/harness.yml#jobs.release",
         ".github/workflows/routine-contracts.yml#jobs.contracts",
         "harness://specification/2.0.0/domains/verification",
         "pyproject.toml#pytest-dependency"
@@ -661,14 +676,17 @@
         ".github/workflows/harness.yml#jobs.authorize",
         ".github/workflows/harness.yml#jobs.full-ci",
         ".github/workflows/harness.yml#jobs.merge",
+        ".github/workflows/harness.yml#jobs.package-wheel",
         ".github/workflows/harness.yml#jobs.pull-request",
+        ".github/workflows/harness.yml#jobs.push-delete-branch",
+        ".github/workflows/harness.yml#jobs.release",
         ".github/workflows/routine-contracts.yml#jobs.contracts",
         "harness://specification/2.0.0/domains/verification",
         "pyproject.toml#pytest-dependency"
       ]
     }
   ],
-  "projection_id": "sha256:5761c00478270c0f657d89ffde61ee7c98da118c7ecf1ead653e2b237c4405f3",
-  "rules_digest": "sha256:a620e8f0f0c4aa1fa0157baa2684e08ca3d4b82c2bc6b4ff4abca6ffb81ce342",
+  "projection_id": "sha256:a0d4e9ce7bdc8db88ca2b89d01b52dda94206d0f059dd6d0b26ec148f1c26621",
+  "rules_digest": "sha256:edc5c21efcd7eff2de385e5009add554a412063ca348b57031ff7367b5a2a839",
   "schema_version": "2.0.0"
 }

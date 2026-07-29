@@ -3,7 +3,7 @@ type: github-actions
 execution:
   workflow_source: .github/workflows/harness.yml
   trigger: workflow_dispatch
-  ref: main
+  ref: current-branch
 authority:
   delivery_credentials_visible_to_agent: false
   default_token_permissions: read-only

@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from harness_core.codex_adapter import load_projection_bundle, runtime_state
+from harness_core.discovery import discover_repository
 from harness_core.initializer import (
     apply_initialization_plan,
     apply_projection_plan,
@@ -181,6 +182,33 @@ def test_monorepo_preserves_distinct_working_directories(
         local_tests["services/api"]["source_refs"]
         == ["services/api/pyproject.toml#pytest-dependency"]
     )
+    assert local_tests["services/api"]["binding"]["argv"] == [
+        "python",
+        "-m",
+        "pytest",
+    ]
+
+
+def test_uv_locked_python_project_runs_pytest_as_module(tmp_path: Path) -> None:
+    (tmp_path / "pyproject.toml").write_text(
+        "[project]\n"
+        "name='locked-python'\n"
+        "version='0.1.0'\n"
+        "dependencies=['pytest>=8']\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "uv.lock").write_text("version = 1\n", encoding="utf-8")
+
+    discovered = discover_repository(tmp_path)
+    commands = discovered["project_units"][0]["commands"]
+
+    assert commands[0]["argv"] == [
+        "uv",
+        "run",
+        "python",
+        "-m",
+        "pytest",
+    ]
 
 
 def test_conflicting_ci_bindings_fail_closed_with_both_sources(
