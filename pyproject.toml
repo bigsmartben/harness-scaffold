@@ -1,7 +1,7 @@
 [project]
 name = "sdd-harness"
-version = "1.0.0"
-description = "Deterministic contracts and execution layer for AI Coding Harness"
+version = "2.0.0"
+description = "Repository-local SDD governance scaffold for Codex App and Codex CLI"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "jsonschema>=4.23,<5",
@@ -22,12 +22,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["skills/initialize-ai-coding-harness/scripts/harness_core"]
-
-[tool.hatch.build.targets.wheel.force-include]
-"skills/initialize-ai-coding-harness/assets/schemas" = "harness_core/schemas"
+packages = ["src/harness_core"]
 
 [tool.pytest.ini_options]
 addopts = "-q"
 testpaths = ["tests"]
-pythonpath = ["skills/initialize-ai-coding-harness/scripts"]
+pythonpath = ["src"]

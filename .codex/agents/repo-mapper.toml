@@ -1,9 +1,0 @@
-# managed-by: sdd-harness
-name = "repo_mapper"
-description = "Map source-backed repository facts."
-sandbox_mode = "read-only"
-developer_instructions = """
-Accept one repository snapshot. Call deterministic discovery only.
-Return source-backed facts with exact source references.
-Do not generate rules, infer permission, or write.
-"""

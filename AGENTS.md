@@ -5,14 +5,14 @@
 - Restate the exact repository, Issue number, and intended mutation before creating, updating, commenting on, closing, or reopening a GitHub Issue.
 
 <!-- ai-coding-harness:start -->
-# AI Coding Harness
+# AI Coding Harness 2.0
 
-- Treat this block as the Harness orchestration entrypoint.
-- Current governance projection: `sha256:63622a513db9ebdc6d101e3c134e0647c74cdb10cc390cc72dfb3fd5e21d9152`.
-- Read `.harness/governance/projection.lock.json` before governed work.
-- Use `$harness` for generation, update, action routing, or Evidence verification.
-- Spawn only the six project roles declared in `.codex/agents/`; do not fall back to a generic agent.
-- Projection lanes are read-only. Publish and code writes use a single writer or non-overlapping ownership.
-- Submit only `projection_id`, Work Grant, `action_id`, scope, and typed parameters.
-- Stop on any stable blocker code. Agent summaries, Memory, and Transcript are not authorization or Evidence.
+- Treat this marked block as the repository Harness entrypoint.
+- Use `$harness` for governed local work, explicit `git commit`, Issue operations, Test, Build, CI, and controlled delivery.
+- Read `.harness/harness.yaml` and run `sdd-harness inspect --json` before a governed action.
+- Keep ordinary local work continuous and use only the minimum sufficient T0-T3 validation.
+- Call actions by their source-backed `action_id`; do not invent or override an invocation.
+- Treat project policy as versioned behavior and a task decision as one task or one exact action only.
+- Require an independent task decision and upstream platform gates for every controlled action.
+- Stop with stable blocker codes when runtime, projection, source, scope, binding, branch, target, or evidence cannot be verified.
 <!-- ai-coding-harness:end -->

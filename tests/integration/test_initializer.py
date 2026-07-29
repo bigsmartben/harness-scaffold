@@ -1,0 +1,214 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from harness_core.cli import main
+from harness_core.codex_adapter import runtime_state
+from harness_core.initializer import (
+    apply_initialization_plan,
+    apply_projection_plan,
+    build_initialization_plan,
+    build_projection_plan,
+)
+from harness_core.package_resources import iter_resource_files, repo_skill_root
+
+from conftest import initialize
+
+
+def test_init_publishes_exact_skill_without_hooks_and_is_idempotent(
+    private_repository: Path,
+) -> None:
+    (private_repository / "AGENTS.md").write_text(
+        "# User instructions\n\nKeep this line.\n",
+        encoding="utf-8",
+    )
+    initialize(private_repository)
+    assert "Keep this line." in (
+        private_repository / "AGENTS.md"
+    ).read_text(encoding="utf-8")
+    for relative, expected in iter_resource_files(repo_skill_root()):
+        assert (
+            private_repository / ".agents/skills/harness" / relative
+        ).read_bytes() == expected
+    assert (
+        private_repository
+        / ".agents/skills/harness/agents/openai.yaml"
+    ).is_file()
+    assert not (private_repository / ".codex/hooks.json").exists()
+    assert runtime_state(private_repository)["status"] == "active"
+
+    second = build_initialization_plan(private_repository)
+    assert second["blocker_codes"] == []
+    assert second["write_scope"] == []
+
+
+def test_with_hooks_is_explicit_and_does_not_change_runtime_authority(
+    private_repository: Path,
+) -> None:
+    config_dir = private_repository / ".codex"
+    config_dir.mkdir()
+    (config_dir / "config.toml").write_text(
+        "[features]\nweb_search = true\n",
+        encoding="utf-8",
+    )
+    initialize(private_repository, with_hooks=True)
+    config = (config_dir / "config.toml").read_text(encoding="utf-8")
+    assert config.count("[features]") == 1
+    assert "hooks = true" in config
+    hooks = json.loads((config_dir / "hooks.json").read_text(encoding="utf-8"))
+    assert "sdd-harness hook" in json.dumps(hooks)
+    state = runtime_state(private_repository)
+    assert state["status"] == "active"
+    assert state["hook_defense"] == "configured"
+
+
+def test_unsupported_config_is_rejected_without_writes(
+    private_repository: Path,
+    capsys,
+) -> None:
+    harness = private_repository / ".harness"
+    harness.mkdir()
+    unsupported = (
+        "schema_version: 1.0.0\n"
+        "mode: adopt\n"
+        "standing_policy: {}\n"
+    )
+    (harness / "harness.yaml").write_text(unsupported, encoding="utf-8")
+    before = {
+        path.relative_to(private_repository).as_posix(): path.read_bytes()
+        for path in private_repository.rglob("*")
+        if path.is_file() and ".git" not in path.parts
+    }
+    plan = build_initialization_plan(private_repository)
+    after_plan = {
+        path.relative_to(private_repository).as_posix(): path.read_bytes()
+        for path in private_repository.rglob("*")
+        if path.is_file() and ".git" not in path.parts
+    }
+    assert before == after_plan
+    assert plan["blocker_codes"] == ["HARNESS_RUNTIME_INCOMPATIBLE"]
+    blocked = apply_initialization_plan(
+        private_repository,
+        plan,
+        approved_plan_digest=plan["plan_digest"],
+    )
+    assert blocked["blocker_codes"] == ["HARNESS_RUNTIME_INCOMPATIBLE"]
+    assert main(
+        ["init", str(private_repository), "--yes", "--json"]
+    ) == 2
+    output = json.loads(capsys.readouterr().out)
+    assert output["status"] == "blocked"
+    assert output["blocker_codes"] == ["HARNESS_RUNTIME_INCOMPATIBLE"]
+
+
+def test_invalid_current_config_is_not_replaced(
+    private_repository: Path,
+) -> None:
+    harness = private_repository / ".harness"
+    harness.mkdir()
+    (harness / "harness.yaml").write_text(
+        "schema_version: 2.0.0\nmode: adopt\n",
+        encoding="utf-8",
+    )
+    plan = build_initialization_plan(private_repository)
+    assert plan["blocker_codes"] == ["CONFIG_INVALID"]
+
+
+def test_changed_initialization_plan_is_stale(
+    private_repository: Path,
+) -> None:
+    plan = build_initialization_plan(private_repository)
+    assert plan["blocker_codes"] == []
+    (private_repository / "pyproject.toml").write_text(
+        "[project]\nname='changed'\nversion='0.2.0'\n",
+        encoding="utf-8",
+    )
+    result = apply_initialization_plan(
+        private_repository,
+        plan,
+        approved_plan_digest=plan["plan_digest"],
+    )
+    assert result["blocker_codes"] == ["INITIALIZATION_PLAN_STALE"]
+
+
+def test_entrypoint_and_projection_are_two_exact_phases(
+    private_repository: Path,
+) -> None:
+    initial_tree = {
+        path.relative_to(private_repository).as_posix(): path.read_bytes()
+        for path in private_repository.rglob("*")
+        if path.is_file() and ".git" not in path.parts
+    }
+    entrypoint = build_initialization_plan(private_repository)
+    assert entrypoint["repository_model"] == "Blue"
+    assert entrypoint["mode"] == "bootstrap"
+    assert entrypoint["phase"] == "entrypoint"
+    assert entrypoint["projection_id"] is None
+    assert not any(
+        path.startswith(".harness/governance/")
+        for path in entrypoint["write_scope"]
+    )
+    assert "pyproject.toml" in entrypoint["preserved_paths"]
+    assert {
+        path.relative_to(private_repository).as_posix(): path.read_bytes()
+        for path in private_repository.rglob("*")
+        if path.is_file() and ".git" not in path.parts
+    } == initial_tree
+
+    applied = apply_initialization_plan(
+        private_repository,
+        entrypoint,
+        approved_plan_digest=entrypoint["plan_digest"],
+    )
+    assert applied["status"] == "applied"
+    assert runtime_state(private_repository)["status"] == "entrypoint-ready"
+
+    projection = build_projection_plan(private_repository)
+    assert projection["repository_model"] == "Blue"
+    assert projection["classification_mode"] == "Bootstrap"
+    assert len(projection["write_scope"]) == 5
+    assert projection["coverage"] == {"total": 16, "missing": []}
+    assert "ci" in projection["capability_gaps"]
+    assert "release" in projection["capability_gaps"]
+    assert "deploy" in projection["capability_gaps"]
+    projected = apply_projection_plan(
+        private_repository,
+        projection,
+        approved_plan_digest=projection["plan_digest"],
+    )
+    assert projected["status"] == "applied"
+    assert runtime_state(private_repository)["status"] == "active"
+
+    repeated = build_projection_plan(private_repository)
+    assert repeated["write_scope"] == []
+    assert repeated["projection_id"] == projection["projection_id"]
+    unchanged = apply_projection_plan(
+        private_repository,
+        repeated,
+        approved_plan_digest=repeated["plan_digest"],
+    )
+    assert unchanged["status"] == "unchanged"
+
+
+def test_projection_plan_stales_when_a_source_changes(
+    private_repository: Path,
+) -> None:
+    entrypoint = build_initialization_plan(private_repository)
+    apply_initialization_plan(
+        private_repository,
+        entrypoint,
+        approved_plan_digest=entrypoint["plan_digest"],
+    )
+    plan = build_projection_plan(private_repository)
+    (private_repository / "pyproject.toml").write_text(
+        "[project]\nname='changed'\nversion='0.2.0'\n",
+        encoding="utf-8",
+    )
+    result = apply_projection_plan(
+        private_repository,
+        plan,
+        approved_plan_digest=plan["plan_digest"],
+    )
+    assert result["blocker_codes"] == ["INITIALIZATION_PLAN_STALE"]
+    assert not (private_repository / ".harness/governance").exists()

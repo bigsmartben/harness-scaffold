@@ -1,243 +1,177 @@
-# SDD Harness 使用者快速上手
+# Harness 快速上手
 
-版本：`1.0.0`
+版本：`2.0.0`
 
-这份指南面向 consumer（使用者）：你想把 Harness 安装到自己的仓库，并在 Codex App 或 Codex CLI 中用 `$harness` 执行受治理的开发任务。维护 Harness 本身请阅读[维护者手册](../README.md)。
-
-Harness 主要替你防止五类问题：
-
-| 常见问题 | Harness 的处理 |
-|---|---|
-| Agent 猜错项目命令 | 只调用仓库有来源的 Action Binding（行为绑定） |
-| Agent 改了无关文件 | 用 Work Grant（工作授权）和 Scope（范围）限制写入 |
-| “测试通过”没有证据 | 检查报告、Postcondition（后置条件）和 Evidence（证据） |
-| 仓库变化后继续用旧计划 | 让旧 `projection_id` 和 Work Grant 失效 |
-| 修代码时顺手 Push 或发布 | 把交付作为需要精确确认的独立权限跃迁 |
-
-## 1. 安装固定版本
-
-先安装 [uv](https://docs.astral.sh/uv/getting-started/installation/)，再从 GitHub Release 安装经过验证的 wheel：
+## 1. 安装与初始化
 
 ```text
-uv tool install https://github.com/bigsmartben/harness-scaffold/releases/download/v1.0.0/sdd_harness-1.0.0-py3-none-any.whl
-sdd-harness --version
-```
-
-预期输出：
-
-```text
-sdd-harness 1.0.0
-```
-
-如果当前环境不能直接下载 Release asset，可以固定到同一个 Git tag：
-
-```text
-uv tool install git+https://github.com/bigsmartben/harness-scaffold.git@v1.0.0
-```
-
-不要执行 `uv tool install sdd-harness`：PyPI 上的同名包不是本项目。
-
-## 2. 初始化目标仓库
-
-进入要接入 Harness 的目标仓库：
-
-```text
+uv tool install <source-or-package>
 cd <target-repository>
+sdd-harness --version
 sdd-harness init .
 ```
 
-命令会先生成并校验精确 Plan（计划），预检通过后直接写入目标仓库。
+`init` 首先返回零写入计划（plan）和 `plan_digest`。交互外的自动化可用：
 
-成功后会生成或更新：
+```text
+sdd-harness init . --yes
+```
+
+Harness 2.0 不兼容历史配置。如果目标仓库已有非 2.0
+`.harness/harness.yaml`，初始化零写入返回
+`HARNESS_RUNTIME_INCOMPATIBLE`；需要用户自行移除或重建旧控制面。
+
+初始化生成：
 
 ```text
 AGENTS.md
-.codex/config.toml
-.codex/agents/*.toml
 .agents/skills/harness/
-.harness/governance/
+.harness/harness.yaml
+.harness/.gitignore
 ```
 
-初始化器只管理带 Harness marker 的区块，不覆盖 `AGENTS.md` 或 `.codex/config.toml` 中的用户内容。已有角色文件无法证明受 Harness 管理时，它会零写入并返回冲突。
-
-## 3. 在 Codex 中使用
-
-用 Codex App 或 Codex CLI 打开目标仓库，显式输入：
+默认不生成 Hook、Plugin 或固定 Agent TOML。需要项目 Hook 时显式执行：
 
 ```text
-$harness
+sdd-harness init . --with-hooks --yes
 ```
 
-随后直接描述结果，不需要手写命令。例如：
+项目 Hook 仍需按 Codex 的信任模型启用；没有 Hook 不影响基础流程。
+
+初始化完成后，治理投影仍未生成。这是预期的两阶段边界，而不是安装失败。
+
+## 2. 在 Codex 中生成治理投影并工作
+
+Codex App / CLI 会发现仓库内 Skill。可以直接描述任务，也可以显式写：
 
 ```text
-修改解析器以支持新的配置字段，并运行受影响测试。
+$harness 为当前仓库生成治理投影；先展示计划，保留既有文件
 ```
 
-更推荐使用下面的模板：
+Harness 会先说明 Blue / Bootstrap 或 Gray / Adopt 及逐条路径依据，再展示只
+涉及以下 5 个文件的零写入计划：
 
 ```text
-$harness
-
-目标：
-范围：
-不要做：
-完成标准：
-交付边界：
+.harness/governance/sources.lock.json
+.harness/governance/action-graph.json
+.harness/governance/rules.json
+.harness/governance/projection.lock.json
+.harness/governance/compatibility.json
 ```
 
-例如：
+投影生成并复查为 `active` 后，可以继续描述本地目标：
 
 ```text
-$harness
-
-目标：订单创建接口增加可选的 delivery_note 字段。
-范围：接口规范、订单请求模型和相关测试。
-不要做：不改数据库，不升级依赖，不重构其他订单代码。
-完成标准：兼容旧请求；长度最多 200；增加有效值和超长值测试。
-交付边界：只完成本地修改和验证，不 Push，不创建 PR。
+$harness 修改解析器并运行最低充分验证
 ```
 
-你不需要提供测试命令，也不需要指定内部 Agent。Harness 应从仓库事实中解析入口；如果入口缺失或存在歧义，它会阻断并告诉你需要补什么，而不是猜一个命令继续执行。
-
-Harness 会完成以下闭环：
+Harness 先运行：
 
 ```text
-仓库快照
-  → 解析 Action（行为）和 Scope（范围）
-  → 创建 Work Grant（工作授权）
-  → 检查 G0–G7 Gate（门禁）
-  → 执行已登记 Task
-  → 验证 Postconditions（后置条件）
-  → 生成 Evidence（证据）
+sdd-harness inspect . --json
 ```
 
-常规只读分析、已登记测试和 Work Grant 范围内修改不会逐命令确认；扩大写路径或执行 Push、PR、Merge、Release 等权限跃迁时，Harness 会提交绑定精确事实的一次确认包。
+状态为 `active` 后，普通本地工作连续执行。若状态为 `entrypoint-ready`，说明
+入口可用但第二阶段投影仍待生成。验证层级示例：
 
-### 3.1 目标本地体验
+| 变化 | 层级 | 实例 |
+|---|---|---|
+| 文档或惰性文本 | T0 | `docs/quickstart.md` |
+| 窄实现或单测试 | T1 | `src/widget.py` |
+| 公共 Schema 或多文件组件 | T2 | `schemas/public.schema.json` |
+| 核心、依赖、安全、CI/CD | T3 | `src/harness_core/projection.py` |
 
-以下是 Harness SDD 四域治理模型的目标体验，尚未全部进入当前运行契约：
+## 3. 项目策略与本次决定
 
-- 在本地目录和 Private Branch 中连续推进，不逐文件、逐命令询问；
-- 小改动只做最低充分验证，不自动运行完整测试；
-- 内部保留 Gate 和 Evidence，用户默认只看人话摘要；
-- `git commit` 是本地开发中唯一默认可见的检查点；
-- Push、PR、Merge、Release 和 Deploy 仍是独立外部动作。
-
-最低验证示例：
-
-| 变化 | 默认验证 |
+| 用户意图 | 保存方式 |
 |---|---|
-| 只改 Markdown | T0：检查内容和链接，不运行项目测试 |
-| 修一个小函数 | T1：最近的单元测试 |
-| 改公共接口或 Schema | T2：受影响组件或契约测试 |
-| 改依赖锁、迁移、安全或 CI/CD | T3：完整测试或 CI |
+| “以后本项目的 Issue 都发到 GitHub” | 项目策略（Project policy） |
+| “这次只提交 `src/a.py`” | 本次决定（Task decision） |
 
-完成时，用户默认看到：
+本次决定绑定 `task_id + projection_id + workspace_digest + exact_action +
+target`。例如 Commit 的决定不能授权 Remote Issue，文件变化后旧决定也不能复用。
 
-```text
-完成：修改 3 个文件
-验证：T1，运行 6 个相关测试，全部通过
-未运行：完整测试；本次未影响共享接口
-剩余风险：无已知风险
-```
-
-原始 `projection_id`、Action ID、Gate 明细和 Evidence Digest 默认隐藏，需要时可以要求“展开技术证据”。
-
-### 3.2 `git commit` 工作流
-
-当你明确输入：
+持久修改项目策略时先生成零写入计划：
 
 ```text
-git commit
+$harness 把后续验证配置为 strict-contracts；先展示项目策略计划，不写文件
 ```
 
-Harness 会询问：
+应用过程会原子更新 `.harness/harness.yaml` 和治理投影；摘要、工作区或旧投影
+发生变化时返回 `PROJECT_POLICY_PLAN_STALE`。任务或精确动作完成后，Harness
+结束对应的临时决定。
+
+## 4. Commit 与 Issue
+
+选择性 Commit 先生成计划：
 
 ```text
-是否对当前工作区全部未提交变更执行影响面分析？
-默认 Issue 目标：local
-如需远端 Issue，请同时提供或确认远端信息。
+$harness git commit：只提交 src/a.py，提交信息为 fix: parser
 ```
 
-选择“不分析”时，只做必要的 Commit Scope、Secret、冲突和异常文件检查，不额外运行大范围测试。
+确认后由临时 Git Index 创建只含 `src/a.py` 的提交。无关暂存保持原样；目标文件
+已部分暂存时返回 `PARTIAL_STAGING_UNSUPPORTED`。
 
-选择“分析”时，Harness 会检查当前 `HEAD` 之后的全部 Staged、Unstaged 和 Untracked 变化。分析以工作区为准，因此可以跨对话。随后生成：
+Issue 先生成 Provider 无关的 Issue Plan：
 
 ```text
-标题：
-目标：
-当前变更：
-影响模块：
-兼容性风险：
-Commit 包含：
-Commit 排除：
-最低验证范围：
-完成标准：
+$harness 创建 Issue：标题“Parser error”；正文包含复现、期望、实际与完成标准
 ```
 
-你确认后，Harness 写入 Issue、执行计划和最低充分验证，然后完成原始 Commit。没有新的重大 Scope 变化时，不再要求第三次确认。
+Consumer 默认写 `.harness/issues`。配置为 GitHub 时，Harness 只准备精确的
+Provider Request；远端失败不会创建本地副本。
 
-### 3.3 本地或远端 Issue
+## 5. 受控交付
 
-对普通消费者项目，Issue 目标由项目级 Harness 配置决定；没有远端配置时默认是本地：
-
-```yaml
-issue_planning:
-  default_destination: local
-  local_directory: .harness/issues
-  remote:
-    provider: null
-    project: null
-```
-
-本地 Issue 用于跨对话保存计划，不会改变远端状态。
-
-这是消费者项目的低门槛默认值，不适用于 Harness 产品自身的维护者迭代。Harness 维护统一使用本仓库 GitHub Issues；本地文档只保存链接，不复制 Issue 正文。
-
-如需创建远端 Issue，你需要确认或提供：
-
-- Provider，例如 GitHub、GitLab 或 Jira；
-- Repository、Project 或 Project Key；
-- 将要创建的标题和正文；
-- 可选的 Label 和 Assignee。
-
-不要在远端信息中粘贴 Token、密码或私钥。即使项目已经连接远端服务，Harness 也不能把“连接存在”当成创建 Issue 的授权。
-
-远端 Issue 创建后，返回的 Issue ID/URL 会写回本地工作状态。`git commit` 不授权 Push、PR、Merge、Release 或 Deploy。
-
-## 4. 如何判断任务完成
-
-退出码为零不等于任务完成。只有 Schema、后置条件、摘要链和执行后漂移检查都通过，Evidence 才能支撑“测试通过”“构建成功”或“允许交付”等结论。
-
-| 你看到的结果 | 含义 |
-|---|---|
-| `completed` 或 `passed` | 内部证据已接受；默认只展示人话摘要 |
-| `confirmation-required` | 即将扩大范围或执行关键外部动作 |
-| `blocked` + blocker codes | 输入、绑定、平台或证据不完整，未执行危险回退 |
-
-默认用户界面不需要展示原始 Evidence。正常成功时只显示修改摘要、验证强度、未运行检查和剩余风险；出现阻断或用户主动要求时再展开技术细节。
-
-## 5. 重复初始化与更新
-
-相同仓库快照、Schema、编译器版本和维护者声明会产生相同 `projection_id`。再次执行：
+Pull Request、Merge、Publish、Release 和 Deploy 使用同一条确定性流程：
 
 ```text
-sdd-harness init .
+平台门禁证据
+  → delivery-plan
+  → 针对 action_id 的独立本次决定
+  → delivery-prepare
+  → Provider 单次调用
+  → delivery-validate-receipt
 ```
 
-应该得到空 Diff。仓库 Manifest、Workflow 或治理声明发生变化后，重新运行初始化以更新投影；旧 Work Grant 会立即失效，不能继续授权执行。
+平台门禁证据（platform-gate evidence）是 Harness 从上游平台独立查询后生成的
+摘要绑定记录。消费者只需描述精确目标，例如：
+
+```text
+$harness 为当前已推送分支创建 Draft PR 到 main；标题为“fix: parser”
+```
+
+生成结果示例：
+
+```json
+{
+  "artifact_type": "platform-gate-evidence",
+  "schema_version": "2.0.0",
+  "action_id": "delivery:pull-request",
+  "provider": "github",
+  "repository": "owner/repo",
+  "target_digest": "sha256:<exact-target>",
+  "status": "passed",
+  "checks": [{
+    "name": "required-checks",
+    "status": "passed",
+    "source": "github://owner/repo/rules",
+    "evidence_id": "ruleset-22"
+  }],
+  "evidence_digest": "sha256:<canonical-evidence>"
+}
+```
+
+缺失或篡改的门禁返回 `PLATFORM_GATE_REQUIRED`。Provider 失败返回
+`REMOTE_DELIVERY_FAILED`，不会回退到其他 Provider 或本地替代动作。
 
 ## 6. 常见阻断
 
-| 阻断码 | 人话解释 | 下一步 |
+| 阻断码 | 人话解释 | 处理 |
 |---|---|---|
-| `GOVERNANCE_PROJECTION_STALE` | 仓库事实变了，当前投影已过期 | 重新运行 `$harness` 或初始化 |
-| `TOOL_ACTION_UNCLASSIFIED` | 找到了工具，但仓库没有声明它用于什么行为 | 补充有来源的 Action 定义 |
-| `TOOL_BINDING_AMBIGUOUS` | 同一行为解析出了多个入口 | 消除冲突绑定 |
-| `AGENT_CONFIGURATION_UNTRUSTED` | 自定义角色文件存在，但无法证明由 Harness 管理 | 人工核对并移交所有权 |
-| `GOVERNANCE_EVIDENCE_INCOMPLETE` | 执行结果不足以支撑结论 | 补齐后置条件或平台 Evidence |
-| `CONTROLLED_BRANCH_GATE_REQUIRED` | 目标是受控分支，但确认或平台门禁不完整 | 使用私有工作分支和受保护 PR 流程 |
-| `HANDOFF_REQUIRED` | 需要人的决定或外部平台操作 | 按阻断包给出的精确目标继续 |
-
-阻断会一次返回完整问题包；Harness 不会猜测缺失命令、权限或验证结论。
+| `HARNESS_RUNTIME_INCOMPATIBLE` | PATH 上的程序或仓库 Skill 版本不一致 | 重新安装并运行 `init` |
+| `GOVERNANCE_PROJECTION_STALE` | 项目策略或治理输入已变化 | 重新生成投影 |
+| `TASK_DECISION_STALE` | 本次决定绑定的工作区、动作或目标变了 | 重新确认精确动作 |
+| `CONTROLLED_BRANCH_GATE_REQUIRED` | 当前分支不能直接写入或交付 | 切到私有工作分支或走平台门禁 |
+| `PLATFORM_GATE_REQUIRED` | 受控交付缺少匹配的上游平台证据 | 查询平台规则并绑定证据摘要 |
+| `GOVERNANCE_COVERAGE_INCOMPLETE` | 16 Cell 存在缺失、重复或无来源 N/A | 修复来源后重新编译 |

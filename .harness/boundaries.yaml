@@ -9,9 +9,15 @@ branch_gate:
     - refs/heads/agent/**
   unmatched: controlled
   actions:
+    - write
+    - commit
+    - issue-write
     - push
     - pull-request
     - merge
+    - publish
+    - release
+    - deploy
   confirmation: strong
   platform_gate: required
   blocker_codes:

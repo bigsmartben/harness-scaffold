@@ -1,54 +1,20 @@
-schema_version: 1.0.0
-use_cases:
-  UC-001:
-    evals:
-      - adopt-existing-ci
-    tests:
-      - tests/integration/test_initialize_workflows.py
-  UC-002:
-    evals:
-      - bootstrap-empty-project
-    tests:
-      - tests/integration/test_initialize_workflows.py
-  UC-003:
-    evals:
-      - registry-is-not-authorization
-    tests:
-      - tests/unit/test_contracts.py
-  UC-004:
-    tests:
-      - tests/unit/test_delivery.py
-  UC-005:
-    evals:
-      - avoid-unnecessary-full-ci
-    tests:
-      - tests/unit/test_delivery.py
-  UC-006:
-    tests:
-      - tests/unit/test_delivery.py
-  UC-007:
-    evals:
-      - adopt-existing-ci
-    tests:
-      - tests/integration/test_initialize_workflows.py
-  UC-008:
-    tests:
-      - tests/unit/test_delivery.py
-  UC-009:
-    evals:
-      - unconfirmed-critical-delivery
-    tests:
-      - tests/unit/test_delivery.py
-  UC-010:
-    tests:
-      - tests/integration/test_initialize_workflows.py
-  UC-011:
-    tests:
-      - tests/unit/test_delivery.py
-  UC-012:
-    evals:
-      - unconfirmed-critical-delivery
-    tests:
-      - tests/unit/test_delivery.py
-      - tests/unit/test_platform.py
-    availability_dependency: ci-platform-gates
+schema_version: 2.0.0
+coverage_statuses:
+  - missing
+  - documented
+  - verified
+  - enforced
+  - not_applicable
+matrix:
+  audiences:
+    - maintainer
+    - consumer
+  responsibilities:
+    - generate
+    - enforce
+  domains:
+    - specification
+    - implementation
+    - verification
+    - delivery
+expected_cells: 16

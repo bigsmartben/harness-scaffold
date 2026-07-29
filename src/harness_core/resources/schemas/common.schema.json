@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sdd-harness.dev/schemas/2.0/common.schema.json",
+  "x-harness-schema-version": "2.0.0",
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "version": {
+      "const": "2.0.0"
+    },
+    "audience": {
+      "enum": ["maintainer", "consumer"]
+    },
+    "responsibility": {
+      "enum": ["generate", "enforce"]
+    },
+    "domain": {
+      "enum": ["specification", "implementation", "verification", "delivery"]
+    },
+    "coverageStatus": {
+      "enum": ["missing", "documented", "verified", "enforced", "not_applicable"]
+    },
+    "validationLevel": {
+      "enum": ["T0", "T1", "T2", "T3"]
+    },
+    "boundary": {
+      "enum": ["local", "controlled"]
+    },
+    "stringList": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "blockerCode": {
+      "enum": [
+        "CONFIG_INVALID",
+        "HARNESS_RUNTIME_UNAVAILABLE",
+        "HARNESS_RUNTIME_INCOMPATIBLE",
+        "INITIALIZATION_PLAN_STALE",
+        "GOVERNANCE_SOURCE_MISSING",
+        "GOVERNANCE_CONFLICT",
+        "GOVERNANCE_INHERITANCE_INVALID",
+        "GOVERNANCE_SCOPE_UNRESOLVED",
+        "GOVERNANCE_PROJECTION_STALE",
+        "GOVERNANCE_PRECONDITION_FAILED",
+        "GOVERNANCE_COVERAGE_INCOMPLETE",
+        "ACTION_SEMANTICS_AMBIGUOUS",
+        "TOOL_ACTION_UNCLASSIFIED",
+        "TOOL_BINDING_AMBIGUOUS",
+        "CONTROLLED_BRANCH_GATE_REQUIRED",
+        "PLATFORM_GATE_REQUIRED",
+        "TASK_DECISION_REQUIRED",
+        "TASK_DECISION_STALE",
+        "PROJECT_POLICY_PLAN_STALE",
+        "CONTROLLED_DELIVERY_PLAN_STALE",
+        "VALIDATION_BINDING_MISSING",
+        "PARTIAL_STAGING_UNSUPPORTED",
+        "COMMIT_PLAN_STALE",
+        "PUSH_PLAN_STALE",
+        "ISSUE_TARGET_REQUIRED",
+        "ISSUE_PROVIDER_UNAVAILABLE",
+        "REMOTE_ISSUE_WRITE_FAILED",
+        "REMOTE_PUSH_FAILED",
+        "REMOTE_DELIVERY_FAILED",
+        "GOVERNANCE_EVIDENCE_INCOMPLETE",
+        "GOVERNANCE_DRIFT_DETECTED",
+        "HANDOFF_REQUIRED"
+      ]
+    }
+  }
+}

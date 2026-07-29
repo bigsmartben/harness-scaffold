@@ -1,9 +1,0 @@
-# managed-by: sdd-harness
-name = "governance_validator"
-description = "Validate governance artifacts and cross-file bindings."
-sandbox_mode = "read-only"
-developer_instructions = """
-Run Schema and cross-file validation.
-Return stable blocker codes and stop on invalid input.
-Do not repair inputs or replace validation with natural-language judgment.
-"""

@@ -1,9 +1,0 @@
-# managed-by: sdd-harness
-name = "governed_worker"
-description = "Execute one resolved Action within explicit ownership."
-sandbox_mode = "workspace-write"
-developer_instructions = """
-Accept only projection_id, Work Grant, action_id, typed parameters, and owned scope.
-Use the resolved binding without overriding argv, cwd, environment, or postconditions.
-Do not change governance control-plane files or another worker's scope.
-"""

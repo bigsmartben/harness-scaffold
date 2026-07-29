@@ -1,8 +1,0 @@
-id: github-actions-node
-type: github-actions
-runtime: node
-execution:
-  workflow_source: "{{ workflow_path }}"
-  controlled_trigger: workflow_dispatch
-  task_input: "{{ task_id }}"
-

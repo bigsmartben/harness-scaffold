@@ -1,34 +1,55 @@
 ---
 name: harness
-description: Generate, update, inspect, or enforce the current repository's deterministic Agent governance projection.
+description: Govern repository work in Codex App or Codex CLI with the installed sdd-harness runtime. Use for $harness, local implementation, git commit, Issue planning or writes, Test, Build, CI, Push, Pull Request, Merge, Publish, Release, Deploy, project policy, task decisions, and evidence-backed diagnostics.
 ---
 
 # Harness
 
+Use the repository's Harness projection to keep local work continuous and
+controlled actions exact.
+
 ## Contract
 
-- Input: repository snapshot, source-backed facts, audience/subdomain lane, Work Grant, and `action_id`.
-- Output: validated projection artifacts, Gate Decision, or digest-bound Action Evidence.
-- Boundary: never infer permission from tool availability and never accept arbitrary invocation overrides.
-- Failure: return canonical blocker codes and `HANDOFF_REQUIRED`; preflight failure writes nothing.
+- Input: the user's goal, current repository facts, project policy, and any
+  action-specific decision.
+- Output: the requested repository result plus the minimum sufficient
+  validation summary, or a stable blocker code.
+- Boundary: never treat tool availability as permission, never widen scope
+  silently, and never reuse one action's decision for another action.
+- Failure: fail closed when the runtime, projection, source, scope, binding,
+  branch, target, or evidence cannot be verified.
 
-## Generate
+## Start
 
-1. Read `AGENTS.md`, `.codex/config.toml`, and `.harness/governance/projection.lock.json`.
-2. Use `repo_mapper` for deterministic facts.
-3. Run one read-only `governance_projector` per audience × subdomain lane.
-4. Wait for all lanes, then use `projection_reconciler` and `governance_validator`.
-5. Present one exact Plan digest and write scope.
-6. Publish only the unchanged confirmed Plan through the single writer.
+1. Read `AGENTS.md` and `.harness/harness.yaml`.
+2. Run `sdd-harness inspect --json`.
+3. If status is `entrypoint-ready` and the user wants to generate or refresh
+   repository governance, use the Projection route. The only allowed pending
+   blocker at this point is `GOVERNANCE_SOURCE_MISSING`.
+4. For every other non-empty `blocker_codes` result, stop and use the
+   diagnostics route. Do not repair governance outside the user-confirmed task
+   scope.
+5. Keep internal artifact names out of normal user summaries.
 
-## Enforce
+## Route
 
-1. Resolve the requested `action_id`; do not accept a command string.
-2. Bind the current projection and Work Grant.
-3. Run G0-G5 before invocation.
-4. Give one non-overlapping ownership scope to `governed_worker`.
-5. Use `evidence_verifier` for G6-G7.
-6. Report only accepted conclusions.
+| Intent | Reference |
+|---|---|
+| Generate, refresh, or explain repository governance | [references/projection.md](references/projection.md) |
+| Inspect, edit, Test, or Build locally | [references/local-work.md](references/local-work.md) |
+| Explicit `git commit` or equivalent | [references/commit.md](references/commit.md) |
+| Plan or create a local/remote Issue | [references/issues.md](references/issues.md) |
+| Push, PR, Merge, Publish, Release, or Deploy | [references/controlled-delivery.md](references/controlled-delivery.md) |
+| Explain a blocker or inspect internal evidence | [references/diagnostics.md](references/diagnostics.md) |
 
-If the projection Schema version is unsupported or the projection is stale, stay
-in bootstrap-only mode and permit only read-only inspection and projection repair.
+Load only the directly relevant reference.
+
+## User language
+
+Use only these user-facing decision names:
+
+- Project policy / 项目策略: versioned behavior for later tasks.
+- Task decision / 本次决定: one task or one exact action only.
+
+Default to a task decision. Create or change project policy only when the user
+clearly asks for lasting behavior.

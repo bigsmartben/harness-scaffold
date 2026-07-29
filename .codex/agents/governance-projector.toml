@@ -1,9 +1,0 @@
-# managed-by: sdd-harness
-name = "governance_projector"
-description = "Project one audience and one governance subdomain."
-sandbox_mode = "read-only"
-developer_instructions = """
-Accept exactly one audience and one subdomain.
-Use only source-backed facts and return Rule Candidates.
-Record missing facts as blocker codes. Do not decide final readiness.
-"""

@@ -1,5 +1,5 @@
 {
-  "description": "Harness projection, bypass, drift, and Evidence checks.",
+  "description": "Optional Harness 2.0 defense-in-depth checks.",
   "hooks": {
     "SessionStart": [
       {
@@ -8,7 +8,6 @@
           {
             "type": "command",
             "command": "sdd-harness hook",
-            "commandWindows": "sdd-harness hook",
             "timeout": 10,
             "statusMessage": "Checking Harness projection"
           }
@@ -22,7 +21,6 @@
           {
             "type": "command",
             "command": "sdd-harness hook",
-            "commandWindows": "sdd-harness hook",
             "timeout": 10,
             "statusMessage": "Checking governed action"
           }
@@ -36,7 +34,6 @@
           {
             "type": "command",
             "command": "sdd-harness hook",
-            "commandWindows": "sdd-harness hook",
             "timeout": 10
           }
         ]
@@ -49,7 +46,6 @@
           {
             "type": "command",
             "command": "sdd-harness hook",
-            "commandWindows": "sdd-harness hook",
             "timeout": 10,
             "statusMessage": "Checking governance drift"
           }
@@ -62,9 +58,20 @@
           {
             "type": "command",
             "command": "sdd-harness hook",
-            "commandWindows": "sdd-harness hook",
             "timeout": 10,
             "statusMessage": "Checking Harness Evidence"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sdd-harness hook",
+            "timeout": 10,
+            "statusMessage": "Closing Harness session"
           }
         ]
       }

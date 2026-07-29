@@ -1,7 +1,0 @@
-id: git-remote
-type: git-remote
-remote: origin
-execution:
-  shell: false
-  force: false
-  operation: push-ref

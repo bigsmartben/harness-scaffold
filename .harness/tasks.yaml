@@ -5,9 +5,7 @@ tasks:
     auto_allowed: true
     command_source: scripts/smoke_distribution.py
     command:
-      - uv
-      - run
-      - python
+      - "@harness-python"
       - scripts/smoke_distribution.py
     backend: local
     working_directory: repository-root
@@ -36,8 +34,8 @@ tasks:
     auto_allowed: true
     command_source: pyproject.toml#tool.pytest.ini_options
     command:
-      - uv
-      - run
+      - "@harness-python"
+      - -m
       - pytest
     backend: local
     working_directory: repository-root

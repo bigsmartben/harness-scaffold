@@ -1,8 +1,0 @@
-# ai-coding-harness:start
-[agents]
-enabled = true
-max_concurrent_threads_per_session = 6
-
-[features]
-hooks = true
-# ai-coding-harness:end

@@ -1,220 +1,441 @@
 {
-  "action_graph_digest": "sha256:d94b30aafd899a08a52f12face41527a67dc2d593299098986f143dcd671c61c",
+  "action_graph_digest": "sha256:a2df349ec532b3fd4a8a216e08be6dcf898670e8fea21a3f97727bf0f8967e65",
   "actions": [
     {
-      "action_id": "ci:github:github-workflows-delivery-gate-evidence-yml:production-gate",
-      "binding_state": "declared",
-      "invocation": {
+      "action_id": "ci:workflow:ci:contracts",
+      "binding": {
         "adapter": "github-actions",
-        "cwd": ".",
-        "job": "production-gate",
-        "workflow": ".github/workflows/delivery-gate-evidence.yml"
+        "job": "contracts",
+        "workflow": ".github/workflows/routine-contracts.yml"
       },
-      "mutates_repository": false,
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "verification",
       "semantics": "ci",
       "source_refs": [
-        ".github/workflows/delivery-gate-evidence.yml#jobs.production-gate"
+        ".github/workflows/routine-contracts.yml#jobs.contracts"
       ],
-      "subdomains": [
-        "engineering-runtime",
-        "test-code"
-      ]
+      "validation_floor": "T3"
     },
     {
-      "action_id": "ci:github:github-workflows-harness-yml:full-ci",
-      "binding_state": "declared",
-      "invocation": {
+      "action_id": "ci:workflow:ci:full-ci",
+      "binding": {
         "adapter": "github-actions",
-        "cwd": ".",
         "job": "full-ci",
         "workflow": ".github/workflows/harness.yml"
       },
-      "mutates_repository": false,
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "verification",
       "semantics": "ci",
       "source_refs": [
         ".github/workflows/harness.yml#jobs.full-ci"
       ],
-      "subdomains": [
-        "engineering-runtime",
-        "test-code"
-      ]
+      "validation_floor": "T3"
     },
     {
-      "action_id": "merge:github:github-workflows-harness-yml:authorize",
-      "binding_state": "declared",
-      "invocation": {
+      "action_id": "ci:workflow:ci:production-gate",
+      "binding": {
         "adapter": "github-actions",
-        "cwd": ".",
+        "job": "production-gate",
+        "workflow": ".github/workflows/delivery-gate-evidence.yml"
+      },
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "verification",
+      "semantics": "ci",
+      "source_refs": [
+        ".github/workflows/delivery-gate-evidence.yml#jobs.production-gate"
+      ],
+      "validation_floor": "T3"
+    },
+    {
+      "action_id": "ci:workflow:merge:authorize",
+      "binding": {
+        "adapter": "github-actions",
         "job": "authorize",
         "workflow": ".github/workflows/harness.yml"
       },
-      "mutates_repository": true,
-      "semantics": "merge",
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "verification",
+      "semantics": "ci",
       "source_refs": [
         ".github/workflows/harness.yml#jobs.authorize"
       ],
-      "subdomains": [
-        "engineering-runtime",
-        "source-code"
-      ]
+      "validation_floor": "T3"
     },
     {
-      "action_id": "merge:github:github-workflows-harness-yml:merge",
-      "binding_state": "declared",
-      "invocation": {
+      "action_id": "ci:workflow:merge:merge",
+      "binding": {
         "adapter": "github-actions",
-        "cwd": ".",
         "job": "merge",
         "workflow": ".github/workflows/harness.yml"
       },
-      "mutates_repository": true,
-      "semantics": "merge",
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "verification",
+      "semantics": "ci",
       "source_refs": [
         ".github/workflows/harness.yml#jobs.merge"
       ],
-      "subdomains": [
-        "engineering-runtime",
-        "source-code"
-      ]
+      "validation_floor": "T3"
     },
     {
-      "action_id": "merge:github:github-workflows-harness-yml:pull-request",
-      "binding_state": "declared",
-      "invocation": {
+      "action_id": "ci:workflow:merge:pull-request",
+      "binding": {
         "adapter": "github-actions",
-        "cwd": ".",
         "job": "pull-request",
         "workflow": ".github/workflows/harness.yml"
       },
-      "mutates_repository": true,
-      "semantics": "merge",
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "verification",
+      "semantics": "ci",
       "source_refs": [
         ".github/workflows/harness.yml#jobs.pull-request"
       ],
-      "subdomains": [
-        "engineering-runtime",
-        "source-code"
-      ]
+      "validation_floor": "T3"
     },
     {
-      "action_id": "push:github:github-workflows-harness-yml:push-delete-branch",
-      "binding_state": "declared",
-      "invocation": {
+      "action_id": "ci:workflow:push:push-delete-branch",
+      "binding": {
         "adapter": "github-actions",
-        "cwd": ".",
         "job": "push-delete-branch",
         "workflow": ".github/workflows/harness.yml"
       },
-      "mutates_repository": true,
-      "semantics": "push",
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "verification",
+      "semantics": "ci",
       "source_refs": [
         ".github/workflows/harness.yml#jobs.push-delete-branch"
       ],
-      "subdomains": [
-        "engineering-runtime",
-        "source-code"
-      ]
+      "validation_floor": "T3"
     },
     {
-      "action_id": "release:github:github-workflows-harness-yml:package-wheel",
-      "binding_state": "declared",
-      "invocation": {
+      "action_id": "ci:workflow:release:package-wheel",
+      "binding": {
         "adapter": "github-actions",
-        "cwd": ".",
         "job": "package-wheel",
         "workflow": ".github/workflows/harness.yml"
       },
-      "mutates_repository": true,
-      "semantics": "release",
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "verification",
+      "semantics": "ci",
       "source_refs": [
         ".github/workflows/harness.yml#jobs.package-wheel"
       ],
-      "subdomains": [
-        "engineering-runtime"
-      ]
+      "validation_floor": "T3"
     },
     {
-      "action_id": "release:github:github-workflows-harness-yml:release",
-      "binding_state": "declared",
-      "invocation": {
+      "action_id": "ci:workflow:release:release",
+      "binding": {
         "adapter": "github-actions",
-        "cwd": ".",
         "job": "release",
         "workflow": ".github/workflows/harness.yml"
       },
-      "mutates_repository": true,
-      "semantics": "release",
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "verification",
+      "semantics": "ci",
       "source_refs": [
         ".github/workflows/harness.yml#jobs.release"
       ],
-      "subdomains": [
-        "engineering-runtime"
-      ]
+      "validation_floor": "T3"
     },
     {
-      "action_id": "test:github:github-workflows-delivery-gate-evidence-yml:authorize",
-      "binding_state": "declared",
-      "invocation": {
+      "action_id": "ci:workflow:test:authorize",
+      "binding": {
         "adapter": "github-actions",
-        "cwd": ".",
         "job": "authorize",
         "workflow": ".github/workflows/delivery-gate-evidence.yml"
       },
-      "mutates_repository": false,
-      "semantics": "test",
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "verification",
+      "semantics": "ci",
       "source_refs": [
         ".github/workflows/delivery-gate-evidence.yml#jobs.authorize"
       ],
-      "subdomains": [
-        "engineering-runtime",
-        "test-code"
-      ]
+      "validation_floor": "T3"
     },
     {
-      "action_id": "test:github:github-workflows-routine-contracts-yml:contracts",
-      "binding_state": "declared",
-      "invocation": {
-        "adapter": "github-actions",
-        "cwd": ".",
-        "job": "contracts",
-        "workflow": ".github/workflows/routine-contracts.yml"
+      "action_id": "delivery:commit",
+      "binding": {
+        "adapter": "harness-core",
+        "operation": "commit"
       },
-      "mutates_repository": false,
-      "semantics": "test",
-      "source_refs": [
-        ".github/workflows/routine-contracts.yml#jobs.contracts"
+      "binding_state": "bound",
+      "boundary": "local",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding"
       ],
-      "subdomains": [
-        "engineering-runtime",
-        "test-code"
-      ]
+      "domain": "delivery",
+      "semantics": "commit",
+      "source_refs": [
+        "harness://specification/2.0.0/actions/commit"
+      ],
+      "validation_floor": "T0"
+    },
+    {
+      "action_id": "delivery:deploy",
+      "binding": {
+        "adapter": "provider",
+        "operation": "deploy"
+      },
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "delivery",
+      "semantics": "deploy",
+      "source_refs": [
+        "harness://specification/2.0.0/actions/deploy"
+      ],
+      "validation_floor": "T3"
+    },
+    {
+      "action_id": "delivery:merge",
+      "binding": {
+        "adapter": "provider",
+        "operation": "merge"
+      },
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "delivery",
+      "semantics": "merge",
+      "source_refs": [
+        "harness://specification/2.0.0/actions/merge"
+      ],
+      "validation_floor": "T3"
+    },
+    {
+      "action_id": "delivery:publish",
+      "binding": {
+        "adapter": "provider",
+        "operation": "publish"
+      },
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "delivery",
+      "semantics": "publish",
+      "source_refs": [
+        "harness://specification/2.0.0/actions/publish"
+      ],
+      "validation_floor": "T3"
+    },
+    {
+      "action_id": "delivery:pull-request",
+      "binding": {
+        "adapter": "provider",
+        "operation": "pull-request"
+      },
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "delivery",
+      "semantics": "pull-request",
+      "source_refs": [
+        "harness://specification/2.0.0/actions/pull-request"
+      ],
+      "validation_floor": "T3"
+    },
+    {
+      "action_id": "delivery:push",
+      "binding": {
+        "adapter": "harness-core",
+        "operation": "push"
+      },
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "delivery",
+      "semantics": "push",
+      "source_refs": [
+        "harness://specification/2.0.0/actions/push"
+      ],
+      "validation_floor": "T3"
+    },
+    {
+      "action_id": "delivery:release",
+      "binding": {
+        "adapter": "provider",
+        "operation": "release"
+      },
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "delivery",
+      "semantics": "release",
+      "source_refs": [
+        "harness://specification/2.0.0/actions/release"
+      ],
+      "validation_floor": "T3"
+    },
+    {
+      "action_id": "delivery:remote-issue",
+      "binding": {
+        "adapter": "provider",
+        "operation": "issue-write"
+      },
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "delivery",
+      "semantics": "issue-write",
+      "source_refs": [
+        "harness://specification/2.0.0/actions/remote-issue"
+      ],
+      "validation_floor": "T0"
+    },
+    {
+      "action_id": "specification:issue-plan",
+      "binding": {
+        "adapter": "harness-core",
+        "operation": "issue-plan"
+      },
+      "binding_state": "bound",
+      "boundary": "local",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding"
+      ],
+      "domain": "specification",
+      "semantics": "issue-plan",
+      "source_refs": [
+        "harness://specification/2.0.0/actions/issue-plan"
+      ],
+      "validation_floor": "T0"
     },
     {
       "action_id": "test:python-root:test",
-      "binding_state": "bound",
-      "invocation": {
+      "binding": {
+        "adapter": "local",
         "argv": [
           "uv",
           "run",
+          "python",
+          "-m",
           "pytest"
         ],
-        "cwd": ".",
-        "environment": {}
+        "cwd": "."
       },
-      "mutates_repository": false,
+      "binding_state": "bound",
+      "boundary": "local",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding"
+      ],
+      "domain": "verification",
       "semantics": "test",
       "source_refs": [
         "pyproject.toml#pytest-dependency"
       ],
-      "subdomains": [
-        "engineering-runtime",
-        "test-code"
-      ]
+      "validation_floor": "T1"
     }
   ],
   "artifact_type": "action-graph",
   "blockers": [],
-  "facts_digest": "sha256:c4fc088904ec0b59077571a05464c3650028b325cf06b101df996707cfffb74a",
-  "schema_version": "1.0.0",
-  "snapshot_digest": "sha256:31a864497940b1b335790fca7391e0b613eb39060c71db96bf1b1d7073875fb3"
+  "facts_digest": "sha256:6b3354b05371b8560798e45d267ee45e01e28706c6a1b3f896bb10ec6fe32c90",
+  "schema_version": "2.0.0",
+  "snapshot_digest": "sha256:856b6abeb6f75a55588e0829b31c7e52bc300832c3b0bcbefc840139a0855938"
 }

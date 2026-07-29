@@ -1,19 +1,19 @@
 {
   "name": "harness",
-  "version": "1.0.0",
-  "description": "Repo-first deterministic Agent governance for Codex",
+  "version": "2.0.0",
+  "description": "Optional defense-in-depth adapters for Harness 2.0",
   "author": {
     "name": "bigsmartben"
   },
   "skills": "./skills/",
   "interface": {
     "displayName": "Harness",
-    "shortDescription": "Generate and enforce repository Agent governance.",
-    "longDescription": "Harness connects Codex lifecycle events and narrow read/request tools to the repository's deterministic governance projection.",
+    "shortDescription": "Add optional Hooks and MCP reads to Harness 2.0.",
+    "longDescription": "Harness adds opt-in lifecycle checks and narrow read-only MCP tools. The sdd-harness executable remains the deterministic authority.",
     "developerName": "bigsmartben",
     "category": "Productivity",
     "capabilities": ["skills", "hooks", "mcp"],
-    "defaultPrompt": "Use $harness to inspect the current repository governance projection."
+    "defaultPrompt": "Use $harness and the sdd-harness command to complete this repository task under its project policy."
   },
   "mcpServers": "./.mcp.json"
 }

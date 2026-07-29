@@ -1,14 +1,14 @@
 # Harness SDD 四域治理模型：术语、目标边界与规则
 
-状态：**Accepted Target Specification（目标规范已接受，待实现）**  
-决议日期：2026-07-28  
+状态：**Accepted and Implemented（规范已接受并实现）**
+决议日期：2026-07-28
 适用范围：Harness 治理规范、Schema、编译器、Skill、文档和测试
 
 ## 1. 决议
 
 Harness 的目标治理模型正式命名为：
 
-> **Harness SDD 四域治理模型**  
+> **Harness SDD 四域治理模型**
 > Harness SDD Four-Domain Governance Model
 
 不再使用“224 Harness”“226 Harness”“2 层 6 类”等数字名称作为正式术语。数字只能作为内部矩阵规模的简写，不能替代模型名称。
