@@ -26,6 +26,7 @@ Harness 2.0 不兼容历史配置。如果目标仓库已有非 2.0
 ```text
 AGENTS.md
 .agents/skills/harness/
+.agents/skills/repo-documentation-maker/
 .harness/harness.yaml
 .harness/.gitignore
 ```
@@ -80,6 +81,21 @@ sdd-harness inspect . --json
 | 窄实现或单测试 | T1 | `src/widget.py` |
 | 公共 Schema 或多文件组件 | T2 | `schemas/public.schema.json` |
 | 核心、依赖、安全、CI/CD | T3 | `src/harness_core/projection.py` |
+
+仓库文档能力也随初始化直接交付，不需要安装个人级 Skill。例如：
+
+```text
+$repo-documentation-maker 更新 QUICKSTART，并验证第一次成功路径
+```
+
+它可创建、更新、重构或检查 `README.md`、`QUICKSTART.md`、
+`DEVELOPMENT.md`、`MAINTAINER.md`、`HARNESS.md`、`UC.md`、
+`TECH-SELECTION.md` 与 `ARCHITECTURE.md`。所有 Contract 和 Template 都从
+当前仓库的 `.agents/skills/repo-documentation-maker/` 读取。
+
+后续再次执行 `init` 时，未定制的 Skill 文件随安装版本确定性更新；内容摘要与
+上次发布清单不一致的用户定制会保留并在计划的
+`preserved_customizations` 中列出。缺少发布清单的同名 Skill 不会被接管或覆盖。
 
 ## 3. 项目策略与本次决定
 

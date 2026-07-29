@@ -105,6 +105,10 @@ def test_gray_projection_reuses_local_and_controlled_sources(
     projection = _publish_projection(private_repository)
     assert projection["repository_model"] == "Gray"
     assert projection["classification_mode"] == "Adopt"
+    assert (
+        private_repository
+        / ".agents/skills/repo-documentation-maker/SKILL.md"
+    ).is_file()
     assert all(
         (private_repository / path).read_bytes() == expected
         for path, expected in protected.items()

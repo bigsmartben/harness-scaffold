@@ -22,7 +22,8 @@ $harness 修改解析器并运行最低充分验证
 `.agents/skills/harness` 是正式用户入口。Plugin、Hook 和 MCP 都是显式
 启用的纵深防御（defense in depth），不是基础依赖。初始化只发布入口；进入
 Codex 后由 `$harness` 识别 Blue / Gray，并以独立零写入计划生成 5 个治理投影
-文件。
+文件。初始化还会发布 `.agents/skills/repo-documentation-maker`，供使用者
+直接创建、更新、重构和检查仓库文档，不依赖个人级 Skill。
 
 ## 2.0 架构
 
@@ -32,8 +33,10 @@ flowchart LR
     B --> C["init"]
     C --> D["AGENTS.md"]
     C --> E[".agents/skills/harness"]
+    C --> J[".agents/skills/repo-documentation-maker"]
     C --> F[".harness/harness.yaml"]
     E --> H["Codex App / CLI"]
+    J --> H
     H --> G["$harness 生成四域、16 Cell 投影"]
     I["Hook / Plugin / MCP"] -. "可选加固" .-> H
 ```

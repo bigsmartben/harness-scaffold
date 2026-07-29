@@ -1,0 +1,4 @@
+interface:
+  display_name: "Repository Documentation Maker"
+  short_description: "Create and maintain repository documentation"
+  default_prompt: "Use $repo-documentation-maker to create or improve this repository documentation."

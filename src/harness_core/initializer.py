@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
 import shutil
 import tempfile
 import tomllib
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any
 
 import yaml
@@ -23,7 +24,11 @@ from .artifacts import (
 from .contracts import validate_governance_bundle, validate_project_config
 from .discovery import classify_repository_model, discover_repository
 from .facts import extract_source_facts
-from .package_resources import iter_resource_files, repo_skill_root
+from .package_resources import (
+    iter_resource_files,
+    repo_documentation_skill_root,
+    repo_skill_root,
+)
 from .policy import (
     default_project_config,
     load_project_config,
@@ -40,6 +45,9 @@ from .templates import (
 
 _TOML_MARKER_START = "# ai-coding-harness:start"
 _TOML_MARKER_END = "# ai-coding-harness:end"
+_DOCUMENTATION_SKILL_NAME = "repo-documentation-maker"
+_DOCUMENTATION_SKILL_VERSION = "1.0.0"
+_DOCUMENTATION_SKILL_MANIFEST = ".scaffold-manifest.json"
 _HOOK_EVENTS = (
     "SessionStart",
     "PreToolUse",
@@ -48,6 +56,170 @@ _HOOK_EVENTS = (
     "Stop",
     "SessionEnd",
 )
+
+
+def _managed_text_digest(value: str | bytes | Path) -> str | None:
+    try:
+        if isinstance(value, Path):
+            text = value.read_text(encoding="utf-8")
+        elif isinstance(value, bytes):
+            text = value.decode("utf-8")
+        else:
+            text = value
+    except (OSError, UnicodeDecodeError):
+        return None
+    normalized = text.replace("\r\n", "\n")
+    return f"sha256:{hashlib.sha256(normalized.encode('utf-8')).hexdigest()}"
+
+
+def _documentation_skill_manifest(
+    managed_files: dict[str, str],
+    *,
+    preserved_customizations: list[str],
+) -> str:
+    return _json_text(
+        {
+            "schema_version": 1,
+            "skill_name": _DOCUMENTATION_SKILL_NAME,
+            "skill_version": _DOCUMENTATION_SKILL_VERSION,
+            "managed_files": managed_files,
+            "preserved_customizations": preserved_customizations,
+        }
+    )
+
+
+def _valid_managed_relative_path(value: Any) -> bool:
+    if (
+        not isinstance(value, str)
+        or not value
+        or not value.isascii()
+        or "\\" in value
+    ):
+        return False
+    posix_path = PurePosixPath(value)
+    windows_path = PureWindowsPath(value)
+    return (
+        not posix_path.is_absolute()
+        and not windows_path.is_absolute()
+        and not windows_path.drive
+        and all(part not in {"", ".", ".."} for part in value.split("/"))
+    )
+
+
+def _valid_documentation_skill_manifest(value: Any) -> bool:
+    if not isinstance(value, dict):
+        return False
+    managed = value.get("managed_files")
+    version = value.get("skill_version")
+    return (
+        value.get("schema_version") == 1
+        and value.get("skill_name") == _DOCUMENTATION_SKILL_NAME
+        and isinstance(version, str)
+        and re.fullmatch(r"\d+\.\d+\.\d+", version) is not None
+        and isinstance(managed, dict)
+        and all(
+            _valid_managed_relative_path(path)
+            and isinstance(digest, str)
+            and digest.startswith("sha256:")
+            for path, digest in managed.items()
+        )
+    )
+
+
+def _planned_documentation_skill(
+    repository: Path,
+) -> tuple[dict[str, str | None], list[str], list[str]]:
+    source = {
+        relative: payload.decode("utf-8")
+        for relative, payload in iter_resource_files(
+            repo_documentation_skill_root()
+        )
+    }
+    source_digests = {
+        relative: str(_managed_text_digest(content))
+        for relative, content in source.items()
+    }
+    target_root = (
+        repository / ".agents" / "skills" / _DOCUMENTATION_SKILL_NAME
+    )
+    manifest_path = target_root / _DOCUMENTATION_SKILL_MANIFEST
+    prefix = f".agents/skills/{_DOCUMENTATION_SKILL_NAME}"
+    files: dict[str, str | None] = {}
+    blockers: list[str] = []
+    preserved: list[str] = []
+
+    if not target_root.exists():
+        files.update(
+            {f"{prefix}/{relative}": content for relative, content in source.items()}
+        )
+        files[f"{prefix}/{_DOCUMENTATION_SKILL_MANIFEST}"] = (
+            _documentation_skill_manifest(
+                source_digests,
+                preserved_customizations=[],
+            )
+        )
+        return files, blockers, preserved
+
+    try:
+        previous = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return files, ["REPO_SKILL_OWNERSHIP_UNRESOLVED"], preserved
+    if not _valid_documentation_skill_manifest(previous):
+        return files, ["REPO_SKILL_MANIFEST_INVALID"], preserved
+
+    previous_version = tuple(
+        int(part) for part in previous["skill_version"].split(".")
+    )
+    current_version = tuple(
+        int(part) for part in _DOCUMENTATION_SKILL_VERSION.split(".")
+    )
+    if previous_version[0] > current_version[0]:
+        return files, ["REPO_SKILL_VERSION_INCOMPATIBLE"], preserved
+
+    previous_managed = previous["managed_files"]
+    for relative, content in sorted(source.items()):
+        target = target_root / relative
+        planned = f"{prefix}/{relative}"
+        if not target.is_file():
+            files[planned] = content
+            continue
+        current_digest = _managed_text_digest(target)
+        if current_digest in {
+            source_digests[relative],
+            previous_managed.get(relative),
+        }:
+            files[planned] = content
+        else:
+            preserved.append(planned)
+
+    for relative, previous_digest in sorted(previous_managed.items()):
+        if relative in source:
+            continue
+        target = target_root / relative
+        if not target.is_file():
+            continue
+        planned = f"{prefix}/{relative}"
+        if _managed_text_digest(target) == previous_digest:
+            files[planned] = None
+        else:
+            preserved.append(planned)
+
+    known = {*source, *previous_managed, _DOCUMENTATION_SKILL_MANIFEST}
+    for target in target_root.rglob("*"):
+        if not target.is_file():
+            continue
+        relative = target.relative_to(target_root).as_posix()
+        if relative not in known:
+            preserved.append(f"{prefix}/{relative}")
+
+    preserved = sorted(set(preserved))
+    files[f"{prefix}/{_DOCUMENTATION_SKILL_MANIFEST}"] = (
+        _documentation_skill_manifest(
+            source_digests,
+            preserved_customizations=preserved,
+        )
+    )
+    return files, blockers, preserved
 
 
 def _json_text(value: Any) -> str:
@@ -230,7 +402,7 @@ def _planned_files(
     bundle: dict[str, dict[str, Any]] | None,
     agents_content: str,
     hooks_enabled: bool,
-) -> tuple[dict[str, str | None], list[str]]:
+) -> tuple[dict[str, str | None], list[str], list[str]]:
     files: dict[str, str | None] = {
         ".harness/harness.yaml": render_project_config(config),
         ".harness/.gitignore": (
@@ -255,6 +427,11 @@ def _planned_files(
                     files[relative] = None
 
     blockers: list[str] = []
+    documentation_files, documentation_blockers, preserved_customizations = (
+        _planned_documentation_skill(repository)
+    )
+    files.update(documentation_files)
+    blockers.extend(documentation_blockers)
     config_path = repository / ".codex" / "config.toml"
     hook_path = repository / ".codex" / "hooks.json"
     current_config = (
@@ -286,7 +463,7 @@ def _planned_files(
                 managed = False
             if managed:
                 files[path.relative_to(repository).as_posix()] = None
-    return files, blockers
+    return files, blockers, preserved_customizations
 
 
 def _projection_files(
@@ -445,7 +622,7 @@ def build_initialization_plan(
         *inheritance_blockers,
         *projection_blockers,
     }
-    files, file_blockers = _planned_files(
+    files, file_blockers, preserved_customizations = _planned_files(
         root,
         config=config,
         bundle=bundle,
@@ -485,6 +662,7 @@ def build_initialization_plan(
         "preserved_paths": _preserved_paths(
             root, set(files), preflight
         ),
+        "preserved_customizations": preserved_customizations,
         "blocker_codes": sorted(blockers),
     }
     return attach_digest(plan, "plan_digest")
@@ -574,6 +752,7 @@ def build_projection_plan(repository: Path) -> dict[str, Any]:
         "preserved_paths": _preserved_paths(
             root, set(files), preflight
         ),
+        "preserved_customizations": [],
         "available_capabilities": available,
         "capability_gaps": capability_gaps,
         "coverage": {
@@ -767,5 +946,8 @@ def apply_initialization_plan(
             for item in plan["actions"]
             if item["operation"] == "unchanged"
         ],
+        "preserved_customizations": plan.get(
+            "preserved_customizations", []
+        ),
         "blocker_codes": [],
     }
