@@ -2,6 +2,21 @@
   "artifact_type": "source-facts",
   "facts": [
     {
+      "fact_id": "fact:action-binding:ci-workflow-ci-contracts-github-workflows-routine-contracts-yml-jobs-contracts",
+      "fact_type": "action-binding",
+      "source_refs": [
+        ".github/workflows/routine-contracts.yml#jobs.contracts"
+      ],
+      "value": {
+        "action_id": "ci:workflow:ci:contracts",
+        "adapter": "github-actions",
+        "job": "contracts",
+        "job_semantics": "ci",
+        "semantics": "ci",
+        "workflow": ".github/workflows/routine-contracts.yml"
+      }
+    },
+    {
       "fact_id": "fact:action-binding:ci-workflow-ci-full-ci-github-workflows-harness-yml-jobs-full-ci",
       "fact_type": "action-binding",
       "source_refs": [
@@ -137,21 +152,6 @@
       }
     },
     {
-      "fact_id": "fact:action-binding:ci-workflow-test-contracts-github-workflows-routine-contracts-yml-jobs-contracts",
-      "fact_type": "action-binding",
-      "source_refs": [
-        ".github/workflows/routine-contracts.yml#jobs.contracts"
-      ],
-      "value": {
-        "action_id": "ci:workflow:test:contracts",
-        "adapter": "github-actions",
-        "job": "contracts",
-        "job_semantics": "test",
-        "semantics": "ci",
-        "workflow": ".github/workflows/routine-contracts.yml"
-      }
-    },
-    {
       "fact_id": "fact:action-binding:test-python-root-test",
       "fact_type": "action-binding",
       "source_refs": [
@@ -251,7 +251,7 @@
       }
     }
   ],
-  "facts_digest": "sha256:e2fa1b121de9734ee0e0b2f407a2306f76253a4f1e80b392f1c426b74229fe12",
+  "facts_digest": "sha256:6b3354b05371b8560798e45d267ee45e01e28706c6a1b3f896bb10ec6fe32c90",
   "schema_version": "2.0.0",
   "snapshot": {
     "artifact_type": "repository-snapshot",
@@ -265,7 +265,7 @@
         "path": ".github/workflows/harness.yml"
       },
       {
-        "digest": "sha256:8956fd55c30182744c09aa15c96e5e091be2e72263e632e62287fc686d29273c",
+        "digest": "sha256:0da2892a29e2db1ff1b43676570d5189d1e91cefc959f04a494c77461f95a115",
         "path": ".github/workflows/routine-contracts.yml"
       },
       {
@@ -308,8 +308,8 @@
     "head_ref": "refs/heads/codex/issue-22-harness-2-integrate",
     "repository_root": "C:\\Users\\24598\\Documents\\github\\harness",
     "schema_version": "2.0.0",
-    "snapshot_digest": "sha256:f500260b10bc75860619464011a0e3a17f4adb7dd18360cdfc6819e949c61c59",
-    "workspace_digest": "sha256:bc1380d40e79d85f908762ee90d6ceaf3bd590dff15a356e6ec7c76817de6edb"
+    "snapshot_digest": "sha256:856b6abeb6f75a55588e0829b31c7e52bc300832c3b0bcbefc840139a0855938",
+    "workspace_digest": "sha256:724e7d136e622013771f637c9b12ccb04e17fd9da25d9285b1df215f18fc35fa"
   },
-  "snapshot_digest": "sha256:f500260b10bc75860619464011a0e3a17f4adb7dd18360cdfc6819e949c61c59"
+  "snapshot_digest": "sha256:856b6abeb6f75a55588e0829b31c7e52bc300832c3b0bcbefc840139a0855938"
 }

@@ -1,6 +1,28 @@
 {
-  "action_graph_digest": "sha256:adfb1fce4ef1b8d938849b75c0b50d09bde8ad3368fbcced78e1bce848272394",
+  "action_graph_digest": "sha256:a2df349ec532b3fd4a8a216e08be6dcf898670e8fea21a3f97727bf0f8967e65",
   "actions": [
+    {
+      "action_id": "ci:workflow:ci:contracts",
+      "binding": {
+        "adapter": "github-actions",
+        "job": "contracts",
+        "workflow": ".github/workflows/routine-contracts.yml"
+      },
+      "binding_state": "bound",
+      "boundary": "controlled",
+      "cross_controls": [
+        "runtime-context",
+        "action-binding",
+        "platform-control",
+        "evidence"
+      ],
+      "domain": "verification",
+      "semantics": "ci",
+      "source_refs": [
+        ".github/workflows/routine-contracts.yml#jobs.contracts"
+      ],
+      "validation_floor": "T3"
+    },
     {
       "action_id": "ci:workflow:ci:full-ci",
       "binding": {
@@ -196,28 +218,6 @@
       "semantics": "ci",
       "source_refs": [
         ".github/workflows/delivery-gate-evidence.yml#jobs.authorize"
-      ],
-      "validation_floor": "T3"
-    },
-    {
-      "action_id": "ci:workflow:test:contracts",
-      "binding": {
-        "adapter": "github-actions",
-        "job": "contracts",
-        "workflow": ".github/workflows/routine-contracts.yml"
-      },
-      "binding_state": "bound",
-      "boundary": "controlled",
-      "cross_controls": [
-        "runtime-context",
-        "action-binding",
-        "platform-control",
-        "evidence"
-      ],
-      "domain": "verification",
-      "semantics": "ci",
-      "source_refs": [
-        ".github/workflows/routine-contracts.yml#jobs.contracts"
       ],
       "validation_floor": "T3"
     },
@@ -435,7 +435,7 @@
   ],
   "artifact_type": "action-graph",
   "blockers": [],
-  "facts_digest": "sha256:e2fa1b121de9734ee0e0b2f407a2306f76253a4f1e80b392f1c426b74229fe12",
+  "facts_digest": "sha256:6b3354b05371b8560798e45d267ee45e01e28706c6a1b3f896bb10ec6fe32c90",
   "schema_version": "2.0.0",
-  "snapshot_digest": "sha256:f500260b10bc75860619464011a0e3a17f4adb7dd18360cdfc6819e949c61c59"
+  "snapshot_digest": "sha256:856b6abeb6f75a55588e0829b31c7e52bc300832c3b0bcbefc840139a0855938"
 }

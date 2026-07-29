@@ -131,6 +131,7 @@
     },
     {
       "action_bindings": [
+        "ci:workflow:ci:contracts",
         "ci:workflow:ci:full-ci",
         "ci:workflow:ci:production-gate",
         "ci:workflow:merge:authorize",
@@ -140,7 +141,6 @@
         "ci:workflow:release:package-wheel",
         "ci:workflow:release:release",
         "ci:workflow:test:authorize",
-        "ci:workflow:test:contracts",
         "test:python-root:test"
       ],
       "audience": "consumer",
@@ -473,6 +473,7 @@
     },
     {
       "action_bindings": [
+        "ci:workflow:ci:contracts",
         "ci:workflow:ci:full-ci",
         "ci:workflow:ci:production-gate",
         "ci:workflow:merge:authorize",
@@ -482,7 +483,6 @@
         "ci:workflow:release:package-wheel",
         "ci:workflow:release:release",
         "ci:workflow:test:authorize",
-        "ci:workflow:test:contracts",
         "test:python-root:test"
       ],
       "audience": "maintainer",
@@ -686,7 +686,7 @@
       ]
     }
   ],
-  "projection_id": "sha256:a0d4e9ce7bdc8db88ca2b89d01b52dda94206d0f059dd6d0b26ec148f1c26621",
-  "rules_digest": "sha256:edc5c21efcd7eff2de385e5009add554a412063ca348b57031ff7367b5a2a839",
+  "projection_id": "sha256:da58fc725e7eef5fe02cacb02fd68212b6694a25d2514bf193d808ec4e018522",
+  "rules_digest": "sha256:44200f8fb81fb2479bba04fa61a8e7b04c4c6651392be90e671fa47682fe8dde",
   "schema_version": "2.0.0"
 }
