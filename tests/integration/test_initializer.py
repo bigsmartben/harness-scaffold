@@ -13,7 +13,7 @@ from harness_core.initializer import (
 )
 from harness_core.package_resources import iter_resource_files, repo_skill_root
 
-from conftest import initialize
+from conftest import git, initialize
 
 
 def test_init_publishes_exact_skill_without_hooks_and_is_idempotent(
@@ -212,3 +212,40 @@ def test_projection_plan_stales_when_a_source_changes(
     )
     assert result["blocker_codes"] == ["INITIALIZATION_PLAN_STALE"]
     assert not (private_repository / ".harness/governance").exists()
+
+
+def test_projection_is_portable_across_branches_and_clone_paths(
+    private_repository: Path,
+) -> None:
+    initialize(private_repository)
+    original = runtime_state(private_repository)
+    sources = json.loads(
+        (
+            private_repository
+            / ".harness/governance/sources.lock.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert set(sources["snapshot"]) == {
+        "artifact_type",
+        "schema_version",
+        "files",
+        "snapshot_digest",
+    }
+    assert str(private_repository) not in json.dumps(sources)
+
+    git(private_repository, "add", ".")
+    git(private_repository, "commit", "-m", "initialize portable projection")
+    git(private_repository, "checkout", "-b", "codex/other-work")
+
+    switched = runtime_state(private_repository)
+    assert switched["status"] == "active"
+    assert switched["head_ref"] == "refs/heads/codex/other-work"
+    assert switched["projection_id"] == original["projection_id"]
+    assert build_projection_plan(private_repository)["write_scope"] == []
+
+    clone = private_repository.parent / f"{private_repository.name}-clone"
+    git(private_repository.parent, "clone", str(private_repository), str(clone))
+    cloned = runtime_state(clone)
+    assert cloned["status"] == "active"
+    assert cloned["projection_id"] == original["projection_id"]
+    assert build_projection_plan(clone)["write_scope"] == []

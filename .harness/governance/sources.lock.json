@@ -251,65 +251,62 @@
       }
     }
   ],
-  "facts_digest": "sha256:3b2136e7ce4b5299646b46852ecc9336dba173a95af09a50db717fa8d88cb61f",
+  "facts_digest": "sha256:9545faca1e7ed62ef3e39eda5e16abb557037ad3c327160f8a1baa4968eaf2b8",
   "schema_version": "2.0.0",
   "snapshot": {
     "artifact_type": "repository-snapshot",
     "files": [
       {
-        "digest": "sha256:11907856aa4444fc2d440c1b6e23734c02c7861e46b5d0a81889d379d916560c",
+        "digest": "sha256:5996cb4f61d083501d18d037c9636a0879ea5948c3d8ba34e5e3f0f26fe504b4",
         "path": ".github/workflows/delivery-gate-evidence.yml"
       },
       {
-        "digest": "sha256:39720f64d4c6ea8d068b61499344be89ef93c0a86554b04bb6584db65c1f862f",
+        "digest": "sha256:6e5367a6fbf4b438e04f1e9598342c28175f145ceb645b984971220ee2281671",
         "path": ".github/workflows/harness.yml"
       },
       {
-        "digest": "sha256:0da2892a29e2db1ff1b43676570d5189d1e91cefc959f04a494c77461f95a115",
+        "digest": "sha256:d9ce5a5bab9810713c1d3eb6d47cd2fa4524b3d1c501bb5f339316933bb00411",
         "path": ".github/workflows/routine-contracts.yml"
       },
       {
-        "digest": "sha256:9904a4cbabf197540f257e96918335d51c9a951bac49faf441e3b2810bfbc071",
+        "digest": "sha256:d79d67e2ebce0033a3e98ef6adb82ac425cf220412693ef97a7a55cf61e0f70e",
         "path": ".harness/boundaries.yaml"
       },
       {
-        "digest": "sha256:968b87591ee5e4897a02f27fa0e4f62fed056ca692db6adbbaf37c89e0200bd0",
+        "digest": "sha256:3e3979fe7ba030951b83f5b58a5a0d845b4154746a757eff3550da5479884918",
         "path": ".harness/harness.yaml"
       },
       {
-        "digest": "sha256:f2b365ab6ac81d4e62eece4dfec7603a35a1e45ed2c5b08e84b8f3290a2f8d75",
+        "digest": "sha256:3c10f9a9030a31b5624ac2461f3fa38c779a4654d35531bb0d4e46cd709023a5",
         "path": ".harness/impact.yaml"
       },
       {
-        "digest": "sha256:10917fc210a2a26a5b1ef6344d50e8433ee0bb4cadd32ce14c848a99ca04e250",
+        "digest": "sha256:e0f449af3b670b9b9e036243da12db01e70d5a9db2bfc66adac6d5c8ab7b3b05",
         "path": ".harness/tasks.yaml"
       },
       {
-        "digest": "sha256:ea9030101c1f9d59509bd7aa4d2620569d1b3ed9b6caeb2ee409b8bc05a2acdd",
+        "digest": "sha256:8ced90ae8302d77d6829ba73ec2c13d4f67e7ad1399d9136b75e6854c77e384b",
         "path": ".harness/tools.yaml"
       },
       {
-        "digest": "sha256:f3734ebff1261c89e3dca64fd2479f2024d2e65810a3b84120ec946c0bff4273",
+        "digest": "sha256:b1455631e282ae68ec650cd9dbf400a97852823a369b2576d3bc7b43f0dddb22",
         "path": "AGENTS.md"
       },
       {
-        "digest": "sha256:d6aa2afd174b23ee577a49ee5b2dfc49d3ffe7ab61bd104ca2aee4bdfe2fddf5",
+        "digest": "sha256:cd4faf707558d72f1860d972ec0652b926bec035e57c8c9529c5b90bf751570f",
         "path": "pyproject.toml"
       },
       {
-        "digest": "sha256:06084e7e9228602f91f04bf9299e078c6b47f2171602c7071c1efe1aa5961339",
+        "digest": "sha256:17d6f8c50b5632ae12a5e494e367fe56d734c712608f8ddfb56f30578c04e346",
         "path": "scripts/smoke_distribution.py"
       },
       {
-        "digest": "sha256:eba2a90f731e86cde295185ac98abff0f1e39211ee9cef2c71c44289634441f5",
+        "digest": "sha256:41f80f48037005a2b6abc9807a8167cdf7952f08acda9f1873977b97439c03f5",
         "path": "uv.lock"
       }
     ],
-    "head_ref": "refs/heads/codex/issue-28-post-merge",
-    "repository_root": "C:\\Users\\24598\\Documents\\github\\harness",
     "schema_version": "2.0.0",
-    "snapshot_digest": "sha256:c365dffddb00b01257d46a8fd51196fada34757cf036452f971b5c81690e507c",
-    "workspace_digest": "sha256:881dbdbfcea780ce375039c142b9398c63119c9bea0c2382a5cbd62cdba0381d"
+    "snapshot_digest": "sha256:13d1a2b66f6dbd1ca281ed394d5d1333f1c8507b313a312b79dde133d04916d0"
   },
-  "snapshot_digest": "sha256:c365dffddb00b01257d46a8fd51196fada34757cf036452f971b5c81690e507c"
+  "snapshot_digest": "sha256:13d1a2b66f6dbd1ca281ed394d5d1333f1c8507b313a312b79dde133d04916d0"
 }

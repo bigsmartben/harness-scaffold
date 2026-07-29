@@ -8,7 +8,6 @@ from .artifacts import (
     ABSENT,
     SCHEMA_VERSION,
     attach_digest,
-    canonical_digest,
     content_digest,
     path_digest,
 )
@@ -47,6 +46,32 @@ _IGNORED_SOURCE_PREFIXES = {
     "__pycache__",
     "evals",
 }
+
+
+def _git_normalized_digest(
+    repository: Path,
+    relative: str,
+    content: str | bytes | None = None,
+) -> str | None:
+    arguments = ["hash-object", f"--path={relative}"]
+    input_bytes: bytes | None = None
+    if content is None:
+        arguments.extend(["--", relative])
+    else:
+        arguments.append("--stdin")
+        input_bytes = (
+            content.encode("utf-8") if isinstance(content, str) else content
+        )
+    result = run_git(
+        repository,
+        arguments,
+        input_bytes=input_bytes,
+        check=False,
+    )
+    if result.returncode != 0:
+        return None
+    object_id = result.stdout.decode("ascii", errors="strict").strip()
+    return content_digest(f"git-object:{object_id}") if object_id else None
 
 
 def _tracked_and_untracked(repository: Path) -> list[str]:
@@ -115,14 +140,6 @@ def create_repository_snapshot(
         key.replace("\\", "/"): value
         for key, value in (content_overrides or {}).items()
     }
-    head_result = run_git(
-        root, ["symbolic-ref", "-q", "HEAD"], check=False
-    )
-    head_ref = (
-        head_result.stdout.decode("utf-8", errors="replace").strip() or None
-        if head_result.returncode == 0
-        else None
-    )
     paths = set(governance_relevant_paths(root)) | set(overrides)
     files = []
     for relative in sorted(paths):
@@ -131,22 +148,23 @@ def create_repository_snapshot(
             digest = (
                 ABSENT
                 if value is None
-                else content_digest(value)
+                else _git_normalized_digest(root, relative, value)
+                or content_digest(value)
             )
         else:
-            digest = path_digest(root / relative)
+            target = root / relative
+            digest = (
+                ABSENT
+                if not target.exists()
+                else _git_normalized_digest(root, relative)
+                or path_digest(target)
+            )
         if digest != ABSENT or relative in overrides:
             files.append({"path": relative, "digest": digest})
-    workspace_digest = canonical_digest(
-        {"head_ref": head_ref, "files": files}
-    )
     payload = {
         "artifact_type": "repository-snapshot",
         "schema_version": SCHEMA_VERSION,
-        "repository_root": str(root),
-        "head_ref": head_ref,
         "files": files,
-        "workspace_digest": workspace_digest,
     }
     return attach_digest(payload, "snapshot_digest")
 

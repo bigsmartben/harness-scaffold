@@ -22,17 +22,12 @@
       "required": [
         "artifact_type",
         "schema_version",
-        "repository_root",
-        "head_ref",
         "files",
-        "workspace_digest",
         "snapshot_digest"
       ],
       "properties": {
         "artifact_type": {"const": "repository-snapshot"},
         "schema_version": {"const": "2.0.0"},
-        "repository_root": {"type": "string", "minLength": 1},
-        "head_ref": {"type": ["string", "null"]},
         "files": {
           "type": "array",
           "items": {
@@ -50,7 +45,6 @@
             }
           }
         },
-        "workspace_digest": {"$ref": "#/$defs/digest"},
         "snapshot_digest": {"$ref": "#/$defs/digest"}
       }
     },
