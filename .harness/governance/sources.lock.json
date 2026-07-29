@@ -251,7 +251,7 @@
       }
     }
   ],
-  "facts_digest": "sha256:6d2a30986dc3b446ff58c9d97ef5f297e4c641e0ec98fb0032081f67711389b2",
+  "facts_digest": "sha256:57c80d5fe5e9eaf1389212385cd0a79c7732651afaf458f8a3600af1cdb67e64",
   "schema_version": "2.0.0",
   "snapshot": {
     "artifact_type": "repository-snapshot",
@@ -297,7 +297,7 @@
         "path": "pyproject.toml"
       },
       {
-        "digest": "sha256:f12d8eb95fa3e94f3d22d57967994202733a849321580d3d14fa001aabcb7bfc",
+        "digest": "sha256:cc5e4783bda2f6f51e5990aaa9f0462636fe958cd24e11360e0e036cdd2459cf",
         "path": "scripts/smoke_distribution.py"
       },
       {
@@ -306,7 +306,7 @@
       }
     ],
     "schema_version": "2.0.0",
-    "snapshot_digest": "sha256:788a7bd980dc9fd7d15140bd0668d50fc8443c487173dab0fe07afb29a62c067"
+    "snapshot_digest": "sha256:60aef193f8210e2b45ca0e66b7778b5553d24fde2dcc769ae93a18a711d9f56c"
   },
-  "snapshot_digest": "sha256:788a7bd980dc9fd7d15140bd0668d50fc8443c487173dab0fe07afb29a62c067"
+  "snapshot_digest": "sha256:60aef193f8210e2b45ca0e66b7778b5553d24fde2dcc769ae93a18a711d9f56c"
 }
