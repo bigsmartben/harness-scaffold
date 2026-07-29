@@ -1,37 +1,6 @@
-schema_version: 2.0.0
-mode: adopt
-project_policy:
-  local_execution: continuous
-  validation: minimum-sufficient
-  hooks: optional
-  declarations:
-    distribution: uv-tool
-    runtime_surfaces:
-    - codex-app
-    - codex-cli
-issue_planning:
-  default_provider: github
-  local_directory: .harness/issues
-  remote:
-    provider: github
-    repository: bigsmartben/harness-scaffold
-branch_policy:
-  private:
-  - refs/heads/codex/**
-  - refs/heads/agent/**
-  controlled:
-  - refs/heads/main
-  - refs/heads/master
-  - refs/heads/release/**
-  - refs/heads/hotfix/**
-  unmatched: controlled
-  actions:
-  - write
-  - commit
-  - issue-write
-  - push
-  - pull-request
-  - merge
-  - publish
-  - release
-  - deploy
+schema_version: 3.0.0
+rule_instances:
+  specification: []
+  implementation: []
+  verification: []
+  delivery: []

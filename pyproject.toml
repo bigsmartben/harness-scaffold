@@ -1,12 +1,11 @@
 [project]
 name = "sdd-harness"
-version = "2.0.0"
-description = "Repository-local SDD governance scaffold for Codex App and Codex CLI"
+version = "3.0.0"
+description = "Fixed 2-2-4 specification governance scaffold"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "jsonschema>=4.23,<5",
   "pyyaml>=6.0.2,<7",
-  "referencing>=0.35,<1",
 ]
 
 [project.scripts]
@@ -23,6 +22,21 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/harness_core"]
+
+[tool.hatch.build]
+exclude = [
+  "/.codex/**",
+  "/.harness/cache/**",
+  "/.harness/reports/**",
+  "/.harness/runs/**",
+  "/.harness/runtime/**",
+  "/.pytest_cache/**",
+  "/.tmp/**",
+  "/.venv/**",
+  "/dist/**",
+  "/evals/results/**",
+  "/Users*cachepytest/**",
+]
 
 [tool.pytest.ini_options]
 addopts = "-q"

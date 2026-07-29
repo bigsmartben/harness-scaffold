@@ -1,4 +1,0 @@
-[
-  "services/orders/api.py",
-  "services/billing/client.py"
-]

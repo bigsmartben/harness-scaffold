@@ -1,18 +1,16 @@
 # Maintainer Issue Policy
 
 - Use `bigsmartben/harness-scaffold` GitHub Issues as the only SSOT for maintainer iteration plans, status, checklists, and acceptance results.
-- Do not create or maintain editable local Issue mirrors under `.harness/issues/`; local documentation may only link to the authoritative GitHub Issue.
+- Do not create or maintain editable local Issue mirrors; local documentation may only link to the authoritative GitHub Issue.
 - Restate the exact repository, Issue number, and intended mutation before creating, updating, commenting on, closing, or reopening a GitHub Issue.
 
 <!-- ai-coding-harness:start -->
-# AI Coding Harness 2.0
+# Harness 3.0
 
-- Treat this marked block as the repository Harness entrypoint.
-- Use `$harness` for governed local work, explicit `git commit`, Issue operations, Test, Build, CI, and controlled delivery.
-- Read `.harness/harness.yaml` and run `sdd-harness inspect --json` before a governed action.
-- Keep ordinary local work continuous and use only the minimum sufficient T0-T3 validation.
-- Call actions by their source-backed `action_id`; do not invent or override an invocation.
-- Treat project policy as versioned behavior and a task decision as one task or one exact action only.
-- Require an independent task decision and upstream platform gates for every controlled action.
-- Stop with stable blocker codes when runtime, projection, source, scope, binding, branch, target, or evidence cannot be verified.
+- Harness is a local fixed specification governance scaffold.
+- Read `.harness/harness.yaml` and `.agents/skills/harness/SKILL.md`.
+- Use only `sdd-harness init`, `project`, `validate`, and `inspect`.
+- Treat the fixed Audience × Responsibility × Governance Domain model as immutable.
+- Treat every `rule_instances` entry as guidance only; it cannot authorize, block, select, or execute an operation.
+- Reject v1/v2 configuration and artifacts without writing, migrating, completing, deleting, or falling back.
 <!-- ai-coding-harness:end -->

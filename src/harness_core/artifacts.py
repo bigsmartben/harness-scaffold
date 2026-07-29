@@ -1,20 +1,20 @@
-"""Canonical artifact and content digest helpers for Harness 2.0."""
+"""Canonical JSON and digest helpers for Harness 3.0."""
 
 from __future__ import annotations
 
 import hashlib
 import json
 from copy import deepcopy
-from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
+
+from .model import (
+    CORE_VERSION,
+    PROJECTION_COMPILER_VERSION,
+    SCHEMA_VERSION,
+)
 
 
-SCHEMA_VERSION = "2.0.0"
 GOVERNANCE_SCHEMA_VERSION = SCHEMA_VERSION
-CORE_VERSION = SCHEMA_VERSION
-PROJECTION_COMPILER_VERSION = SCHEMA_VERSION
-ABSENT = "absent"
-ABSENT_DIGEST = ABSENT
 
 
 def canonical_json_bytes(
@@ -76,42 +76,8 @@ def content_digest(content: str | bytes) -> str:
     return f"sha256:{hashlib.sha256(payload).hexdigest()}"
 
 
-def path_digest(path: Path) -> str:
-    return content_digest(path.read_bytes()) if path.is_file() else ABSENT
-
-
-file_digest = path_digest
-
-
-def normalized_path_digest(repository: Path, relative_path: str) -> str:
-    root = repository.resolve()
-    target = (root / relative_path.replace("\\", "/")).resolve()
-    if not target.is_relative_to(root):
-        raise ValueError(f"path escapes repository: {relative_path}")
-    return path_digest(target)
-
-
 def digest_matches(document: dict[str, Any], digest_field: str) -> bool:
     recorded = document.get(digest_field)
     return isinstance(recorded, str) and recorded == artifact_digest(
         document, digest_field
     )
-
-
-verify_digest = digest_matches
-
-
-def paths_digest(repository: Path, relative_paths: Iterable[str]) -> str:
-    """Hash path names and exact contents, including absent paths."""
-
-    root = repository.resolve()
-    entries = []
-    for relative in sorted(set(relative_paths)):
-        normalized = relative.replace("\\", "/")
-        entries.append(
-            {
-                "path": normalized,
-                "digest": normalized_path_digest(root, normalized),
-            }
-        )
-    return canonical_digest(entries)

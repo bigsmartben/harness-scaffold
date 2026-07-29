@@ -1,253 +1,555 @@
-"""JSON Schema and cross-artifact validation for Harness 2.0."""
+"""Closed Harness 3.0 configuration and fixed-model contracts."""
 
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
-from itertools import product
 from pathlib import Path
 from typing import Any
 
 import yaml
 from jsonschema import Draft202012Validator
-from referencing import Registry, Resource
 
-from .artifacts import SCHEMA_VERSION, digest_matches
+from .model import (
+    AUDIENCES,
+    CELL_IDS,
+    DOMAINS,
+    RESPONSIBILITIES,
+    RULE_ID_MAX_LENGTH,
+    RULE_ID_PATTERN,
+    SCHEMA_VERSION,
+    cell_id,
+)
 from .package_resources import schema_root
 
 
-AUDIENCES = ("maintainer", "consumer")
-RESPONSIBILITIES = ("generate", "enforce")
-DOMAINS = ("specification", "implementation", "verification", "delivery")
+_RULE_FIELDS = ("rule_id", "directive", "scope")
+_RULE_ID = re.compile(RULE_ID_PATTERN, re.ASCII)
+_DRIVE_PREFIX = re.compile(r"^[A-Za-z]:")
+_SCOPE_SEGMENT = re.compile(r"^[A-Za-z0-9._*?-]+$", re.ASCII)
 
 
 @dataclass(frozen=True)
 class ValidationIssue:
+    """One stable, location-aware contract diagnostic."""
+
     code: str
     path: str
     message: str
+    rule_id: str | None = None
+    expected: Any | None = None
+    actual: Any | None = None
+
+    def as_dict(self) -> dict[str, Any]:
+        result: dict[str, Any] = {
+            "code": self.code,
+            "path": self.path,
+            "message": self.message,
+        }
+        for name in ("rule_id", "expected", "actual"):
+            value = getattr(self, name)
+            if value is not None:
+                result[name] = value
+        return result
 
 
-def _schema_documents() -> dict[str, dict[str, Any]]:
-    documents: dict[str, dict[str, Any]] = {}
-    for child in schema_root().iterdir():
-        if child.name.endswith(".schema.json"):
-            documents[child.name] = json.loads(child.read_text(encoding="utf-8"))
-    return documents
+def _pointer(*parts: object) -> str:
+    if not parts:
+        return ""
+    encoded = [
+        str(part).replace("~", "~0").replace("/", "~1")
+        for part in parts
+    ]
+    return "/" + "/".join(encoded)
 
 
-def _registry(documents: dict[str, dict[str, Any]]) -> Registry:
-    registry = Registry()
-    for document in documents.values():
-        registry = registry.with_resource(
-            document["$id"], Resource.from_contents(document)
+def _sorted(issues: list[ValidationIssue]) -> list[ValidationIssue]:
+    return sorted(
+        issues,
+        key=lambda issue: (issue.path, issue.code, issue.message),
+    )
+
+
+def _issue(
+    code: str,
+    path: str,
+    message: str,
+    *,
+    rule_id: str | None = None,
+    expected: Any | None = None,
+    actual: Any | None = None,
+) -> ValidationIssue:
+    return ValidationIssue(
+        code=code,
+        path=path,
+        message=message,
+        rule_id=rule_id,
+        expected=expected,
+        actual=actual,
+    )
+
+
+def _valid_scope(value: str) -> bool:
+    if (
+        not value
+        or not value.isascii()
+        or value.startswith("/")
+        or _DRIVE_PREFIX.match(value)
+        or "\\" in value
+    ):
+        return False
+    segments = value.split("/")
+    for segment in segments:
+        if (
+            not segment
+            or segment in {".", ".."}
+            or not _SCOPE_SEGMENT.fullmatch(segment)
+            or ("**" in segment and segment != "**")
+        ):
+            return False
+    return True
+
+
+def _validate_rule(
+    rule: Any,
+    *,
+    domain: str,
+    index: int,
+    seen_ids: dict[str, str],
+) -> list[ValidationIssue]:
+    base = ("rule_instances", domain, index)
+    path = _pointer(*base)
+    if not isinstance(rule, dict):
+        return [
+            _issue(
+                "RULE_TYPE_INVALID",
+                path,
+                "rule instance must be an object",
+                expected="object",
+                actual=type(rule).__name__,
+            )
+        ]
+
+    issues: list[ValidationIssue] = []
+    for field in sorted(set(rule) - set(_RULE_FIELDS)):
+        issues.append(
+            _issue(
+                "RULE_FIELD_FORBIDDEN",
+                _pointer(*base, field),
+                f"rule field is not allowed: {field}",
+                rule_id=rule.get("rule_id")
+                if isinstance(rule.get("rule_id"), str)
+                else None,
+                expected=list(_RULE_FIELDS),
+                actual=field,
+            )
         )
-    return registry
+    for field in _RULE_FIELDS:
+        if field not in rule:
+            issues.append(
+                _issue(
+                    "RULE_FIELD_MISSING",
+                    _pointer(*base, field),
+                    f"required rule field is missing: {field}",
+                    rule_id=rule.get("rule_id")
+                    if isinstance(rule.get("rule_id"), str)
+                    else None,
+                    expected=field,
+                )
+            )
+
+    rule_id = rule.get("rule_id")
+    valid_rule_id = (
+        isinstance(rule_id, str)
+        and len(rule_id) <= RULE_ID_MAX_LENGTH
+        and _RULE_ID.fullmatch(rule_id) is not None
+    )
+    if "rule_id" in rule and not valid_rule_id:
+        issues.append(
+            _issue(
+                "RULE_ID_INVALID",
+                _pointer(*base, "rule_id"),
+                "rule_id must be 1-64 ASCII lowercase kebab-case characters",
+                rule_id=rule_id if isinstance(rule_id, str) else None,
+                expected=RULE_ID_PATTERN,
+                actual=rule_id,
+            )
+        )
+    elif valid_rule_id:
+        assert isinstance(rule_id, str)
+        if rule_id in seen_ids:
+            issues.append(
+                _issue(
+                    "RULE_ID_DUPLICATE",
+                    _pointer(*base, "rule_id"),
+                    "rule_id must be globally unique",
+                    rule_id=rule_id,
+                    expected="globally unique rule_id",
+                    actual=rule_id,
+                )
+            )
+        else:
+            seen_ids[rule_id] = _pointer(*base, "rule_id")
+
+    directive = rule.get("directive")
+    if "directive" in rule:
+        if not isinstance(directive, str):
+            issues.append(
+                _issue(
+                    "RULE_DIRECTIVE_INVALID",
+                    _pointer(*base, "directive"),
+                    "directive must be a string",
+                    rule_id=rule_id if valid_rule_id else None,
+                    expected="string",
+                    actual=type(directive).__name__,
+                )
+            )
+        elif not directive.strip():
+            issues.append(
+                _issue(
+                    "RULE_DIRECTIVE_EMPTY",
+                    _pointer(*base, "directive"),
+                    "directive must not be empty after trimming",
+                    rule_id=rule_id if valid_rule_id else None,
+                    expected="non-empty trimmed string",
+                    actual=directive,
+                )
+            )
+
+    scope = rule.get("scope")
+    if "scope" in rule:
+        if not isinstance(scope, list):
+            issues.append(
+                _issue(
+                    "RULE_SCOPE_INVALID",
+                    _pointer(*base, "scope"),
+                    "scope must be a non-empty array",
+                    rule_id=rule_id if valid_rule_id else None,
+                    expected="non-empty array",
+                    actual=type(scope).__name__,
+                )
+            )
+        elif not scope:
+            issues.append(
+                _issue(
+                    "RULE_SCOPE_EMPTY",
+                    _pointer(*base, "scope"),
+                    "scope must contain at least one repository-relative glob",
+                    rule_id=rule_id if valid_rule_id else None,
+                    expected="at least one scope glob",
+                    actual=[],
+                )
+            )
+        else:
+            observed: set[str] = set()
+            for scope_index, item in enumerate(scope):
+                item_path = _pointer(*base, "scope", scope_index)
+                if not isinstance(item, str) or not _valid_scope(item):
+                    issues.append(
+                        _issue(
+                            "RULE_SCOPE_INVALID",
+                            item_path,
+                            "scope must be a portable repository-relative glob",
+                            rule_id=rule_id if valid_rule_id else None,
+                            expected=(
+                                "ASCII repository-relative glob using /, *, ?, "
+                                "and a complete ** segment"
+                            ),
+                            actual=item,
+                        )
+                    )
+                    continue
+                if item in observed:
+                    issues.append(
+                        _issue(
+                            "RULE_SCOPE_DUPLICATE",
+                            item_path,
+                            "scope entries must be unique",
+                            rule_id=rule_id if valid_rule_id else None,
+                            expected="unique scope entries",
+                            actual=item,
+                        )
+                    )
+                observed.add(item)
+    return issues
 
 
-def blocker_codes() -> tuple[str, ...]:
-    common = _schema_documents()["common.schema.json"]
-    return tuple(common["$defs"]["blockerCode"]["enum"])
+def validate_project_config(
+    document_or_path: dict[str, Any] | Path,
+) -> list[ValidationIssue]:
+    """Validate the only supported Harness 3.0 user input."""
+
+    if isinstance(document_or_path, Path):
+        try:
+            document = yaml.safe_load(
+                document_or_path.read_text(encoding="utf-8")
+            )
+        except OSError as exc:
+            return [
+                _issue(
+                    "CONFIG_READ_FAILED",
+                    "",
+                    str(exc),
+                    expected="readable UTF-8 YAML",
+                )
+            ]
+        except yaml.YAMLError as exc:
+            return [
+                _issue(
+                    "CONFIG_YAML_INVALID",
+                    "",
+                    str(exc),
+                    expected="valid YAML",
+                )
+            ]
+    else:
+        document = document_or_path
+
+    if not isinstance(document, dict):
+        return [
+            _issue(
+                "CONFIG_TYPE_INVALID",
+                "",
+                "Harness configuration must be an object",
+                expected="object",
+                actual=type(document).__name__,
+            )
+        ]
+
+    issues: list[ValidationIssue] = []
+    allowed_root = {"schema_version", "rule_instances"}
+    for field in sorted(set(document) - allowed_root):
+        issues.append(
+            _issue(
+                "CONFIG_ADDITIONAL_PROPERTY",
+                _pointer(field),
+                f"root property is not allowed: {field}",
+                expected=sorted(allowed_root),
+                actual=field,
+            )
+        )
+
+    if "schema_version" not in document:
+        issues.append(
+            _issue(
+                "CONFIG_REQUIRED_FIELD_MISSING",
+                _pointer("schema_version"),
+                "required root property is missing: schema_version",
+                expected=SCHEMA_VERSION,
+            )
+        )
+    elif document["schema_version"] != SCHEMA_VERSION:
+        issues.append(
+            _issue(
+                "SCHEMA_VERSION_UNSUPPORTED",
+                _pointer("schema_version"),
+                "only Harness schema_version 3.0.0 is supported",
+                expected=SCHEMA_VERSION,
+                actual=document["schema_version"],
+            )
+        )
+
+    if "rule_instances" not in document:
+        issues.append(
+            _issue(
+                "CONFIG_REQUIRED_FIELD_MISSING",
+                _pointer("rule_instances"),
+                "required root property is missing: rule_instances",
+                expected=list(DOMAINS),
+            )
+        )
+        return _sorted(issues)
+
+    instances = document["rule_instances"]
+    if not isinstance(instances, dict):
+        issues.append(
+            _issue(
+                "RULE_INSTANCES_TYPE_INVALID",
+                _pointer("rule_instances"),
+                "rule_instances must be an object",
+                expected="object",
+                actual=type(instances).__name__,
+            )
+        )
+        return _sorted(issues)
+
+    for domain in sorted(set(instances) - set(DOMAINS)):
+        issues.append(
+            _issue(
+                "GOVERNANCE_DOMAIN_UNKNOWN",
+                _pointer("rule_instances", domain),
+                f"unknown governance domain: {domain}",
+                expected=list(DOMAINS),
+                actual=domain,
+            )
+        )
+    for domain in DOMAINS:
+        if domain not in instances:
+            issues.append(
+                _issue(
+                    "GOVERNANCE_DOMAIN_MISSING",
+                    _pointer("rule_instances", domain),
+                    f"governance domain must be explicit: {domain}",
+                    expected=[],
+                )
+            )
+
+    seen_ids: dict[str, str] = {}
+    for domain in DOMAINS:
+        if domain not in instances:
+            continue
+        rules = instances[domain]
+        if not isinstance(rules, list):
+            issues.append(
+                _issue(
+                    "GOVERNANCE_DOMAIN_TYPE_INVALID",
+                    _pointer("rule_instances", domain),
+                    "governance domain value must be an array",
+                    expected="array",
+                    actual=type(rules).__name__,
+                )
+            )
+            continue
+        for index, rule in enumerate(rules):
+            issues.extend(
+                _validate_rule(
+                    rule,
+                    domain=domain,
+                    index=index,
+                    seen_ids=seen_ids,
+                )
+            )
+    return _sorted(issues)
+
+
+def validate_fixed_model_cells(cells: Any) -> list[ValidationIssue]:
+    """Validate exact cell membership and axis-to-ID consistency."""
+
+    if not isinstance(cells, list):
+        return [
+            _issue(
+                "FIXED_MODEL_CELLS_INVALID",
+                "/cells",
+                "cells must be an array",
+                expected=list(CELL_IDS),
+                actual=type(cells).__name__,
+            )
+        ]
+
+    issues: list[ValidationIssue] = []
+    observed: list[Any] = []
+    for index, cell in enumerate(cells):
+        base = ("cells", index)
+        if not isinstance(cell, dict):
+            issues.append(
+                _issue(
+                    "FIXED_MODEL_CELL_INVALID",
+                    _pointer(*base),
+                    "cell must be an object",
+                    expected=(
+                        "cell_id, audience, responsibility, and domain"
+                    ),
+                    actual=type(cell).__name__,
+                )
+            )
+            observed.append(None)
+            continue
+        observed.append(cell.get("cell_id"))
+        audience = cell.get("audience")
+        responsibility = cell.get("responsibility")
+        domain = cell.get("domain")
+        if audience not in AUDIENCES:
+            issues.append(
+                _issue(
+                    "FIXED_MODEL_AXIS_INVALID",
+                    _pointer(*base, "audience"),
+                    "invalid audience",
+                    expected=list(AUDIENCES),
+                    actual=audience,
+                )
+            )
+        if responsibility not in RESPONSIBILITIES:
+            issues.append(
+                _issue(
+                    "FIXED_MODEL_AXIS_INVALID",
+                    _pointer(*base, "responsibility"),
+                    "invalid responsibility",
+                    expected=list(RESPONSIBILITIES),
+                    actual=responsibility,
+                )
+            )
+        if domain not in DOMAINS:
+            issues.append(
+                _issue(
+                    "FIXED_MODEL_AXIS_INVALID",
+                    _pointer(*base, "domain"),
+                    "invalid governance domain",
+                    expected=list(DOMAINS),
+                    actual=domain,
+                )
+            )
+        if (
+            audience in AUDIENCES
+            and responsibility in RESPONSIBILITIES
+            and domain in DOMAINS
+        ):
+            expected_id = cell_id(audience, responsibility, domain)
+            if cell.get("cell_id") != expected_id:
+                issues.append(
+                    _issue(
+                        "FIXED_MODEL_CELL_ID_MISMATCH",
+                        _pointer(*base, "cell_id"),
+                        "cell_id must match its three axis fields",
+                        expected=expected_id,
+                        actual=cell.get("cell_id"),
+                    )
+                )
+
+    if observed != list(CELL_IDS):
+        issues.append(
+            _issue(
+                "FIXED_MODEL_CELL_SET_MISMATCH",
+                "/cells",
+                "cells must contain the exact fixed IDs in canonical order",
+                expected=list(CELL_IDS),
+                actual=observed,
+            )
+        )
+    return _sorted(issues)
+
+
+def _schema_document(schema_name: str) -> dict[str, Any]:
+    return json.loads(
+        schema_root().joinpath(schema_name).read_text(encoding="utf-8")
+    )
 
 
 def validate_artifact(
     document: Any,
     schema_name: str,
 ) -> list[ValidationIssue]:
-    documents = _schema_documents()
-    schema = documents[schema_name]
-    validator = Draft202012Validator(schema, registry=_registry(documents))
-    return [
-        ValidationIssue(
-            "CONFIG_INVALID",
-            "/".join(str(item) for item in error.absolute_path) or "$",
+    """Validate a v3 artifact against one self-contained public Schema."""
+
+    validator = Draft202012Validator(_schema_document(schema_name))
+    issues = [
+        _issue(
+            "SCHEMA_VALIDATION_FAILED",
+            _pointer(*error.absolute_path),
             error.message,
+            expected=error.validator_value,
+            actual=error.instance,
         )
-        for error in sorted(validator.iter_errors(document), key=str)
+        for error in validator.iter_errors(document)
     ]
-
-
-def validate_project_config(document_or_path: dict[str, Any] | Path) -> list[ValidationIssue]:
-    if isinstance(document_or_path, Path):
-        try:
-            document = yaml.safe_load(document_or_path.read_text(encoding="utf-8"))
-        except (OSError, yaml.YAMLError) as exc:
-            return [ValidationIssue("CONFIG_INVALID", "$", str(exc))]
-    else:
-        document = document_or_path
-    return validate_artifact(document, "harness.schema.json")
-
-
-def validate_runtime_artifact(document: Any) -> list[ValidationIssue]:
-    return validate_artifact(document, "runtime.schema.json")
+    return _sorted(issues)
 
 
 def validate_governance_artifact(document: Any) -> list[ValidationIssue]:
-    return validate_artifact(document, "governance.schema.json")
-
-
-def validate_governance_bundle(
-    bundle: dict[str, dict[str, Any]],
-) -> list[ValidationIssue]:
-    issues: list[ValidationIssue] = []
-    required = ("sources", "action_graph", "rules", "projection_lock")
-    for name in required:
-        if name not in bundle:
-            issues.append(
-                ValidationIssue(
-                    "GOVERNANCE_SOURCE_MISSING",
-                    name,
-                    f"missing governance artifact: {name}",
-                )
-            )
-            continue
-        issues.extend(validate_governance_artifact(bundle[name]))
-    if issues:
+    issues = validate_artifact(document, "governance.schema.json")
+    if issues or not isinstance(document, dict):
         return issues
-
-    sources = bundle["sources"]
-    graph = bundle["action_graph"]
-    rules = bundle["rules"]
-    lock = bundle["projection_lock"]
-    fact_ids = [fact["fact_id"] for fact in sources["facts"]]
-    if len(fact_ids) != len(set(fact_ids)):
-        issues.append(
-            ValidationIssue(
-                "GOVERNANCE_CONFLICT",
-                "sources.facts",
-                "source fact IDs must be unique",
-            )
-        )
-    digest_fields = {
-        "sources": "facts_digest",
-        "action_graph": "action_graph_digest",
-        "rules": "rules_digest",
-        "projection_lock": "projection_lock_digest",
-    }
-    for name, field in digest_fields.items():
-        if not digest_matches(bundle[name], field):
-            issues.append(
-                ValidationIssue(
-                    "GOVERNANCE_DRIFT_DETECTED",
-                    name,
-                    f"{field} does not match the artifact",
-                )
-            )
-
-    expected_cells = {
-        f"{audience}.{responsibility}.{domain}"
-        for audience, responsibility, domain in product(
-            AUDIENCES, RESPONSIBILITIES, DOMAINS
-        )
-    }
-    observed = [cell["cell_id"] for cell in rules["cells"]]
-    if set(observed) != expected_cells or len(observed) != len(expected_cells):
-        issues.append(
-            ValidationIssue(
-                "GOVERNANCE_COVERAGE_INCOMPLETE",
-                "rules.cells",
-                "the projection must contain exactly one record for every governance cell",
-            )
-        )
-    for index, cell in enumerate(rules["cells"]):
-        if (
-            cell["coverage_status"] == "not_applicable"
-            and (
-                not cell["source_refs"]
-                or not isinstance(cell["not_applicable_reason"], str)
-                or not cell["not_applicable_reason"].strip()
-            )
-        ):
-            issues.append(
-                ValidationIssue(
-                    "GOVERNANCE_COVERAGE_INCOMPLETE",
-                    f"rules.cells.{index}",
-                    "not_applicable requires source_refs and a reason",
-                )
-            )
-        if cell["coverage_status"] == "missing":
-            issues.append(
-                ValidationIssue(
-                    "GOVERNANCE_COVERAGE_INCOMPLETE",
-                    f"rules.cells.{index}",
-                    f"{cell['cell_id']} is missing",
-                )
-            )
-
-    cross_checks = (
-        (
-            digest_matches(sources["snapshot"], "snapshot_digest")
-            and sources["snapshot"]["snapshot_digest"]
-            == sources["snapshot_digest"],
-            "source facts snapshot summary does not match its snapshot digest",
-        ),
-        (
-            sources["snapshot_digest"] == graph["snapshot_digest"],
-            "action graph snapshot does not match source facts",
-        ),
-        (
-            sources["facts_digest"] == graph["facts_digest"],
-            "action graph does not bind the current source facts",
-        ),
-        (
-            graph["action_graph_digest"] == lock["action_graph_digest"],
-            "projection lock does not bind the current action graph",
-        ),
-        (
-            sources["facts_digest"] == lock["facts_digest"],
-            "projection lock does not bind the current source facts",
-        ),
-        (
-            rules["projection_id"] == lock["projection_id"],
-            "rules and projection lock use different projection IDs",
-        ),
-        (
-            rules["rules_digest"] == lock["rules_digest"],
-            "projection lock does not bind the current rules",
-        ),
-    )
-    for passed, message in cross_checks:
-        if not passed:
-            issues.append(
-                ValidationIssue("GOVERNANCE_CONFLICT", "$", message)
-            )
-
-    graph_blockers = sorted(
-        {item["code"] for item in graph.get("blockers", [])}
-    )
-    if sorted(lock["blockers"]) != graph_blockers:
-        issues.append(
-            ValidationIssue(
-                "GOVERNANCE_CONFLICT",
-                "projection_lock.blockers",
-                "projection blockers do not match the action graph",
-            )
-        )
-    if lock["ready"] != (not lock["blockers"]):
-        issues.append(
-            ValidationIssue(
-                "GOVERNANCE_CONFLICT",
-                "projection_lock.ready",
-                "ready must equal the absence of blockers",
-            )
-        )
-    if any(
-        artifact.get("schema_version") != SCHEMA_VERSION
-        for artifact in bundle.values()
-    ):
-        issues.append(
-            ValidationIssue(
-                "HARNESS_RUNTIME_INCOMPATIBLE",
-                "$",
-                "every governance artifact must use schema 2.0.0",
-            )
-        )
-    return issues
-
-
-# Compatibility aliases used only by read-only callers.
-validate_config = validate_project_config
-
-
-def runtime_artifact_is_valid(document: Any) -> bool:
-    return not validate_runtime_artifact(document)
+    model = document.get("model")
+    if not isinstance(model, dict):
+        return issues
+    return validate_fixed_model_cells(model.get("cells"))

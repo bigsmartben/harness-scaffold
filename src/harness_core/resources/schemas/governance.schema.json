@@ -1,166 +1,80 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://sdd-harness.dev/schemas/2.0/governance.schema.json",
-  "x-harness-schema-version": "2.0.0",
-  "oneOf": [
-    {"$ref": "#/$defs/repositorySnapshot"},
-    {"$ref": "#/$defs/sourceFacts"},
-    {"$ref": "#/$defs/actionGraph"},
-    {"$ref": "#/$defs/governanceRules"},
-    {"$ref": "#/$defs/projectionLock"}
+  "$id": "https://sdd-harness.dev/schemas/3.0/governance.schema.json",
+  "title": "Harness 3.0 deterministic model lock",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "artifact_type",
+    "schema_version",
+    "components",
+    "model",
+    "rules",
+    "source_digest",
+    "projection_digest"
   ],
-  "$defs": {
-    "digest": {
-      "$ref": "https://sdd-harness.dev/schemas/2.0/common.schema.json#/$defs/digest"
-    },
-    "stringList": {
-      "$ref": "https://sdd-harness.dev/schemas/2.0/common.schema.json#/$defs/stringList"
-    },
-    "repositorySnapshot": {
+  "properties": {
+    "artifact_type": {"const": "harness-model-lock"},
+    "schema_version": {"const": "3.0.0"},
+    "components": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "artifact_type",
-        "schema_version",
-        "files",
-        "snapshot_digest"
+        "core_version",
+        "contract_version",
+        "compiler_version"
       ],
       "properties": {
-        "artifact_type": {"const": "repository-snapshot"},
-        "schema_version": {"const": "2.0.0"},
-        "files": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": ["path", "digest"],
-            "properties": {
-              "path": {"type": "string", "minLength": 1},
-              "digest": {
-                "oneOf": [
-                  {"$ref": "#/$defs/digest"},
-                  {"const": "absent"}
-                ]
-              }
-            }
-          }
-        },
-        "snapshot_digest": {"$ref": "#/$defs/digest"}
+        "core_version": {"const": "3.0.0"},
+        "contract_version": {"const": "3.0.0"},
+        "compiler_version": {"const": "3.0.0"}
       }
     },
-    "sourceFact": {
+    "model": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["fact_id", "fact_type", "value", "source_refs"],
+      "required": [
+        "audiences",
+        "responsibilities",
+        "domains",
+        "cells"
+      ],
       "properties": {
-        "fact_id": {"type": "string", "minLength": 1},
-        "fact_type": {
-          "enum": [
-            "governance-source",
-            "repository-model",
-            "action-binding",
-            "project-policy",
-            "governance-gap"
+        "audiences": {
+          "const": ["maintainer", "consumer"]
+        },
+        "responsibilities": {
+          "const": ["generate", "enforce"]
+        },
+        "domains": {
+          "const": [
+            "specification",
+            "implementation",
+            "verification",
+            "delivery"
           ]
         },
-        "value": {"type": "object"},
-        "source_refs": {"$ref": "#/$defs/stringList"}
-      }
-    },
-    "sourceFacts": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "artifact_type",
-        "schema_version",
-        "snapshot_digest",
-        "snapshot",
-        "facts",
-        "facts_digest"
-      ],
-      "properties": {
-        "artifact_type": {"const": "source-facts"},
-        "schema_version": {"const": "2.0.0"},
-        "snapshot_digest": {"$ref": "#/$defs/digest"},
-        "snapshot": {"$ref": "#/$defs/repositorySnapshot"},
-        "facts": {
+        "cells": {
           "type": "array",
-          "items": {"$ref": "#/$defs/sourceFact"}
-        },
-        "facts_digest": {"$ref": "#/$defs/digest"}
+          "minItems": 16,
+          "maxItems": 16,
+          "items": {"$ref": "#/$defs/cell"}
+        }
       }
     },
-    "action": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "action_id",
-        "semantics",
-        "domain",
-        "boundary",
-        "source_refs",
-        "binding",
-        "binding_state",
-        "validation_floor",
-        "cross_controls"
-      ],
-      "properties": {
-        "action_id": {"type": "string", "minLength": 1},
-        "semantics": {"type": "string", "minLength": 1},
-        "domain": {
-          "$ref": "https://sdd-harness.dev/schemas/2.0/common.schema.json#/$defs/domain"
-        },
-        "boundary": {
-          "$ref": "https://sdd-harness.dev/schemas/2.0/common.schema.json#/$defs/boundary"
-        },
-        "source_refs": {"$ref": "#/$defs/stringList"},
-        "binding": {"type": "object"},
-        "binding_state": {"enum": ["bound", "unavailable"]},
-        "validation_floor": {
-          "$ref": "https://sdd-harness.dev/schemas/2.0/common.schema.json#/$defs/validationLevel"
-        },
-        "cross_controls": {"$ref": "#/$defs/stringList"}
-      }
+    "rules": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/projectedRule"}
     },
-    "actionGraph": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "artifact_type",
-        "schema_version",
-        "snapshot_digest",
-        "facts_digest",
-        "actions",
-        "blockers",
-        "action_graph_digest"
-      ],
-      "properties": {
-        "artifact_type": {"const": "action-graph"},
-        "schema_version": {"const": "2.0.0"},
-        "snapshot_digest": {"$ref": "#/$defs/digest"},
-        "facts_digest": {"$ref": "#/$defs/digest"},
-        "actions": {
-          "type": "array",
-          "items": {"$ref": "#/$defs/action"}
-        },
-        "blockers": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": ["code", "source_refs"],
-            "properties": {
-              "code": {
-                "$ref": "https://sdd-harness.dev/schemas/2.0/common.schema.json#/$defs/blockerCode"
-              },
-              "action_id": {"type": ["string", "null"]},
-              "source_refs": {"$ref": "#/$defs/stringList"}
-            }
-          }
-        },
-        "action_graph_digest": {"$ref": "#/$defs/digest"}
-      }
+    "source_digest": {"$ref": "#/$defs/digest"},
+    "projection_digest": {"$ref": "#/$defs/digest"}
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
     },
-    "coverageRecord": {
+    "cell": {
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -168,16 +82,7 @@
         "audience",
         "responsibility",
         "domain",
-        "source_refs",
-        "directive",
-        "scope",
-        "action_bindings",
-        "preconditions",
-        "postconditions",
-        "evidence",
-        "failure",
-        "coverage_status",
-        "not_applicable_reason"
+        "directive"
       ],
       "properties": {
         "cell_id": {
@@ -185,101 +90,66 @@
           "pattern": "^(maintainer|consumer)\\.(generate|enforce)\\.(specification|implementation|verification|delivery)$"
         },
         "audience": {
-          "$ref": "https://sdd-harness.dev/schemas/2.0/common.schema.json#/$defs/audience"
+          "enum": ["maintainer", "consumer"]
         },
         "responsibility": {
-          "$ref": "https://sdd-harness.dev/schemas/2.0/common.schema.json#/$defs/responsibility"
+          "enum": ["generate", "enforce"]
         },
         "domain": {
-          "$ref": "https://sdd-harness.dev/schemas/2.0/common.schema.json#/$defs/domain"
+          "enum": [
+            "specification",
+            "implementation",
+            "verification",
+            "delivery"
+          ]
         },
-        "source_refs": {"$ref": "#/$defs/stringList"},
-        "directive": {"type": "string", "minLength": 1},
-        "scope": {"$ref": "#/$defs/stringList"},
-        "action_bindings": {"$ref": "#/$defs/stringList"},
-        "preconditions": {"$ref": "#/$defs/stringList"},
-        "postconditions": {"$ref": "#/$defs/stringList"},
-        "evidence": {"$ref": "#/$defs/stringList"},
-        "failure": {
-          "type": "object",
-          "required": ["blocker_codes"],
-          "properties": {
-            "blocker_codes": {
-              "type": "array",
-              "items": {
-                "$ref": "https://sdd-harness.dev/schemas/2.0/common.schema.json#/$defs/blockerCode"
-              },
-              "uniqueItems": true
-            }
-          }
-        },
-        "coverage_status": {
-          "$ref": "https://sdd-harness.dev/schemas/2.0/common.schema.json#/$defs/coverageStatus"
-        },
-        "not_applicable_reason": {"type": ["string", "null"]}
+        "directive": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
-    "governanceRules": {
+    "projectedRule": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "artifact_type",
-        "schema_version",
-        "projection_id",
-        "cells",
-        "rules_digest"
+        "domain",
+        "kind",
+        "rule_id",
+        "directive",
+        "scope",
+        "source_ref"
       ],
       "properties": {
-        "artifact_type": {"const": "governance-rules"},
-        "schema_version": {"const": "2.0.0"},
-        "projection_id": {"$ref": "#/$defs/digest"},
-        "cells": {
-          "type": "array",
-          "minItems": 16,
-          "maxItems": 16,
-          "items": {"$ref": "#/$defs/coverageRecord"}
+        "domain": {
+          "enum": [
+            "specification",
+            "implementation",
+            "verification",
+            "delivery"
+          ]
         },
-        "rules_digest": {"$ref": "#/$defs/digest"}
-      }
-    },
-    "projectionLock": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "artifact_type",
-        "schema_version",
-        "projection_id",
-        "snapshot_digest",
-        "facts_digest",
-        "action_graph_digest",
-        "policy_digest",
-        "governance_schema_version",
-        "projection_compiler_version",
-        "rules_digest",
-        "blockers",
-        "ready",
-        "projection_lock_digest"
-      ],
-      "properties": {
-        "artifact_type": {"const": "projection-lock"},
-        "schema_version": {"const": "2.0.0"},
-        "projection_id": {"$ref": "#/$defs/digest"},
-        "snapshot_digest": {"$ref": "#/$defs/digest"},
-        "facts_digest": {"$ref": "#/$defs/digest"},
-        "action_graph_digest": {"$ref": "#/$defs/digest"},
-        "policy_digest": {"$ref": "#/$defs/digest"},
-        "governance_schema_version": {"const": "2.0.0"},
-        "projection_compiler_version": {"const": "2.0.0"},
-        "rules_digest": {"$ref": "#/$defs/digest"},
-        "blockers": {
-          "type": "array",
-          "items": {
-            "$ref": "https://sdd-harness.dev/schemas/2.0/common.schema.json#/$defs/blockerCode"
-          },
-          "uniqueItems": true
+        "kind": {"const": "guidance"},
+        "rule_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
         },
-        "ready": {"type": "boolean"},
-        "projection_lock_digest": {"$ref": "#/$defs/digest"}
+        "directive": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scope": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "source_ref": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     }
   }

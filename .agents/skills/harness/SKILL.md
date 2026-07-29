@@ -1,55 +1,34 @@
 ---
 name: harness
-description: Govern repository work in Codex App or Codex CLI with the installed sdd-harness runtime. Use for $harness, local implementation, git commit, Issue planning or writes, Test, Build, CI, Push, Pull Request, Merge, Publish, Release, Deploy, project policy, task decisions, and evidence-backed diagnostics.
+description: Validate and project the fixed Harness 3.0 specification governance model and repository guidance rules.
 ---
 
-# Harness
+# Harness 3.0
 
-Use the repository's Harness projection to keep local work continuous and
-controlled actions exact.
+Contract version: `3.0.0`.
 
-## Contract
+Harness is a local specification governance scaffold. Its fixed model has
+three orthogonal axes:
 
-- Input: the user's goal, current repository facts, project policy, and any
-  action-specific decision.
-- Output: the requested repository result plus the minimum sufficient
-  validation summary, or a stable blocker code.
-- Boundary: never treat tool availability as permission, never widen scope
-  silently, and never reuse one action's decision for another action.
-- Failure: fail closed when the runtime, projection, source, scope, binding,
-  branch, target, or evidence cannot be verified.
+- Audience: `maintainer`, `consumer`
+- Responsibility: `generate`, `enforce`
+- Governance Domain: `specification`, `implementation`, `verification`,
+  `delivery`
 
-## Start
+The axes always produce exactly sixteen Cells. `2-2-4` is only a count
+shorthand; it is not a hierarchy.
 
-1. Read `AGENTS.md` and `.harness/harness.yaml`.
-2. Run `sdd-harness inspect --json`.
-3. If status is `entrypoint-ready` and the user wants to generate or refresh
-   repository governance, use the Projection route. The only allowed pending
-   blocker at this point is `GOVERNANCE_SOURCE_MISSING`.
-4. For every other non-empty `blocker_codes` result, stop and use the
-   diagnostics route. Do not repair governance outside the user-confirmed task
-   scope.
-5. Keep internal artifact names out of normal user summaries.
+The only user extension point is `rule_instances` under the four explicit
+governance domains in `.harness/harness.yaml`. Every projected rule has fixed
+`kind: guidance`. Rules cannot grant permission, block an operation, select a
+workflow, or invoke a remote Provider.
 
-## Route
+Use only these local commands:
 
-| Intent | Reference |
-|---|---|
-| Generate, refresh, or explain repository governance | [references/projection.md](references/projection.md) |
-| Inspect, edit, Test, or Build locally | [references/local-work.md](references/local-work.md) |
-| Explicit `git commit` or equivalent | [references/commit.md](references/commit.md) |
-| Plan or create a local/remote Issue | [references/issues.md](references/issues.md) |
-| Push, PR, Merge, Publish, Release, or Deploy | [references/controlled-delivery.md](references/controlled-delivery.md) |
-| Explain a blocker or inspect internal evidence | [references/diagnostics.md](references/diagnostics.md) |
+- `sdd-harness init`
+- `sdd-harness project`
+- `sdd-harness validate`
+- `sdd-harness inspect`
 
-Load only the directly relevant reference.
-
-## User language
-
-Use only these user-facing decision names:
-
-- Project policy / 项目策略: versioned behavior for later tasks.
-- Task decision / 本次决定: one task or one exact action only.
-
-Default to a task decision. Create or change project policy only when the user
-clearly asks for lasting behavior.
+Invalid or legacy input must fail before any write. Harness 3.0 does not read,
+migrate, complete, alias, or fall back to v1/v2 configuration or artifacts.
