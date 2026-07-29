@@ -140,6 +140,30 @@ def test_local_and_remote_issue_adapters_do_not_fallback(
         remote,
         {"provider": "github", "repository": "owner/repo"},
     ) == ["REMOTE_ISSUE_WRITE_FAILED", "HANDOFF_REQUIRED"]
+    valid_receipt = {
+        "status": "succeeded",
+        "provider": "github",
+        "repository": "owner/repo",
+        "target_digest": remote["target_digest"],
+        "url": "https://github.com/owner/repo/issues/23",
+        "issue_number": 23,
+    }
+    assert validate_remote_issue_receipt(remote, valid_receipt) == []
+
+    failed_receipt = {**valid_receipt, "status": "failed"}
+    assert validate_remote_issue_receipt(remote, failed_receipt) == [
+        "REMOTE_ISSUE_WRITE_FAILED",
+        "HANDOFF_REQUIRED",
+    ]
+
+    wrong_target_receipt = {
+        **valid_receipt,
+        "target_digest": "sha256:" + "0" * 64,
+    }
+    assert validate_remote_issue_receipt(remote, wrong_target_receipt) == [
+        "REMOTE_ISSUE_WRITE_FAILED",
+        "HANDOFF_REQUIRED",
+    ]
 
 
 def test_local_issue_write_rejects_a_stale_projection(

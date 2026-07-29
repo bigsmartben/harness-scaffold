@@ -221,6 +221,45 @@ def test_decision_end_expires_only_ignored_runtime_state(
     assert not path.exists()
 
 
+@pytest.mark.parametrize("repository_visible_as", ["unignored", "tracked"])
+def test_decision_end_preserves_repository_visible_state(
+    private_repository: Path,
+    repository_visible_as: str,
+) -> None:
+    initialize(private_repository)
+    state = runtime_state(private_repository)
+    workspace = workspace_state(private_repository)
+    decision = create_task_decision(
+        task_id=f"visible-{repository_visible_as}",
+        projection_id=state["projection_id"],
+        workspace_digest=workspace["workspace_digest"],
+        exact_action="delivery:push",
+        target={"remote": "origin"},
+    )
+    path = save_task_decision(private_repository, decision)
+    relative = path.relative_to(private_repository).as_posix()
+
+    if repository_visible_as == "unignored":
+        ignore_path = private_repository / ".harness/.gitignore"
+        ignore_path.write_text(
+            ignore_path.read_text(encoding="utf-8").replace("runtime/\n", ""),
+            encoding="utf-8",
+            newline="\n",
+        )
+    else:
+        git(private_repository, "add", "-f", relative)
+
+    ended = end_task_decision(private_repository, decision["task_id"])
+
+    assert ended["status"] == "blocked"
+    assert ended["blocker_codes"] == [
+        "GOVERNANCE_PRECONDITION_FAILED",
+        "HANDOFF_REQUIRED",
+    ]
+    assert path.exists()
+    assert load_task_decision(private_repository, decision["task_id"]) == decision
+
+
 def test_decision_refuses_runtime_state_that_git_does_not_ignore(
     tmp_path: Path,
 ) -> None:

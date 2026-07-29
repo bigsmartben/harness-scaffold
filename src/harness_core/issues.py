@@ -237,8 +237,10 @@ def validate_remote_issue_receipt(
     if not digest_matches(plan, "plan_digest") or plan.get("provider") != "github":
         return ["ISSUE_TARGET_REQUIRED"]
     if (
-        receipt.get("provider") != "github"
+        receipt.get("status") != "succeeded"
+        or receipt.get("provider") != "github"
         or receipt.get("repository") != plan.get("repository")
+        or receipt.get("target_digest") != plan.get("target_digest")
         or not isinstance(receipt.get("url"), str)
         or not receipt["url"].startswith("https://")
         or not isinstance(receipt.get("issue_number"), int)

@@ -93,6 +93,21 @@ def end_task_decision(repository: Path, task_id: str) -> dict[str, Any]:
             "task_id": task_id,
             "blocker_codes": ["TASK_DECISION_STALE", "HANDOFF_REQUIRED"],
         }
+    relative = path.relative_to(repository.resolve()).as_posix()
+    ignored = run_git(
+        repository,
+        ["check-ignore", "--quiet", "--", relative],
+        check=False,
+    )
+    if ignored.returncode != 0:
+        return {
+            "status": "blocked",
+            "task_id": task_id,
+            "blocker_codes": [
+                "GOVERNANCE_PRECONDITION_FAILED",
+                "HANDOFF_REQUIRED",
+            ],
+        }
     try:
         path.unlink()
         path.parent.rmdir()
