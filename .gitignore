@@ -3,4 +3,12 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .ruff_cache/
-
+.tmp/
+dist/
+.codex/
+.harness/cache/
+.harness/reports/
+.harness/runs/
+.harness/runtime/
+evals/results/
+Users*cachepytest/

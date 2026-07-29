@@ -1,92 +1,70 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://sdd-harness.dev/schemas/2.0/harness.schema.json",
-  "x-harness-schema-version": "2.0.0",
+  "$id": "https://sdd-harness.dev/schemas/3.0/harness.schema.json",
+  "title": "Harness 3.0 configuration",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "schema_version",
-    "mode",
-    "project_policy",
-    "issue_planning",
-    "branch_policy"
-  ],
+  "required": ["schema_version", "rule_instances"],
   "properties": {
-    "schema_version": {"const": "2.0.0"},
-    "mode": {"enum": ["bootstrap", "adopt"]},
-    "project_policy": {
+    "schema_version": {
+      "const": "3.0.0"
+    },
+    "rule_instances": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["local_execution", "validation", "hooks"],
+      "required": [
+        "specification",
+        "implementation",
+        "verification",
+        "delivery"
+      ],
       "properties": {
-        "local_execution": {"const": "continuous"},
-        "validation": {"const": "minimum-sufficient"},
-        "hooks": {"enum": ["optional", "enabled"]},
-        "declarations": {
-          "type": "object",
-          "additionalProperties": true
+        "specification": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/ruleInstance"}
+        },
+        "implementation": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/ruleInstance"}
+        },
+        "verification": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/ruleInstance"}
+        },
+        "delivery": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/ruleInstance"}
         }
       }
-    },
-    "issue_planning": {
+    }
+  },
+  "$defs": {
+    "ruleInstance": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["default_provider", "local_directory"],
+      "required": ["rule_id", "directive", "scope"],
       "properties": {
-        "default_provider": {"enum": ["local", "github"]},
-        "local_directory": {
+        "rule_id": {
           "type": "string",
-          "pattern": "^\\.harness/issues(?:/.*)?$"
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
         },
-        "remote": {
-          "type": ["object", "null"],
-          "additionalProperties": false,
-          "required": ["provider", "repository"],
-          "properties": {
-            "provider": {"const": "github"},
-            "repository": {
-              "type": "string",
-              "pattern": "^[^/\\s]+/[^/\\s]+$"
-            }
-          }
-        }
-      }
-    },
-    "branch_policy": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["private", "controlled", "unmatched", "actions"],
-      "properties": {
-        "private": {
-          "type": "array",
-          "items": {"type": "string", "minLength": 1},
-          "uniqueItems": true
+        "directive": {
+          "type": "string",
+          "minLength": 1
         },
-        "controlled": {
+        "scope": {
           "type": "array",
-          "items": {"type": "string", "minLength": 1},
-          "uniqueItems": true
-        },
-        "unmatched": {"const": "controlled"},
-        "actions": {
-          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
           "items": {
-            "enum": [
-              "write",
-              "commit",
-              "issue-write",
-              "push",
-              "pull-request",
-              "merge",
-              "publish",
-              "release",
-              "deploy"
-            ]
-          },
-          "uniqueItems": true
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!.*//)(?:[A-Za-z0-9._*?-]+/)*[A-Za-z0-9._*?-]+$"
+          }
         }
       }
     }
   }
 }
-

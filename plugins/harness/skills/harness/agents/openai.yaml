@@ -1,7 +1,0 @@
-interface:
-  display_name: "Harness"
-  short_description: "Govern repository work with minimum sufficient checks"
-  default_prompt: "Use $harness to complete this repository task under its project policy and minimum sufficient validation."
-policy:
-  allow_implicit_invocation: true
-

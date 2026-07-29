@@ -1,5 +1,0 @@
-schema_version: 1.0.0
-mode: adopt
-delivery_authority: ci-platform
-fact_sources:
-  project_manifest: pyproject.toml

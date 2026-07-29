@@ -1,7 +1,0 @@
-type: local
-execution:
-  command:
-    - powershell.exe
-    - -NoProfile
-    - -Command
-    - Set-Content -LiteralPath BACKEND_CALLED_INTEGRATION -Value called

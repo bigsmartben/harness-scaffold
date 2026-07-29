@@ -1,7 +1,0 @@
-id: merge:default
-kind: merge
-requires_independent_confirmation: true
-stages:
-  - id: test
-    tasks: [test:python]
-    requires_evidence: true

@@ -1,7 +1,0 @@
-{
-  "name": "multi-level-agents-fixture",
-  "version": "1.0.0",
-  "scripts": {
-    "test": "node --test"
-  }
-}

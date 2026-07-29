@@ -1,8 +1,0 @@
-[
-  {
-    "task_id": "verify:routine",
-    "status": "passed",
-    "change_manifest": "sha256:fixture-change-manifest",
-    "selection": "sha256:fixture-selection"
-  }
-]

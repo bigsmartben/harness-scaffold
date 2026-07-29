@@ -1,8 +1,0 @@
-id: publish:default
-kind: publish
-requires_independent_confirmation: true
-stages:
-  - id: publish
-    tasks: ["publish:python"]
-    requires_evidence: true
-

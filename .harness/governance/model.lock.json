@@ -1,0 +1,142 @@
+{
+  "artifact_type": "harness-model-lock",
+  "components": {
+    "compiler_version": "3.0.0",
+    "contract_version": "3.0.0",
+    "core_version": "3.0.0"
+  },
+  "model": {
+    "audiences": [
+      "maintainer",
+      "consumer"
+    ],
+    "cells": [
+      {
+        "audience": "maintainer",
+        "cell_id": "maintainer.generate.specification",
+        "directive": "Define and deterministically emit the canonical specification Cell.",
+        "domain": "specification",
+        "responsibility": "generate"
+      },
+      {
+        "audience": "maintainer",
+        "cell_id": "maintainer.generate.implementation",
+        "directive": "Define and deterministically emit the canonical implementation Cell.",
+        "domain": "implementation",
+        "responsibility": "generate"
+      },
+      {
+        "audience": "maintainer",
+        "cell_id": "maintainer.generate.verification",
+        "directive": "Define and deterministically emit the canonical verification Cell.",
+        "domain": "verification",
+        "responsibility": "generate"
+      },
+      {
+        "audience": "maintainer",
+        "cell_id": "maintainer.generate.delivery",
+        "directive": "Define and deterministically emit the canonical delivery Cell.",
+        "domain": "delivery",
+        "responsibility": "generate"
+      },
+      {
+        "audience": "maintainer",
+        "cell_id": "maintainer.enforce.specification",
+        "directive": "Strictly validate the canonical specification Cell and reject model drift.",
+        "domain": "specification",
+        "responsibility": "enforce"
+      },
+      {
+        "audience": "maintainer",
+        "cell_id": "maintainer.enforce.implementation",
+        "directive": "Strictly validate the canonical implementation Cell and reject model drift.",
+        "domain": "implementation",
+        "responsibility": "enforce"
+      },
+      {
+        "audience": "maintainer",
+        "cell_id": "maintainer.enforce.verification",
+        "directive": "Strictly validate the canonical verification Cell and reject model drift.",
+        "domain": "verification",
+        "responsibility": "enforce"
+      },
+      {
+        "audience": "maintainer",
+        "cell_id": "maintainer.enforce.delivery",
+        "directive": "Strictly validate the canonical delivery Cell and reject model drift.",
+        "domain": "delivery",
+        "responsibility": "enforce"
+      },
+      {
+        "audience": "consumer",
+        "cell_id": "consumer.generate.specification",
+        "directive": "Deterministically project validated specification guidance for the repository.",
+        "domain": "specification",
+        "responsibility": "generate"
+      },
+      {
+        "audience": "consumer",
+        "cell_id": "consumer.generate.implementation",
+        "directive": "Deterministically project validated implementation guidance for the repository.",
+        "domain": "implementation",
+        "responsibility": "generate"
+      },
+      {
+        "audience": "consumer",
+        "cell_id": "consumer.generate.verification",
+        "directive": "Deterministically project validated verification guidance for the repository.",
+        "domain": "verification",
+        "responsibility": "generate"
+      },
+      {
+        "audience": "consumer",
+        "cell_id": "consumer.generate.delivery",
+        "directive": "Deterministically project validated delivery guidance for the repository.",
+        "domain": "delivery",
+        "responsibility": "generate"
+      },
+      {
+        "audience": "consumer",
+        "cell_id": "consumer.enforce.specification",
+        "directive": "Strictly validate repository specification guidance against the canonical contract.",
+        "domain": "specification",
+        "responsibility": "enforce"
+      },
+      {
+        "audience": "consumer",
+        "cell_id": "consumer.enforce.implementation",
+        "directive": "Strictly validate repository implementation guidance against the canonical contract.",
+        "domain": "implementation",
+        "responsibility": "enforce"
+      },
+      {
+        "audience": "consumer",
+        "cell_id": "consumer.enforce.verification",
+        "directive": "Strictly validate repository verification guidance against the canonical contract.",
+        "domain": "verification",
+        "responsibility": "enforce"
+      },
+      {
+        "audience": "consumer",
+        "cell_id": "consumer.enforce.delivery",
+        "directive": "Strictly validate repository delivery guidance against the canonical contract.",
+        "domain": "delivery",
+        "responsibility": "enforce"
+      }
+    ],
+    "domains": [
+      "specification",
+      "implementation",
+      "verification",
+      "delivery"
+    ],
+    "responsibilities": [
+      "generate",
+      "enforce"
+    ]
+  },
+  "projection_digest": "sha256:e59e6c27297f40ac3fbe465e6f5388ab6fdf81248e1a2b20d3e34ed073beaec0",
+  "rules": [],
+  "schema_version": "3.0.0",
+  "source_digest": "sha256:50b8ff1811febc8aaa8ce3b17355a1016f106ef5f1028a966a9f11f3227f911b"
+}

@@ -1,8 +1,0 @@
-{
-  "paths": [
-    "src/calculator.py"
-  ],
-  "recommended_tasks": [
-    "test:unit"
-  ]
-}
