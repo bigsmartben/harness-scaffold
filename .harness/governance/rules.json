@@ -686,7 +686,7 @@
       ]
     }
   ],
-  "projection_id": "sha256:294df89b94aba476ed5a779888eaef905de99f5df4fe9dd62803fa6ec3d75dcc",
-  "rules_digest": "sha256:3a74dc1a0e56bdb269daf20f215c88f3b26df9ad3e96fb55a31b611bce7bcfe1",
+  "projection_id": "sha256:8a3030a9f69a704c69ef0625d308163326618371c0809a3313b90701ddfbef70",
+  "rules_digest": "sha256:2aeff035e1580f27dd026b64a13e3c7759fcd6f86373ac3c2142599693c1c5f4",
   "schema_version": "2.0.0"
 }

@@ -21,6 +21,12 @@ def repo_skill_root():
     return resource_root().joinpath("repo_skill", "harness")
 
 
+def repo_documentation_skill_root():
+    return resource_root().joinpath(
+        "repo_skill", "repo-documentation-maker"
+    )
+
+
 def iter_resource_files(root) -> Iterator[tuple[str, bytes]]:
     """Yield sorted relative file names and exact bytes."""
 

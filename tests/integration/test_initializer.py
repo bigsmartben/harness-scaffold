@@ -11,7 +11,11 @@ from harness_core.initializer import (
     build_initialization_plan,
     build_projection_plan,
 )
-from harness_core.package_resources import iter_resource_files, repo_skill_root
+from harness_core.package_resources import (
+    iter_resource_files,
+    repo_documentation_skill_root,
+    repo_skill_root,
+)
 
 from conftest import git, initialize
 
@@ -35,12 +39,139 @@ def test_init_publishes_exact_skill_without_hooks_and_is_idempotent(
         private_repository
         / ".agents/skills/harness/agents/openai.yaml"
     ).is_file()
+    for relative, expected in iter_resource_files(
+        repo_documentation_skill_root()
+    ):
+        assert (
+            private_repository
+            / ".agents/skills/repo-documentation-maker"
+            / relative
+        ).read_bytes() == expected
+    documentation_manifest = json.loads(
+        (
+            private_repository
+            / ".agents/skills/repo-documentation-maker"
+            / ".scaffold-manifest.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert documentation_manifest["skill_name"] == (
+        "repo-documentation-maker"
+    )
+    assert documentation_manifest["skill_version"] == "1.0.0"
+    assert documentation_manifest["preserved_customizations"] == []
     assert not (private_repository / ".codex/hooks.json").exists()
     assert runtime_state(private_repository)["status"] == "active"
 
     second = build_initialization_plan(private_repository)
     assert second["blocker_codes"] == []
     assert second["write_scope"] == []
+
+
+def test_update_preserves_customized_documentation_skill_file(
+    private_repository: Path,
+) -> None:
+    initialize(private_repository)
+    customized = (
+        private_repository
+        / ".agents/skills/repo-documentation-maker"
+        / "templates/README.template.md"
+    )
+    customized.write_text(
+        customized.read_text(encoding="utf-8")
+        + "\n## Local extension\n\nKeep this customization.\n",
+        encoding="utf-8",
+    )
+    extra = (
+        private_repository
+        / ".agents/skills/repo-documentation-maker"
+        / "references/local-guidance.md"
+    )
+    extra.write_text("# Local guidance\n", encoding="utf-8")
+
+    plan = build_initialization_plan(private_repository)
+    relative = (
+        ".agents/skills/repo-documentation-maker/"
+        "templates/README.template.md"
+    )
+    extra_relative = (
+        ".agents/skills/repo-documentation-maker/"
+        "references/local-guidance.md"
+    )
+    preserved = sorted([relative, extra_relative])
+    assert plan["blocker_codes"] == []
+    assert plan["preserved_customizations"] == preserved
+    assert relative not in plan["write_scope"]
+    assert extra_relative not in plan["write_scope"]
+    assert (
+        ".agents/skills/repo-documentation-maker/"
+        ".scaffold-manifest.json"
+    ) in plan["write_scope"]
+
+    applied = apply_initialization_plan(
+        private_repository,
+        plan,
+        approved_plan_digest=plan["plan_digest"],
+    )
+    assert applied["status"] == "applied"
+    assert applied["preserved_customizations"] == preserved
+    assert "Keep this customization." in customized.read_text(
+        encoding="utf-8"
+    )
+    assert extra.read_text(encoding="utf-8") == "# Local guidance\n"
+
+    repeated = build_initialization_plan(private_repository)
+    assert repeated["blocker_codes"] == []
+    assert repeated["write_scope"] == []
+    assert repeated["preserved_customizations"] == preserved
+
+
+def test_existing_unowned_documentation_skill_fails_closed(
+    private_repository: Path,
+) -> None:
+    target = (
+        private_repository
+        / ".agents/skills/repo-documentation-maker"
+    )
+    target.mkdir(parents=True)
+    (target / "SKILL.md").write_text(
+        "---\nname: repo-documentation-maker\n"
+        "description: User-owned skill.\n---\n",
+        encoding="utf-8",
+    )
+
+    plan = build_initialization_plan(private_repository)
+
+    assert plan["blocker_codes"] == [
+        "REPO_SKILL_OWNERSHIP_UNRESOLVED"
+    ]
+    assert not any(
+        path.startswith(
+            ".agents/skills/repo-documentation-maker/"
+        )
+        for path in plan["write_scope"]
+    )
+
+
+def test_documentation_skill_manifest_rejects_path_traversal(
+    private_repository: Path,
+) -> None:
+    initialize(private_repository)
+    manifest_path = (
+        private_repository
+        / ".agents/skills/repo-documentation-maker"
+        / ".scaffold-manifest.json"
+    )
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["managed_files"]["../../README.md"] = "sha256:invalid"
+    manifest_path.write_text(
+        json.dumps(manifest),
+        encoding="utf-8",
+    )
+
+    plan = build_initialization_plan(private_repository)
+
+    assert plan["blocker_codes"] == ["REPO_SKILL_MANIFEST_INVALID"]
+    assert "../../README.md" not in "\n".join(plan["write_scope"])
 
 
 def test_with_hooks_is_explicit_and_does_not_change_runtime_authority(

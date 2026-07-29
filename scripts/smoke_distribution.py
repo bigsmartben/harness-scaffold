@@ -17,6 +17,14 @@ ROOT = Path(__file__).parents[1]
 CANONICAL_SKILL = (
     ROOT / "src" / "harness_core" / "resources" / "repo_skill" / "harness"
 )
+CANONICAL_DOCUMENTATION_SKILL = (
+    ROOT
+    / "src"
+    / "harness_core"
+    / "resources"
+    / "repo_skill"
+    / "repo-documentation-maker"
+)
 VERSION = "2.0.0"
 
 
@@ -122,6 +130,39 @@ def _assert_skill_exact(repository: Path) -> None:
         raise RuntimeError("published repository Skill differs from wheel source")
     if "agents/openai.yaml" not in actual:
         raise RuntimeError("published Skill lacks agents/openai.yaml")
+
+    expected_documentation = {
+        path.relative_to(CANONICAL_DOCUMENTATION_SKILL).as_posix(): (
+            path.read_bytes()
+        )
+        for path in CANONICAL_DOCUMENTATION_SKILL.rglob("*")
+        if path.is_file()
+    }
+    published_documentation = (
+        repository / ".agents" / "skills" / "repo-documentation-maker"
+    )
+    actual_documentation = {
+        path.relative_to(published_documentation).as_posix(): path.read_bytes()
+        for path in published_documentation.rglob("*")
+        if path.is_file() and path.name != ".scaffold-manifest.json"
+    }
+    if actual_documentation != expected_documentation:
+        raise RuntimeError(
+            "published documentation Skill differs from wheel source"
+        )
+    manifest = json.loads(
+        (
+            published_documentation / ".scaffold-manifest.json"
+        ).read_text(encoding="utf-8")
+    )
+    if (
+        manifest.get("skill_name") != "repo-documentation-maker"
+        or manifest.get("skill_version") != "1.0.0"
+    ):
+        raise RuntimeError("documentation Skill manifest is invalid")
+    combined = b"\n".join(actual_documentation.values()).lower()
+    if b"pre-sdd" in combined:
+        raise RuntimeError("documentation Skill retains an external association")
 
 
 def main() -> int:

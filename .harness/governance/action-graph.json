@@ -1,5 +1,5 @@
 {
-  "action_graph_digest": "sha256:0fdc4ce24b6e75b9f05134903ba03a8c236d1eea2d5293c30baec45f0b33170a",
+  "action_graph_digest": "sha256:97eb2dcc5b07e571c94f8c99e76c1487f500aac1f81648b46b8bf6e85d1b9d00",
   "actions": [
     {
       "action_id": "ci:workflow:ci:contracts",
@@ -435,7 +435,7 @@
   ],
   "artifact_type": "action-graph",
   "blockers": [],
-  "facts_digest": "sha256:b8b8367e565d8e9d498e15182d639c7dbd8df430f6f5fe0d9c499ddf2b04154a",
+  "facts_digest": "sha256:6d2a30986dc3b446ff58c9d97ef5f297e4c641e0ec98fb0032081f67711389b2",
   "schema_version": "2.0.0",
-  "snapshot_digest": "sha256:ea3206b0c9c415cfd2926df9a0814a07d0cbde338ee9e4a6ae6b69fe07b628bc"
+  "snapshot_digest": "sha256:788a7bd980dc9fd7d15140bd0668d50fc8443c487173dab0fe07afb29a62c067"
 }
