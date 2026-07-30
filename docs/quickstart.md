@@ -2,12 +2,15 @@
 
 版本：`3.0.1`
 
+模型原理、16 个治理单元及能力边界参见
+[2-2-4 治理模型白皮书](harness-2x2x4-governance-model-whitepaper.md)。
+
 ## 1. 安装并初始化
 
 Harness 需要 Python 3.12。
 
 ```text
-uv tool install <source-or-package>
+uv tool install "sdd-harness @ git+https://github.com/bigsmartben/harness-scaffold.git@v3.0.1"
 sdd-harness --version
 cd <target-repository>
 sdd-harness init --json
