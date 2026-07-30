@@ -38,7 +38,7 @@ EXPECTED_CELL_IDS = [
 
 def minimal_config() -> dict:
     return {
-        "schema_version": "3.0.0",
+        "schema_version": "3.0.1",
         "rule_instances": {
             "specification": [],
             "implementation": [],
@@ -404,7 +404,7 @@ def test_public_schemas_are_closed_and_versioned_3_0() -> None:
         is False
     )
     assert governance_schema["properties"]["schema_version"] == {
-        "const": "3.0.0"
+        "const": "3.0.1"
     }
     Draft202012Validator.check_schema(harness_schema)
     Draft202012Validator.check_schema(governance_schema)
@@ -419,11 +419,11 @@ def test_versions_and_public_exports_have_no_v2_aliases() -> None:
             encoding="utf-8"
         )
     )
-    assert project["project"]["version"] == "3.0.0"
-    assert harness_core.__version__ == "3.0.0"
-    assert harness_core.SCHEMA_VERSION == "3.0.0"
-    assert harness_core.CONTRACT_VERSION == "3.0.0"
-    assert harness_core.PROJECTION_COMPILER_VERSION == "3.0.0"
+    assert project["project"]["version"] == "3.0.1"
+    assert harness_core.__version__ == "3.0.1"
+    assert harness_core.SCHEMA_VERSION == "3.0.1"
+    assert harness_core.CONTRACT_VERSION == "3.0.1"
+    assert harness_core.PROJECTION_COMPILER_VERSION == "3.0.1"
     assert not hasattr(harness_core, "file_digest")
     assert not hasattr(harness_core, "verify_digest")
     assert not hasattr(harness_core, "validate_config")
@@ -440,7 +440,7 @@ def test_distributed_skill_declares_the_same_closed_v3_contract() -> None:
         / "harness"
         / "SKILL.md"
     ).read_text(encoding="utf-8")
-    assert "Contract version: `3.0.0`." in skill
+    assert "Contract version: `3.0.1`." in skill
     assert "exactly sixteen Cells" in skill
     assert "`kind: guidance`" in skill
     assert "grant permission" in skill

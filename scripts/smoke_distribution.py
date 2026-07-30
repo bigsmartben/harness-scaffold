@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any, Sequence
 
 
-VERSION = "3.0.0"
+VERSION = "3.0.1"
 ROOT = Path(__file__).parents[1]
 DIST = ROOT / "dist"
 
@@ -109,7 +109,7 @@ FORBIDDEN_NODE_MANIFESTS = {
 }
 
 LEGAL_CONFIG = """\
-schema_version: 3.0.0
+schema_version: 3.0.1
 rule_instances:
   specification:
     - rule_id: acceptance-before-code
@@ -123,7 +123,7 @@ rule_instances:
 """
 
 ILLEGAL_CONFIG = """\
-schema_version: 3.0.0
+schema_version: 3.0.1
 rule_instances:
   specification: []
   implementation:
@@ -217,7 +217,7 @@ def inspect_wheel(wheel: Path) -> dict[str, Any]:
         )
         metadata = archive.read(metadata_name).decode("utf-8")
         if f"Version: {VERSION}" not in metadata:
-            raise AssertionError("wheel metadata version is not 3.0.0")
+            raise AssertionError("wheel metadata version is not 3.0.1")
         packaged_skill = archive.read(
             "harness_core/resources/repo_skill/harness/SKILL.md"
         )
@@ -266,7 +266,7 @@ def installed_surface(python: Path) -> dict[str, Any]:
     )
     payload = json.loads(run([python, "-c", probe]).stdout)
     if payload["version"] != VERSION:
-        raise AssertionError("installed package version is not 3.0.0")
+        raise AssertionError("installed package version is not 3.0.1")
     if FORBIDDEN_EXPORTS.intersection(payload["exports"]):
         raise AssertionError("installed package exposes legacy capability")
     return payload
@@ -329,7 +329,7 @@ def clean_install_smoke(wheel: Path) -> dict[str, Any]:
         if valid_payload["status"] != "valid":
             raise AssertionError(f"initial validate failed: {valid_payload}")
         if inspect_payload["schema_version"] != VERSION:
-            raise AssertionError("inspect did not report version 3.0.0")
+            raise AssertionError("inspect did not report version 3.0.1")
 
         config = repository / ".harness" / "harness.yaml"
         lock = repository / ".harness" / "governance" / "model.lock.json"

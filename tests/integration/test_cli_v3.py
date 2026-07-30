@@ -94,10 +94,10 @@ def test_empty_directory_init_validate_inspect_is_minimal(
     assert inspected.returncode == 0
     inspect_result = json.loads(inspected.stdout)
     assert inspect_result["status"] == "valid"
-    assert inspect_result["schema_version"] == "3.0.0"
-    assert inspect_result["core_version"] == "3.0.0"
-    assert inspect_result["contract_version"] == "3.0.0"
-    assert inspect_result["compiler_version"] == "3.0.0"
+    assert inspect_result["schema_version"] == "3.0.1"
+    assert inspect_result["core_version"] == "3.0.1"
+    assert inspect_result["contract_version"] == "3.0.1"
+    assert inspect_result["compiler_version"] == "3.0.1"
     assert inspect_result["rule_counts"] == {
         "specification": 0,
         "implementation": 0,

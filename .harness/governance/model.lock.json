@@ -1,9 +1,9 @@
 {
   "artifact_type": "harness-model-lock",
   "components": {
-    "compiler_version": "3.0.0",
-    "contract_version": "3.0.0",
-    "core_version": "3.0.0"
+    "compiler_version": "3.0.1",
+    "contract_version": "3.0.1",
+    "core_version": "3.0.1"
   },
   "model": {
     "audiences": [
@@ -135,7 +135,7 @@
       "enforce"
     ]
   },
-  "projection_digest": "sha256:17c479da6d89c48426de38de0c1608315b9b458f6ed3c179107fb6e3c77a769f",
+  "projection_digest": "sha256:489a64a09c1fbad01164817bae501f2c35595d3a02146427b480734d296fcf71",
   "rules": [
     {
       "directive": "Keep GitHub Actions dependencies in the maintainer platform layer and outside Harness distributions, CLI behavior, and consumer initialization output.",
@@ -162,6 +162,6 @@
       "source_ref": ".harness/harness.yaml#/rule_instances/verification/verify-github-actions-dependencies"
     }
   ],
-  "schema_version": "3.0.0",
-  "source_digest": "sha256:fcd4cc41153697e1584af8a85009a9254d477b6b5875dee7f37ffef2488b02fa"
+  "schema_version": "3.0.1",
+  "source_digest": "sha256:e5b025cd68faa10f87ce6f871e834ed80cb689e146b267265d6abf09ff776cdc"
 }

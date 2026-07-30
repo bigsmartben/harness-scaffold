@@ -344,7 +344,7 @@ def validate_project_config(
             _issue(
                 "SCHEMA_VERSION_UNSUPPORTED",
                 _pointer("schema_version"),
-                "only Harness schema_version 3.0.0 is supported",
+                "only Harness schema_version 3.0.1 is supported",
                 expected=SCHEMA_VERSION,
                 actual=document["schema_version"],
             )

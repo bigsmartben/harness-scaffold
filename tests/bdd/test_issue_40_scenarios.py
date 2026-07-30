@@ -65,7 +65,7 @@ FORBIDDEN_CAPABILITIES = {
 
 def minimal_config() -> dict[str, Any]:
     return {
-        "schema_version": "3.0.0",
+        "schema_version": "3.0.1",
         "rule_instances": {
             "specification": [],
             "implementation": [],

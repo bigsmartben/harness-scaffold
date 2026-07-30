@@ -5,7 +5,7 @@ description: Validate and project the fixed Harness 3.0 specification governance
 
 # Harness 3.0
 
-Contract version: `3.0.0`.
+Contract version: `3.0.1`.
 
 Harness is a local specification governance scaffold. Its fixed model has
 three orthogonal axes:
