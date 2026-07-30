@@ -1,148 +1,138 @@
-# Harness 2.0 规范
+# Harness 3.0 规范
 
-版本：`2.0.0`
+规范版本：`3.0.0`
 
 ## 1. 产品边界
 
-Harness 是仓库脚手架，不是常驻 Agent 平台。公共闭环是：
+Harness 是本地规范治理脚手架。它接收一个封闭配置，验证固定模型与用户规则，
+再生成一个可重复验证的模型锁文件。
 
 ```text
-uv tool install → sdd-harness init → repository Skill → Codex App / CLI
-  → $harness projection plan/apply
+.harness/harness.yaml
+        │ validate
+        ▼
+固定 2-2-4 模型 + guidance 规则
+        │ project
+        ▼
+.harness/governance/model.lock.json
 ```
 
-Python Core 是唯一确定性权威。Skill 解释工作流；Hook、Plugin、MCP 只提供可选
-加固，并通过 PATH 上的 `sdd-harness` 和 JSON 契约调用 Core。
+Harness 只表达规范与指导。它不是任务运行器、授权系统、交付系统或远程
+Provider 客户端。
 
-## 2. 公共契约
+## 2. 规范术语
 
-| 契约项 | 规则 | 失败语义 |
+| 正式术语 | 中文 | 固定值 |
 |---|---|---|
-| 输入 | 仓库快照、来源事实、版本化项目策略 | 来源缺失时失败关闭 |
-| 输出 | Action Graph、16 Cell Projection、Coverage、精确动作结果 | Schema 或摘要不符不得接受 |
-| 边界 | 模型可解释与修改业务代码，但不能生成权威 Projection、Coverage、Gate Decision | 返回稳定 blocker code |
-| 版本 | Core、Schema、Skill 必须都是 `2.0.0` | `HARNESS_RUNTIME_INCOMPATIBLE` |
+| Audience | 适用角色 | `maintainer \| consumer` |
+| Responsibility | 治理职责 | `generate \| enforce` |
+| Governance Domain | 治理域 | `specification \| implementation \| verification \| delivery` |
+| Cell | 治理单元 | 三条轴的一个精确组合 |
+| Rule Instance | 规则实例 | 用户在某个治理域下声明的一条指导 |
 
-### 2.1 四域
-
-每个 Action 只有一个主域：
-
-| Domain | Action 实例 |
-|---|---|
-| `specification` | 更新需求、生成 Issue Plan |
-| `implementation` | 编辑源码、代码生成、Build |
-| `verification` | Test、类型检查、契约验证、CI |
-| `delivery` | Commit、Remote Issue、Push、PR、Merge、Release |
-
-### 2.2 16 Cell
-
-Cell ID 固定为：
+三条轴互相正交，固定产生 16 个 Cell。Cell ID 采用：
 
 ```text
 <audience>.<responsibility>.<domain>
 ```
 
-其中 Audience 为 `maintainer | consumer`，Responsibility 为
-`generate | enforce`。每个 Cell 独立包含来源、单一 directive、scope、
-可空 action binding、前后置条件、Evidence、失败语义和 Coverage。
+顺序固定为 Audience → Responsibility → Governance Domain，并按上表中每组值的
+声明顺序枚举。`2-2-4` 只表示三组值的数量，不表示父子层级。
 
-Coverage 机器枚举只有：
+## 3. 唯一输入契约
+
+最小合法配置必须显式包含四个空数组：
+
+```yaml
+schema_version: 3.0.0
+rule_instances:
+  specification: []
+  implementation: []
+  verification: []
+  delivery: []
+```
+
+根对象、`rule_instances` 和每条规则都禁止额外字段。缺失任一治理域不是合法
+输入，程序不会在内存中补默认值。
+
+每条规则只允许：
+
+| 字段 | 约束 | 示例 |
+|---|---|---|
+| `rule_id` | 全局唯一的小写 kebab-case，最多 64 字符 | `acceptance-before-code` |
+| `directive` | 去除首尾空白后非空 | `先定义可观察验收条件。` |
+| `scope` | 非空且无重复的仓库相对可移植 glob | `docs/**` |
+
+`scope` 使用 `/`，禁止绝对路径、盘符、反斜杠、空路径段、`.`、`..` 及不受支持
+的扩展 glob 语法。
+
+以下字段没有配置语义并稳定拒绝：`audience`、`responsibility`、`kind`、
+`blocking`、action、permission、branch、delivery、Provider、验证等级、
+前后置条件、失败语义和 coverage 状态。
+
+## 4. 单一模型锁
+
+合法配置投影为：
 
 ```text
-missing | documented | verified | enforced | not_applicable
+.harness/governance/model.lock.json
 ```
 
-若展示 C0–C4，它们只能是固定别名，不能参与判断。`not_applicable` 必须同时有
-来源和理由；缺失、重复、无来源 N/A 都返回
-`GOVERNANCE_COVERAGE_INCOMPLETE`。
+锁文件包含：
 
-## 3. 确定性编译
+- 精确版本组件；
+- 固定三轴及 16 个 Cell；
+- 规范化、排序后的规则；
+- `source_digest`（源摘要）；
+- `projection_digest`（投影摘要）。
 
-```mermaid
-flowchart LR
-    A["Repository Snapshot"] --> B["Source Facts"]
-    B --> C["Action Graph"]
-    C --> D["16 Cell Rules"]
-    D --> E["Projection Lock"]
+每条投影规则固定为：
+
+```json
+{
+  "domain": "specification",
+  "kind": "guidance",
+  "rule_id": "acceptance-before-code",
+  "directive": "实现前应给出可观察的验收条件。",
+  "scope": ["docs/**", "src/**"],
+  "source_ref": ".harness/harness.yaml#/rule_instances/specification/acceptance-before-code"
+}
 ```
 
-`projection_id` 绑定 Snapshot、Facts、Action Graph、项目策略、Schema 和编译器
-版本。项目策略、Issue 配置或治理来源变化后，旧投影和旧本次决定立即失效。
-版本化 Snapshot 只记录仓库相对来源路径及内容摘要；绝对工作区路径、当前分支
-和运行时工作区摘要不进入投影。因此同一 Commit 在不同私有分支或克隆目录中
-保持同一投影，分支与工作区变化仍由本次决定独立绑定。文本来源只显式统一
-CRLF / LF 换行后计算摘要，不执行 Git clean filter；因此换行策略不会制造
-克隆噪音，有损 `ident` 等过滤器也不能隐藏工作树中的真实来源变化。
+规则和 scope 的输入顺序不影响输出字节。增、删、改任一规则都会改变源摘要和
+投影摘要。校验器从配置重算完整锁文件，因此篡改内容后重新计算自摘要也不能
+隐藏漂移。
 
-## 4. 项目策略与本次决定
+## 5. 命令语义
 
-项目策略写入版本化 `.harness/harness.yaml`，包含本地执行、最低充分验证、
-Issue Provider、Hook 选项和分支边界。
+| 命令 | 成功条件 | 失败边界 |
+|---|---|---|
+| `init` | 目标目录存在，且没有冲突或旧输入 | 校验失败时写入为零 |
+| `project` | 配置合法，临时文件可被原子替换 | 原锁文件保持逐字节不变 |
+| `validate` | 配置、锁结构、固定模型和摘要全部一致 | 只返回诊断，不写文件 |
+| `inspect` | 与 `validate` 相同 | 只返回版本、摘要、数量和诊断 |
 
-本次决定只写入被 Git 忽略的 `.harness/runtime/<task_id>/decision.json`，并绑定：
+诊断包含稳定错误码、JSON Pointer 路径、消息，以及适用时的 `rule_id`、
+`expected` 和 `actual`。
+
+## 6. 初始化结果
+
+`init` 只管理：
 
 ```text
-task_id + projection_id + workspace_digest + exact_action + target_digest
+.harness/harness.yaml
+.harness/governance/model.lock.json
+.agents/skills/harness/SKILL.md
 ```
 
-新任务、投影变化、工作区变化或精确目标变化都会使决定失效。Commit、Remote
-Issue、Push、PR 分别需要决定，不得扩散授权。
+现有不同内容的 Skill、v1/v2 配置或旧治理 Artifact 会在任何写入前被拒绝。
+Harness 不删除 consumer 文件，也不生成兼容产物。
 
-## 5. 本地工作与 T0–T3
+## 7. 版本与无兼容边界
 
-普通本地修改不逐工具询问。选择器按变化面给出最低验证：
+Core、Schema、模型锁、包元数据、CLI 和分发 Skill 的版本必须精确等于
+`3.0.0`。
 
-- T0：文档、只读检查；
-- T1：单个窄实现或测试；
-- T2：公共 Schema、组件级或多文件变化；
-- T3：Core、依赖、安全、CI/CD。
-
-Action Graph 可提高验证下限，但不能降低由路径影响得到的层级。
-
-## 6. Commit、Issue 与受控边界
-
-Commit Planner 分离 Workspace Impact Scope 与 Commit Scope。执行器使用临时 Git
-Index 提交确认路径；无关暂存保持不变。目标文件部分暂存且无法保持分块语义时
-阻断，不扩大为整文件。
-
-Local Issue 和 Remote Issue 共用 Issue Plan：
-
-- Consumer 默认写 `.harness/issues`；
-- Maintainer 可把 GitHub 配成唯一 SSOT；
-- 远端写入失败不回退本地。
-
-Private Branch 可直接进行仓库内动作。Controlled 或 Unclassified Branch 的写入、
-Commit、Issue Write 和交付动作返回 `CONTROLLED_BRANCH_GATE_REQUIRED` 与
-`HANDOFF_REQUIRED`，并要求上游平台门禁。
-
-PR、Merge、Publish、Release、Deploy 使用同一受控交付契约：
-
-```text
-精确目标 + 平台门禁 Evidence
-  → Delivery Plan
-  → 绑定 action_id / projection / workspace / target 的本次决定
-  → Provider Request
-  → Provider Receipt
-  → Evidence 校验
-```
-
-平台门禁必须来自独立查询并绑定 `action_id + provider + repository +
-target_digest`。缺失或摘要不符返回 `PLATFORM_GATE_REQUIRED`；Provider 失败返回
-`REMOTE_DELIVERY_FAILED`，不得回退到其他目标。
-
-## 7. 初始化与版本边界
-
-新仓库使用 `sdd-harness init .`；自动化可使用 `--yes`，也可用
-`--approve-plan <plan_digest>` 接受一份未变化的精确计划。该命令只发布
-`AGENTS.md`、仓库 Skill、项目配置和忽略规则，不生成治理投影。第二阶段必须由
-仓库 `$harness` 先识别 Blue / Gray，再以独立计划生成 5 个投影文件。
-
-Harness 2.0 不提供历史版本兼容、字段映射或迁移工具。目标仓库存在非 2.0
-配置时，初始化必须零写入返回 `HARNESS_RUNTIME_INCOMPATIBLE`。无效的 2.0 配置
-返回 `CONFIG_INVALID`，不得静默替换。
-
-## 8. 完成定义
-
-只有 Core / Schema / Skill 版本一致、投影摘要有效、16 Cell 各一条、Action
-绑定唯一、当前分支与精确决定有效、最低验证和必要平台 Evidence 完整时，Harness
-才能声明对应结果成立。
+3.0.0 不实现迁移器、双读、字段映射、别名、默认补全、弃用期、兼容包装器或
+回退。外部 consumer 需要自行备份并移除旧控制面，再以干净目标重新执行
+`sdd-harness init`。

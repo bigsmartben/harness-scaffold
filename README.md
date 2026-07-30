@@ -1,90 +1,91 @@
 # SDD Harness
 
-Harness 是面向 Codex App / Codex CLI 的仓库脚手架（repository
-scaffold）。它通过一个隔离安装的确定性程序，把仓库级 Skill、项目策略和
-可验证治理投影发布到目标仓库。当前契约版本为 `2.0.0`。
+Harness 3.0 是一个本地规范治理脚手架（specification governance
+scaffold）。它把仓库规则校验并投影为一个确定性的模型锁文件，供人和 Agent
+读取。它不执行项目动作、不授予权限，也不连接远程 Provider（服务提供方）。
+
+当前且唯一支持的契约版本是 `3.0.0`。
+
+## 固定模型
+
+模型由三条彼此正交的轴组成：
+
+| 轴 | 中文含义 | 固定值 |
+|---|---|---|
+| Audience | 适用角色 | `maintainer`、`consumer` |
+| Responsibility | 治理职责 | `generate`、`enforce` |
+| Governance Domain | 治理域 | `specification`、`implementation`、`verification`、`delivery` |
+
+三条轴的笛卡尔积固定产生 16 个 Cell（治理单元）。`2-2-4` 只是数量简称，
+不是层级结构，也不是用户可配置项。
 
 ## 快速开始
 
 ```text
 uv tool install <source-or-package>
 cd <target-repository>
-sdd-harness init . --yes
+sdd-harness init
+sdd-harness validate
+sdd-harness inspect
 ```
 
-随后直接在 Codex App 或 CLI 中描述任务，或显式使用：
+`init` 只创建三个文件：
 
 ```text
-$harness 修改解析器并运行最低充分验证
+.harness/harness.yaml
+.harness/governance/model.lock.json
+.agents/skills/harness/SKILL.md
 ```
 
-`sdd-harness init` 是确定性初始化入口；仓库内
-`.agents/skills/harness` 是正式用户入口。Plugin、Hook 和 MCP 都是显式
-启用的纵深防御（defense in depth），不是基础依赖。初始化只发布入口；进入
-Codex 后由 `$harness` 识别 Blue / Gray，并以独立零写入计划生成 5 个治理投影
-文件。初始化还会发布 `.agents/skills/repo-documentation-maker`，供使用者
-直接创建、更新、重构和检查仓库文档，不依赖个人级 Skill。
+配置中的唯一扩展点是四个治理域下的规则实例：
 
-## 2.0 架构
-
-```mermaid
-flowchart LR
-    A["uv tool install"] --> B["隔离的 sdd-harness"]
-    B --> C["init"]
-    C --> D["AGENTS.md"]
-    C --> E[".agents/skills/harness"]
-    C --> J[".agents/skills/repo-documentation-maker"]
-    C --> F[".harness/harness.yaml"]
-    E --> H["Codex App / CLI"]
-    J --> H
-    H --> G["$harness 生成四域、16 Cell 投影"]
-    I["Hook / Plugin / MCP"] -. "可选加固" .-> H
+```yaml
+schema_version: 3.0.0
+rule_instances:
+  specification:
+    - rule_id: acceptance-before-code
+      directive: 实现前应给出可观察的验收条件。
+      scope: ['docs/**', 'src/**']
+  implementation: []
+  verification: []
+  delivery: []
 ```
 
-| 层 | 职责 | 实例 |
+修改配置后运行：
+
+```text
+sdd-harness project
+sdd-harness validate
+sdd-harness inspect
+```
+
+`project` 原子替换单一锁文件；`validate` 和 `inspect` 都是只读操作。规则固定
+投影为 `kind: guidance`，不能带有动作、授权、分支、交付、验证等级或 Provider
+字段。
+
+## 四个命令
+
+| 命令 | 作用 | 写入 |
 |---|---|---|
-| 分发（distribution） | 隔离安装和版本握手 | `uv tool install` 后 PATH 上有 `sdd-harness` |
-| 确定性内核（deterministic core） | 编译事实、Action Graph、Coverage、决定与证据 | 同一输入产生同一 `projection_id` |
-| 仓库 Skill | 告诉 Codex 如何完成任务 | `$harness` 路由本地工作、Commit、Issue、交付 |
-| 可选加固 | 提前发现旁路或漂移 | `sdd-harness init . --with-hooks` |
+| `init` | 初始化最小 v3 配置、Skill 和锁文件 | 仅创建缺失的三个目标文件 |
+| `project` | 从合法配置重建确定性锁文件 | 原子替换一个锁文件 |
+| `validate` | 验证配置、固定模型、规则和摘要 | 无 |
+| `inspect` | 查看版本、摘要、规则数量和诊断 | 无 |
 
-## 四个治理域
+## 破坏性变更
 
-| Domain（域） | 处理什么 | 实例 |
-|---|---|---|
-| `specification` | 需求和 Issue Plan | 更新验收标准 |
-| `implementation` | 源码和生成物 | 修改 Python 模块 |
-| `verification` | Test、类型和契约验证 | `test:contracts` |
-| `delivery` | Commit、远端 Issue、Push、PR、Release | 选择性 Commit |
+3.0.0 不读取、补全、迁移、映射、别名化或回退到 v1/v2。不存在双版本读取器、
+弃用期或兼容包装器。已有外部 consumer（使用方）必须自行备份并清理旧 Harness
+控制面，然后重新运行 `sdd-harness init`；Harness 不提供自动转换工具。
 
-`maintainer / consumer × generate / enforce × 四域` 固定形成 16 个 Cell。
-它们由 Python 编译器一次生成，不依赖 16 次 Agent 推理。
+## 文档
 
-## 用户只需理解两个决定
-
-- 项目策略（Project policy）：写入 `.harness/harness.yaml`，供后续任务复用。
-- 本次决定（Task decision）：只绑定当前任务或一个精确动作，工作区、投影或目标变化后立即失效。
-
-例如，“以后 Issue 都写 GitHub”是项目策略；“现在提交 `src/a.py`”是本次决定。
-Commit、Remote Issue、Push、PR 互不共享决定。
-
-## 安全边界
-
-- 普通本地修改连续执行，使用 T0–T3 最低充分验证。
-- Action 只有一个主域，调用只能来自仓库事实，不能由模型发明命令。
-- Controlled / Unclassified Branch 的直接写入、Commit 和交付失败关闭。
-- Remote Issue 失败不会回退为本地 Issue。
-- PR、Merge、Publish、Release、Deploy 必须同时绑定平台门禁证据和独立的本次决定。
-- 临时 Git Index 只提交确认路径，并保留无关暂存状态。
-- Coverage 缺失、重复或无来源的 `not_applicable` 都会阻断。
-
-## 文档与验证
-
-- [2.0 规范](docs/specification.md)
-- [快速上手](docs/quickstart.md)
+- [规范说明](docs/specification.md)
+- [快速开始](docs/quickstart.md)
 - [仓库结构](docs/repository-structure.md)
-- [Issue #28 消费者验收证据映射](docs/issue-28-acceptance.md)
-- [可观察用例](uc.md)
-- [实施状态](plan.md)
+- [行为验收追踪](docs/acceptance-traceability.md)
+- [3.0.0 发布说明](docs/release-notes-3.0.0.md)
 
-本仓库的验证必须通过 `.harness/tools.yaml` 登记的 `task_ref` 执行。
+维护计划、状态、清单和验收结果只记录在
+[GitHub Issue #32](https://github.com/bigsmartben/harness-scaffold/issues/32)
+及其子 Issue。

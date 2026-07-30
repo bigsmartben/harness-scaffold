@@ -1,0 +1,31 @@
+schema_version: 3.0.0
+source_issue: https://github.com/bigsmartben/harness-scaffold/issues/40
+ci_job: contracts
+scenarios:
+  - scenario_id: M-G01
+    audience: maintainer
+    test: tests/bdd/test_issue_40_scenarios.py::test_m_g01_fixed_model_is_exactly_sixteen_differentiated_cells
+  - scenario_id: M-G02
+    audience: maintainer
+    test: tests/bdd/test_issue_40_scenarios.py::test_m_g02_fixed_model_tampering_is_read_only_and_rejected
+  - scenario_id: M-G03
+    audience: maintainer
+    test: tests/bdd/test_issue_40_scenarios.py::test_m_g03_public_and_generated_surfaces_are_guidance_only
+  - scenario_id: M-G04
+    audience: maintainer
+    test: tests/bdd/test_issue_40_scenarios.py::test_m_g04_legacy_inputs_are_rejected_before_any_write
+  - scenario_id: C-G01
+    audience: consumer
+    test: tests/bdd/test_issue_40_scenarios.py::test_c_g01_rules_project_to_guidance_without_external_side_effects
+  - scenario_id: C-G02
+    audience: consumer
+    test: tests/bdd/test_issue_40_scenarios.py::test_c_g02_cardinality_order_and_digest_rules_are_deterministic
+  - scenario_id: C-G03
+    audience: consumer
+    test: tests/bdd/test_issue_40_scenarios.py::test_c_g03_invalid_rules_have_precise_diagnostics_and_zero_writes
+  - scenario_id: C-G04
+    audience: consumer
+    test: tests/bdd/test_issue_40_scenarios.py::test_c_g04_execution_and_authorization_fields_never_call_providers
+  - scenario_id: C-G05
+    audience: consumer
+    test: tests/bdd/test_issue_40_scenarios.py::test_c_g05_minimal_input_is_explicit_and_never_default_completed

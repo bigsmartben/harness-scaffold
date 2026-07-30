@@ -23,3 +23,5 @@ jobs:
       - run: uv sync --locked
       - run: uv run python -m pytest
       - run: uv build
+      - run: uv run python scripts/smoke_distribution.py
+      - run: uv run sdd-harness validate --json
