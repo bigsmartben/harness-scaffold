@@ -1,6 +1,6 @@
 # Harness 3.0 仓库结构
 
-版本：`3.0.0`
+版本：`3.0.1`
 
 ## 开发仓库
 
@@ -24,7 +24,7 @@ harness/
 ├── .harness/
 │   ├── harness.yaml                 本仓库的 v3 规则输入
 │   └── governance/model.lock.json   本仓库的单一模型锁
-└── pyproject.toml                   3.0.0 包与 CLI 入口
+└── pyproject.toml                   3.0.1 包与 CLI 入口
 ```
 
 Python 包只包含八个模块：`__init__`、`artifacts`、`cli`、`contracts`、

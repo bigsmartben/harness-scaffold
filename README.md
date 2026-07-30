@@ -4,7 +4,7 @@ Harness 3.0 是一个本地规范治理脚手架（specification governance
 scaffold）。它把仓库规则校验并投影为一个确定性的模型锁文件，供人和 Agent
 读取。它不执行项目动作、不授予权限，也不连接远程 Provider（服务提供方）。
 
-当前且唯一支持的契约版本是 `3.0.0`。
+当前且唯一支持的契约版本是 `3.0.1`。
 
 ## 固定模型
 
@@ -40,7 +40,7 @@ sdd-harness inspect
 配置中的唯一扩展点是四个治理域下的规则实例：
 
 ```yaml
-schema_version: 3.0.0
+schema_version: 3.0.1
 rule_instances:
   specification:
     - rule_id: acceptance-before-code
@@ -74,7 +74,7 @@ sdd-harness inspect
 
 ## 破坏性变更
 
-3.0.0 不读取、补全、迁移、映射、别名化或回退到 v1/v2。不存在双版本读取器、
+3.0.1 不读取、补全、迁移、映射、别名化或回退到 v1/v2。不存在双版本读取器、
 弃用期或兼容包装器。已有外部 consumer（使用方）必须自行备份并清理旧 Harness
 控制面，然后重新运行 `sdd-harness init`；Harness 不提供自动转换工具。
 
@@ -84,6 +84,7 @@ sdd-harness inspect
 - [快速开始](docs/quickstart.md)
 - [仓库结构](docs/repository-structure.md)
 - [行为验收追踪](docs/acceptance-traceability.md)
+- [3.0.1 发布说明](docs/release-notes-3.0.1.md)
 - [3.0.0 发布说明](docs/release-notes-3.0.0.md)
 
 维护计划、状态、清单和验收结果只记录在

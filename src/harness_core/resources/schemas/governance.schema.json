@@ -15,7 +15,7 @@
   ],
   "properties": {
     "artifact_type": {"const": "harness-model-lock"},
-    "schema_version": {"const": "3.0.0"},
+    "schema_version": {"const": "3.0.1"},
     "components": {
       "type": "object",
       "additionalProperties": false,
@@ -25,9 +25,9 @@
         "compiler_version"
       ],
       "properties": {
-        "core_version": {"const": "3.0.0"},
-        "contract_version": {"const": "3.0.0"},
-        "compiler_version": {"const": "3.0.0"}
+        "core_version": {"const": "3.0.1"},
+        "contract_version": {"const": "3.0.1"},
+        "compiler_version": {"const": "3.0.1"}
       }
     },
     "model": {

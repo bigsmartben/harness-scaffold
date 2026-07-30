@@ -37,7 +37,7 @@ LEGACY_PATHS = (
 )
 
 MINIMAL_CONFIG = {
-    "schema_version": "3.0.0",
+        "schema_version": "3.0.1",
     "rule_instances": {
         "specification": [],
         "implementation": [],

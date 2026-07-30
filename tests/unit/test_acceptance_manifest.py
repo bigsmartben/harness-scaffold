@@ -31,7 +31,7 @@ def test_issue_40_manifest_maps_every_scenario_to_pytest_and_ci() -> None:
         ROOT / "docs" / "acceptance-traceability.md"
     ).read_text(encoding="utf-8")
 
-    assert manifest["schema_version"] == "3.0.0"
+    assert manifest["schema_version"] == "3.0.1"
     assert manifest["source_issue"].endswith("/issues/40")
     assert manifest["ci_job"] == "contracts"
     assert "  contracts:" in workflow
@@ -64,7 +64,7 @@ def test_v3_documents_and_skill_copies_have_one_current_contract() -> None:
         "$repo-documentation-maker",
     ]
 
-    assert all("3.0.0" in path.read_text(encoding="utf-8") for path in document_paths)
+    assert all("3.0.1" in path.read_text(encoding="utf-8") for path in document_paths)
     assert all(
         term in documents
         for term in ("Audience", "Responsibility", "Governance Domain")
@@ -91,9 +91,9 @@ def test_release_workflow_is_pinned_to_the_v3_contract() -> None:
         ROOT / ".github" / "workflows" / "release.yml"
     ).read_text(encoding="utf-8")
 
-    assert "tags:\n      - v3.0.0" in release
-    assert 'test "$GITHUB_REF_NAME" = "v3.0.0"' in release
-    assert "sdd-harness 3.0.0" in release
+    assert "tags:\n      - v3.0.1" in release
+    assert 'test "$GITHUB_REF_NAME" = "v3.0.1"' in release
+    assert "sdd-harness 3.0.1" in release
     assert "scripts/smoke_distribution.py" in release
     assert 'gh release create "$GITHUB_REF_NAME"' in release
-    assert "--notes-file docs/release-notes-3.0.0.md" in release
+    assert "--notes-file docs/release-notes-3.0.1.md" in release

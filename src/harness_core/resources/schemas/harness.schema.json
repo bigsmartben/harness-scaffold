@@ -7,7 +7,7 @@
   "required": ["schema_version", "rule_instances"],
   "properties": {
     "schema_version": {
-      "const": "3.0.0"
+      "const": "3.0.1"
     },
     "rule_instances": {
       "type": "object",

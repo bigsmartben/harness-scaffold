@@ -1,6 +1,6 @@
 # Harness 3.0 快速开始
 
-版本：`3.0.0`
+版本：`3.0.1`
 
 ## 1. 安装并初始化
 
@@ -16,7 +16,7 @@ sdd-harness init --json
 版本输出必须是：
 
 ```text
-sdd-harness 3.0.0
+sdd-harness 3.0.1
 ```
 
 初始化成功后只有三个 Harness 文件：
@@ -39,7 +39,7 @@ sdd-harness inspect --json
 编辑 `.harness/harness.yaml`：
 
 ```yaml
-schema_version: 3.0.0
+schema_version: 3.0.1
 rule_instances:
   specification:
     - rule_id: acceptance-before-code

@@ -166,7 +166,7 @@ EXPECTED_CELLS = [
 
 def config() -> dict:
     return {
-        "schema_version": "3.0.0",
+            "schema_version": "3.0.1",
         "rule_instances": {
             "specification": [],
             "implementation": [],
@@ -191,11 +191,11 @@ def one_rule_config() -> dict:
 def test_empty_model_lock_has_exact_fixed_cells_and_public_schema() -> None:
     lock = compile_model_lock(config())
     assert lock["artifact_type"] == "harness-model-lock"
-    assert lock["schema_version"] == "3.0.0"
+    assert lock["schema_version"] == "3.0.1"
     assert lock["components"] == {
-        "core_version": "3.0.0",
-        "contract_version": "3.0.0",
-        "compiler_version": "3.0.0",
+        "core_version": "3.0.1",
+        "contract_version": "3.0.1",
+        "compiler_version": "3.0.1",
     }
     assert lock["model"]["audiences"] == ["maintainer", "consumer"]
     assert lock["model"]["responsibilities"] == ["generate", "enforce"]
@@ -419,7 +419,7 @@ def test_validator_detects_every_tampered_surface() -> None:
         (("model", "cells", 0, "directive"), "Tampered."),
         (("rules", 0, "directive"), "Tampered."),
         (("rules", 0, "scope"), ["other/**"]),
-        (("components", "compiler_version"), "3.0.1"),
+        (("components", "compiler_version"), "9.9.9"),
         (("source_digest",), "sha256:" + ("1" * 64)),
         (("projection_digest",), "sha256:" + ("2" * 64)),
     ]

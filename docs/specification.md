@@ -1,6 +1,6 @@
 # Harness 3.0 规范
 
-规范版本：`3.0.0`
+规范版本：`3.0.1`
 
 ## 1. 产品边界
 
@@ -44,7 +44,7 @@ Provider 客户端。
 最小合法配置必须显式包含四个空数组：
 
 ```yaml
-schema_version: 3.0.0
+schema_version: 3.0.1
 rule_instances:
   specification: []
   implementation: []
@@ -131,8 +131,8 @@ Harness 不删除 consumer 文件，也不生成兼容产物。
 ## 7. 版本与无兼容边界
 
 Core、Schema、模型锁、包元数据、CLI 和分发 Skill 的版本必须精确等于
-`3.0.0`。
+`3.0.1`。
 
-3.0.0 不实现迁移器、双读、字段映射、别名、默认补全、弃用期、兼容包装器或
+3.0.1 不实现迁移器、双读、字段映射、别名、默认补全、弃用期、兼容包装器或
 回退。外部 consumer 需要自行备份并移除旧控制面，再以干净目标重新执行
 `sdd-harness init`。

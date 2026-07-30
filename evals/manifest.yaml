@@ -1,4 +1,4 @@
-schema_version: 3.0.0
+schema_version: 3.0.1
 source_issue: https://github.com/bigsmartben/harness-scaffold/issues/40
 ci_job: contracts
 scenarios:
