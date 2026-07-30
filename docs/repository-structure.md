@@ -21,14 +21,16 @@ harness/
 │   └── bdd/                         M-G / C-G 行为场景
 ├── scripts/smoke_distribution.py    wheel/sdist 干净环境验收
 ├── evals/manifest.yaml              场景到测试和 CI 的静态映射
-├── .harness/
-│   ├── harness.yaml                 本仓库的 v3 规则输入
-│   └── governance/model.lock.json   本仓库的单一模型锁
 └── pyproject.toml                   3.0.1 包与 CLI 入口
 ```
 
 Python 包只包含八个模块：`__init__`、`artifacts`、`cli`、`contracts`、
 `initializer`、`model`、`package_resources` 和 `projection`。
+
+开发仓库不是 consumer 初始化目标，因此根目录不包含 `.harness/harness.yaml`、
+`.harness/governance/model.lock.json` 或
+`.agents/skills/harness/SKILL.md`。测试和分发冒烟检查只在临时 consumer 仓库中
+运行 `init`、`project`、`validate` 和 `inspect`。
 
 ## 生成仓库
 
@@ -56,16 +58,18 @@ target-repository/
 ## 权威关系
 
 ```text
-model.py ──────────────┐
-harness.yaml ─────────┼─> projection.py ─> model.lock.json
-schemas ───────────────┘
+开发仓库：
+model.py + schemas + projection.py + resources/repo_skill/harness/SKILL.md
+
+临时或外部 consumer 仓库：
+harness.yaml ────────────────> projection.py ─> model.lock.json
 
 resources/repo_skill/harness/SKILL.md ─> init ─> target Skill
 ```
 
-固定三轴和 16 个 Cell 只有 `model.py` 一个规范来源。用户规则只有
-`.harness/harness.yaml` 一个输入来源。生成 Skill 必须与 wheel 内发布副本
-逐字节一致。
+固定三轴和 16 个 Cell 只有 `model.py` 一个规范来源。consumer 用户规则只有其
+仓库内的 `.harness/harness.yaml` 一个输入来源。生成 Skill 必须与 wheel 内发布
+副本逐字节一致。
 
 ## 不属于 3.0 的结构
 

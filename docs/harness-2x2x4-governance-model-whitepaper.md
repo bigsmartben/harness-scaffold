@@ -322,6 +322,6 @@ Harness 3.0.1 要求 Core、Schema、模型锁、CLI、包元数据和分发 Ski
 
 - `src/harness_core/model.py`：三轴、Cell ID、固定 Cell 语义；
 - `src/harness_core/resources/schemas/`：配置和模型锁 Schema；
-- `.harness/governance/model.lock.json`：当前仓库的确定性投影；
+- consumer 仓库的 `.harness/governance/model.lock.json`：该仓库的确定性投影；
 - [Harness 3.0 规范](specification.md)：输入、输出、命令和诊断契约；
 - [Harness 3.0 快速开始](quickstart.md)：安装与最小使用流程。
