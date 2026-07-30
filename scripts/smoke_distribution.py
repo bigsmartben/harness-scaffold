@@ -99,6 +99,15 @@ FORBIDDEN_ARTIFACTS = {
     ".harness/governance/sources.lock.json",
 }
 
+FORBIDDEN_NODE_SUFFIXES = {".cjs", ".js", ".mjs", ".ts"}
+FORBIDDEN_NODE_MANIFESTS = {
+    "npm-shrinkwrap.json",
+    "package-lock.json",
+    "package.json",
+    "pnpm-lock.yaml",
+    "yarn.lock",
+}
+
 LEGAL_CONFIG = """\
 schema_version: 3.0.0
 rule_instances:
@@ -178,6 +187,14 @@ def assert_no_forbidden_paths(names: list[str], label: str) -> None:
     ]
     if matches:
         raise AssertionError(f"{label} contains forbidden paths: {matches}")
+    node_assets = [
+        name
+        for name in normalized
+        if Path(name).suffix in FORBIDDEN_NODE_SUFFIXES
+        or Path(name).name in FORBIDDEN_NODE_MANIFESTS
+    ]
+    if node_assets:
+        raise AssertionError(f"{label} contains Node.js assets: {node_assets}")
 
 
 def inspect_wheel(wheel: Path) -> dict[str, Any]:

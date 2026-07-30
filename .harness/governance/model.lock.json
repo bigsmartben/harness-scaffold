@@ -135,8 +135,33 @@
       "enforce"
     ]
   },
-  "projection_digest": "sha256:e59e6c27297f40ac3fbe465e6f5388ab6fdf81248e1a2b20d3e34ed073beaec0",
-  "rules": [],
+  "projection_digest": "sha256:17c479da6d89c48426de38de0c1608315b9b458f6ed3c179107fb6e3c77a769f",
+  "rules": [
+    {
+      "directive": "Keep GitHub Actions dependencies in the maintainer platform layer and outside Harness distributions, CLI behavior, and consumer initialization output.",
+      "domain": "implementation",
+      "kind": "guidance",
+      "rule_id": "github-actions-platform-boundary",
+      "scope": [
+        ".github/workflows/**",
+        "pyproject.toml",
+        "scripts/**"
+      ],
+      "source_ref": ".harness/harness.yaml#/rule_instances/implementation/github-actions-platform-boundary"
+    },
+    {
+      "directive": "Verify that external Actions use audited full commit SHAs with Node.js 24 and that Harness distributions remain uv and Python only.",
+      "domain": "verification",
+      "kind": "guidance",
+      "rule_id": "verify-github-actions-dependencies",
+      "scope": [
+        ".github/workflows/**",
+        "scripts/**",
+        "tests/**"
+      ],
+      "source_ref": ".harness/harness.yaml#/rule_instances/verification/verify-github-actions-dependencies"
+    }
+  ],
   "schema_version": "3.0.0",
-  "source_digest": "sha256:50b8ff1811febc8aaa8ce3b17355a1016f106ef5f1028a966a9f11f3227f911b"
+  "source_digest": "sha256:fcd4cc41153697e1584af8a85009a9254d477b6b5875dee7f37ffef2488b02fa"
 }
