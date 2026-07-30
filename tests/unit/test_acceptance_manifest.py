@@ -46,7 +46,7 @@ def test_issue_40_manifest_maps_every_scenario_to_pytest_and_ci() -> None:
         assert item["scenario_id"] in traceability
 
 
-def test_v3_documents_and_skill_copies_have_one_current_contract() -> None:
+def test_v3_documents_and_maintainer_layout_have_one_current_contract() -> None:
     document_paths = [
         ROOT / "README.md",
         ROOT / "docs" / "specification.md",
@@ -71,19 +71,10 @@ def test_v3_documents_and_skill_copies_have_one_current_contract() -> None:
     )
     assert not any(term in documents for term in obsolete_current_claims)
 
-    source_skill = (
-        ROOT
-        / "src"
-        / "harness_core"
-        / "resources"
-        / "repo_skill"
-        / "harness"
-        / "SKILL.md"
-    ).read_bytes()
     repository_skill = (
         ROOT / ".agents" / "skills" / "harness" / "SKILL.md"
-    ).read_bytes()
-    assert repository_skill == source_skill
+    )
+    assert not repository_skill.exists()
 
 
 def test_release_workflow_is_pinned_to_the_v3_contract() -> None:

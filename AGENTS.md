@@ -5,11 +5,13 @@
 - Restate the exact repository, Issue number, and intended mutation before creating, updating, commenting on, closing, or reopening a GitHub Issue.
 
 <!-- ai-coding-harness:start -->
-# Harness 3.0
+# Harness 3.0 Maintainer Repository
 
-- Harness is a local fixed specification governance scaffold.
-- Read `.harness/harness.yaml` and `.agents/skills/harness/SKILL.md`.
-- Use only `sdd-harness init`, `project`, `validate`, and `inspect`.
+- This repository develops and distributes Harness; it is not a consumer initialization target.
+- Do not run `sdd-harness init`, `project`, `validate`, or `inspect` against the repository root.
+- Exercise the four public CLI commands only against temporary consumer repositories in tests and distribution smoke checks.
+- Treat `src/harness_core/model.py`, `src/harness_core/resources/schemas/`, and `src/harness_core/resources/repo_skill/harness/SKILL.md` as the maintainer sources.
+- Keep the public CLI limited to `init`, `project`, `validate`, and `inspect`.
 - Treat the fixed Audience × Responsibility × Governance Domain model as immutable.
 - Treat every `rule_instances` entry as guidance only; it cannot authorize, block, select, or execute an operation.
 - Reject v1/v2 configuration and artifacts without writing, migrating, completing, deleting, or falling back.

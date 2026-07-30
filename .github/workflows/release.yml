@@ -22,7 +22,6 @@ jobs:
       - run: uv run python -m pytest
       - run: uv build
       - run: uv run python scripts/smoke_distribution.py
-      - run: uv run sdd-harness validate --json
       - name: Verify release version
         run: |
           test "$GITHUB_REF_NAME" = "v3.0.1"
