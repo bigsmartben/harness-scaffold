@@ -38,12 +38,6 @@ scenarios:
   - scenario_id: ENFORCE-MALFORMED-EVIDENCE
     owner_issue: 54
     test: tests/unit/test_issue_54_scaffold.py::test_malformed_typed_evidence_fails_closed
-  - scenario_id: BOOTSTRAP-UPGRADE
-    owner_issue: 55
-    test: tests/integration/test_issue_55_bootstrap_cli.py::test_v301_consumer_is_imported_archived_and_not_a_second_ssot
-  - scenario_id: LEGACY-VERSION-PRESERVED
-    owner_issue: 55
-    test: tests/integration/test_issue_55_bootstrap_cli.py::test_recognizable_v2_governance_keeps_its_actual_archive_version
   - scenario_id: CROSS-LAYER-E2E
     owner_issue: 56
     test: tests/e2e/test_issue_49_reconstruction.py::test_new_repository_load_rule_operation_and_enforce_e2e

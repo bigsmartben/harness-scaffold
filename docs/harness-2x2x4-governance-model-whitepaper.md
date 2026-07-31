@@ -138,11 +138,5 @@ consumer 规则状态是 SSOT；投影和 enforcement 状态都是派生结果�
 | 把 Skill 当业务执行器 | 治理接口越权 | Skill 只提交类型化请求 |
 | 把 Schema 校验当执行保障 | 规则只是静态文字 | enforce 必须产生可观察义务与决策 |
 
-## 历史合同边界
-
-3.0.1 的 guidance-only（仅指导）和 contract-validation-only（仅合同校验）语义
-是历史发布语义，不再定义当前产品。升级、bootstrap 和分发版本由 Epic #49 的
-后续工作包统一完成，不能保留两个现行规则 SSOT。
-
 完整规范见 [specification.md](specification.md)，实施状态见
 [GitHub Epic #49](https://github.com/bigsmartben/harness-scaffold/issues/49)。

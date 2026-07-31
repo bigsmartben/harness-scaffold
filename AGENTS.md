@@ -16,5 +16,4 @@
 - Keep the public CLI limited to `load`, `operate`, `cancel`, and `inspect`.
 - Treat the fixed Audience × Responsibility × Governance Domain model as immutable.
 - Treat the authoritative rule state as the only consumer rule SSOT; projections and enforcement decisions are derived.
-- Read recognizable legacy governance intent during `load`; block without writing when it cannot be calibrated losslessly.
 <!-- ai-coding-harness:end -->

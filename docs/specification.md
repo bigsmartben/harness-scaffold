@@ -203,32 +203,3 @@ projection、rule_id 和 revision；规则更新、停用、删除或重新投�
 
 Harness 只核验外部执行者提交的结果。例如 verification obligation 可以要求
 `verification_result`，但运行测试仍属于测试 Worker。
-
-## 10. 3.0.1 规则裁决
-
-| 3.0.1 语义 | 决议 | 新语义 |
-|---|---|---|
-| 固定 Audience / Responsibility / Domain 值域 | 保留 | 仍固定为 2 × 2 × 4 |
-| `generate` 只投影用户手写 guidance | 替换 | 覆盖发现、读取、规整、分类、校准和投影 |
-| `enforce` 等于合同或模型漂移校验 | 删除 | 改为内部执行保障闭环 |
-| 规则固定 `kind: guidance` 且无状态 | 替换 | 使用 #51 的规则身份、状态、版本和历史合同 |
-| v1/v2/既有治理一律拒绝 | 替换 | 读取可识别治理意图；不能无损规整时稳定失败 |
-| `init` / `project` / `validate` / `inspect` | 替换 | 4.0.0 使用 `load` / `operate` / `cancel` / `inspect` |
-| 仓库级 Skill 只能在 `init` 后发现 | 删除 | 由 #52/#55 提供首次 load bootstrap |
-| Skill 关键词扫描足以验收 | 删除 | 由 #56 使用真实意图与跨层行为验收 |
-| 维护仓库不是 consumer 初始化目标 | 保留 | 根目录只维护规范源码、分发源和仓库测试 |
-
-历史探索逐项裁决：
-
-| 历史来源 | 原探索重点 | 决议 | 进入 4.0.0 的部分 |
-|---|---|---|---|
-| [#2](https://github.com/bigsmartben/harness-scaffold/issues/2) | 通用执行控制面 | 替换 | 只保留“治理必须有机器可观察结果”；删除通用任务、权限、Provider 和业务执行入口 |
-| [#22](https://github.com/bigsmartben/harness-scaffold/issues/22) | 四域低摩擦执行 | 替换 | 保留四个 Governance Domain；执行改为脚手架义务与外部 Evidence 核验，不由 Skill 执行业务 |
-| [#32](https://github.com/bigsmartben/harness-scaffold/issues/32) | guidance-only 最小脚手架 | 部分保留 | 保留固定 2-2-4、确定性和维护者/consumer 边界；删除 guidance-only、contract-validation-only 和 legacy 全拒绝 |
-| 3.0.1 `rule_instances` | 用户手写四域指导 | 迁移 | 可识别 directive/scope/rule_id 作为带来源的规则候选导入，成功后旧配置只读归档 |
-| 3.0.1 模型锁 | 固定 Cell、规则投影与摘要 | 替换 | 固定 Cell 继续由 `model.py` 定义；旧锁只归档，不作为规则或投影 SSOT |
-| 3.0.1 仓库 Skill | 四条旧 CLI 与 guidance-only 边界 | 删除并替换 | 成功 load 后安装 4.0.0 治理意图 Skill，旧 Skill 进入 legacy 归档 |
-
-这是 4.0.0 破坏性合同重构，不与 3.0.1 形成双重现行规范。升级入口和分发产物
-由 [Issue #55](https://github.com/bigsmartben/harness-scaffold/issues/55)
-统一；历史发布说明只描述其对应历史版本。

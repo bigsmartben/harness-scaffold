@@ -75,7 +75,5 @@ Memory 不构成权威治理状态或执行证据。
 - [2-2-4 治理模型白皮书](docs/harness-2x2x4-governance-model-whitepaper.md)
 - [快速开始与实施状态](docs/quickstart.md)
 - [仓库结构](docs/repository-structure.md)
-- [历史 3.0.1 发布说明](docs/release-notes-3.0.1.md)
-
-3.0.1 的 guidance-only 语义是历史发布合同。Harness 4 在 load 成功后将可识别
-旧输入归档并建立唯一权威状态，不把旧配置保留为第二个现行 SSOT。
+- [4.0.0 发布说明](docs/release-notes-4.0.0.md)
+- [验收追踪](docs/acceptance-traceability.md)
