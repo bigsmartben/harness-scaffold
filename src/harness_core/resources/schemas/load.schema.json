@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sdd-harness.dev/schemas/load.schema.json",
+  "title": "Harness Load Core request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "repository"],
+  "properties": {
+    "contract_version": {"const": "4.0.0"},
+    "repository": {"type": "string", "minLength": 1}
+  }
+}

@@ -1,4 +1,4 @@
-"""Canonical JSON and digest helpers for Harness 3.0."""
+"""Canonical JSON and digest helpers for Harness 4."""
 
 from __future__ import annotations
 

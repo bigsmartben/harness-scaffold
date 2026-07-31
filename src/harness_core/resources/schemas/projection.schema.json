@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sdd-harness.dev/schemas/projection.schema.json",
+  "title": "Harness deterministic governance projection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["artifact_type", "contract_version", "state_revision", "fixed_cells", "rules", "disabled_rules", "projection_id"],
+  "properties": {
+    "artifact_type": {"const": "harness-governance-projection"},
+    "contract_version": {"const": "4.0.0"},
+    "state_revision": {"type": "integer", "minimum": 0},
+    "fixed_cells": {
+      "type": "array",
+      "minItems": 16,
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^(maintainer|consumer)\\.(generate|enforce)\\.(specification|implementation|verification|delivery)$"
+      }
+    },
+    "rules": {"type": "array", "items": {"$ref": "#/$defs/enabledRule"}},
+    "disabled_rules": {"type": "array", "items": {"$ref": "#/$defs/disabledRule"}},
+    "projection_id": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}
+  },
+  "$defs": {
+    "cellBindings": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^consumer\\.(generate|enforce)\\.(specification|implementation|verification|delivery)$"
+      }
+    },
+    "enabledRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rule_id", "revision", "domain", "cell_bindings", "status", "directive", "scope", "sources"],
+      "properties": {
+        "rule_id": {"type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"},
+        "revision": {"type": "integer", "minimum": 1},
+        "domain": {"enum": ["specification", "implementation", "verification", "delivery"]},
+        "cell_bindings": {"$ref": "#/$defs/cellBindings"},
+        "status": {"const": "enabled"},
+        "directive": {"type": "string", "minLength": 1},
+        "scope": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "sources": {"type": "array", "minItems": 1, "items": {"type": "object"}}
+      }
+    },
+    "disabledRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rule_id", "revision", "domain", "cell_bindings", "status"],
+      "properties": {
+        "rule_id": {"type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"},
+        "revision": {"type": "integer", "minimum": 1},
+        "domain": {"enum": ["specification", "implementation", "verification", "delivery"]},
+        "cell_bindings": {"$ref": "#/$defs/cellBindings"},
+        "status": {"const": "disabled"}
+      }
+    }
+  }
+}

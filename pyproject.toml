@@ -1,7 +1,7 @@
 [project]
 name = "sdd-harness"
-version = "3.0.1"
-description = "Fixed 2-2-4 specification governance scaffold"
+version = "4.0.0"
+description = "Fixed 2-2-4 repository governance system"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "jsonschema>=4.23,<5",
@@ -10,6 +10,7 @@ dependencies = [
 
 [project.scripts]
 sdd-harness = "harness_core.cli:main"
+harness = "harness_core.cli:main"
 
 [dependency-groups]
 dev = [

@@ -1,11 +1,11 @@
-"""The single normative source for the fixed Harness 3.0 meta-model."""
+"""The single normative source for the fixed Harness 4 meta-model."""
 
 from __future__ import annotations
 
 from itertools import product
 
 
-SCHEMA_VERSION = "3.0.1"
+SCHEMA_VERSION = "4.0.0"
 CORE_VERSION = SCHEMA_VERSION
 CONTRACT_VERSION = SCHEMA_VERSION
 PROJECTION_COMPILER_VERSION = SCHEMA_VERSION
@@ -13,6 +13,39 @@ PROJECTION_COMPILER_VERSION = SCHEMA_VERSION
 AUDIENCES = ("maintainer", "consumer")
 RESPONSIBILITIES = ("generate", "enforce")
 DOMAINS = ("specification", "implementation", "verification", "delivery")
+
+GENERATE_STAGES = (
+    "discover",
+    "read",
+    "normalize",
+    "classify",
+    "calibrate",
+    "project",
+)
+
+RESPONSIBILITY_SEMANTICS = {
+    "generate": (
+        "Discover repository facts and existing governance sources, then read, "
+        "normalize, classify, calibrate, and deterministically project governance rules."
+    ),
+    "enforce": (
+        "Generate and operate internal governance safeguards that create typed "
+        "obligations and verify external evidence for projected rules."
+    ),
+}
+
+LAYER_RESPONSIBILITIES = {
+    "skill": (
+        "Interpret natural-language governance intent and submit typed governance requests."
+    ),
+    "scaffold": (
+        "Discover facts, maintain authoritative governance state, project rules, "
+        "validate internal consistency, and operate enforcement safeguards."
+    ),
+    "vertical_executor": (
+        "Implement code, run tests, perform Git operations, release, and deploy software."
+    ),
+}
 
 CELL_IDS = tuple(
     f"{audience}.{responsibility}.{domain}"
@@ -25,52 +58,62 @@ CELL_IDS = tuple(
 
 CELL_DIRECTIVES = {
     "maintainer.generate.specification": (
-        "Define and deterministically emit the canonical specification Cell."
+        "Define specification governance semantics and publish their canonical "
+        "maintainer sources."
     ),
     "maintainer.generate.implementation": (
-        "Define and deterministically emit the canonical implementation Cell."
+        "Generate implementation contracts and artifacts from accepted governance semantics."
     ),
     "maintainer.generate.verification": (
-        "Define and deterministically emit the canonical verification Cell."
+        "Generate repeatable verification criteria that trace to the normative contract."
     ),
     "maintainer.generate.delivery": (
-        "Define and deterministically emit the canonical delivery Cell."
+        "Generate version-aligned distribution guidance and release contract artifacts."
     ),
     "maintainer.enforce.specification": (
-        "Strictly validate the canonical specification Cell and reject model drift."
+        "Operate safeguards that keep normative specification sources mutually consistent."
     ),
     "maintainer.enforce.implementation": (
-        "Strictly validate the canonical implementation Cell and reject model drift."
+        "Operate safeguards that require maintainer implementation evidence to satisfy "
+        "accepted contracts."
     ),
     "maintainer.enforce.verification": (
-        "Strictly validate the canonical verification Cell and reject model drift."
+        "Operate safeguards that require repeatable verification evidence before acceptance."
     ),
     "maintainer.enforce.delivery": (
-        "Strictly validate the canonical delivery Cell and reject model drift."
+        "Operate safeguards that require version and artifact integrity before distribution."
     ),
     "consumer.generate.specification": (
-        "Deterministically project validated specification guidance for the repository."
+        "Discover and calibrate source-backed specification rules, then project them "
+        "deterministically."
     ),
     "consumer.generate.implementation": (
-        "Deterministically project validated implementation guidance for the repository."
+        "Discover and calibrate source-backed implementation rules, then project them "
+        "deterministically."
     ),
     "consumer.generate.verification": (
-        "Deterministically project validated verification guidance for the repository."
+        "Discover and calibrate source-backed verification rules, then project them "
+        "deterministically."
     ),
     "consumer.generate.delivery": (
-        "Deterministically project validated delivery guidance for the repository."
+        "Discover and calibrate source-backed delivery rules, then project them "
+        "deterministically."
     ),
     "consumer.enforce.specification": (
-        "Strictly validate repository specification guidance against the canonical contract."
+        "Create specification obligations and verify typed evidence against active "
+        "projected rules."
     ),
     "consumer.enforce.implementation": (
-        "Strictly validate repository implementation guidance against the canonical contract."
+        "Create implementation obligations and verify typed evidence against active "
+        "projected rules."
     ),
     "consumer.enforce.verification": (
-        "Strictly validate repository verification guidance against the canonical contract."
+        "Create verification obligations and verify typed evidence against active "
+        "projected rules."
     ),
     "consumer.enforce.delivery": (
-        "Strictly validate repository delivery guidance against the canonical contract."
+        "Create delivery obligations and verify typed evidence against active "
+        "projected rules."
     ),
 }
 if tuple(CELL_DIRECTIVES) != CELL_IDS:
@@ -84,3 +127,14 @@ def cell_id(audience: str, responsibility: str, domain: str) -> str:
     """Return the canonical ID for one fixed meta-model cell."""
 
     return f"{audience}.{responsibility}.{domain}"
+
+
+def consumer_rule_cell_ids(domain: str) -> tuple[str, str]:
+    """Return the generate/enforce views for one consumer governance rule."""
+
+    if domain not in DOMAINS:
+        raise ValueError(f"unknown governance domain: {domain}")
+    return (
+        cell_id("consumer", "generate", domain),
+        cell_id("consumer", "enforce", domain),
+    )

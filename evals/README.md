@@ -1,8 +1,7 @@
-# Harness 3.0 evaluations
+# Harness 4 evaluations
 
-`manifest.yaml` is the machine-readable mapping from the nine Issue #40
-behavior scenarios to pytest node IDs and the required GitHub Actions job.
+`manifest.yaml` maps Epic #49 behavior scenarios to their owning Issue, pytest
+node ID, and the required GitHub Actions job.
 
-Evaluation results are runtime evidence and remain ignored under
-`evals/results/`. They are not an editable mirror of GitHub Issue plans,
-checklists, status, or acceptance conclusions.
+Runtime results remain ignored under `evals/results/`. They are evidence, not
+an editable mirror of GitHub Issue plans, status, checklists, or conclusions.
