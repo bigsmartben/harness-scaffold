@@ -27,17 +27,12 @@ load 会：
 此后通过 `$harness` Skill 提交治理意图。bootstrap 与仓库 Skill 使用同一
 Load Core、Operation 和权威状态，不形成双实现。
 
-## 新旧仓库
+## 仓库 load
 
 新仓库即使没有仓库 Skill，也能直接运行 `harness load`。没有发现对应工程表面
 时，四域 baseline 会明确记录“缺失”事实，而不是伪造已经存在的工具链。
 
-3.0.1 consumer 的 `.harness/harness.yaml` 和 `model.lock.json` 会在无冲突导入
-后移动到 `.harness/legacy/3.0.1/`；其他可识别旧版本按实际
-`schema_version` 归档。新 `state.json` 是唯一当前规则 SSOT；归档
-只用于来源追踪。
-
-若旧规范重复、冲突或无法分类，load 返回稳定诊断并保持权威状态零写入。例如，
+若已有规范重复、冲突或无法分类，load 返回稳定诊断并保持权威状态零写入。例如，
 “Python 必须为 3.12”和“支持 Python 3.10+”不能被静默选边。
 
 ## 规则操作
@@ -72,9 +67,3 @@ update、disable、enable 和 delete 必须绑定当前 `base_revision`。并发
 4. 脚手架核验 Worker 提交的类型化证据。
 
 Skill 不运行第 3 步，脚手架也不把“已测试”的聊天文字当成第 4 步证据。
-
-## 历史版本
-
-维护历史 3.0.1 consumer 时参见
-[3.0.1 发布说明](release-notes-3.0.1.md)。guidance-only 行为不属于 4.0.0
-当前合同。
