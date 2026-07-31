@@ -1,4 +1,4 @@
-"""Read immutable Harness 3.0 resources shipped in the wheel."""
+"""Read immutable Harness resources shipped in the wheel."""
 
 from __future__ import annotations
 

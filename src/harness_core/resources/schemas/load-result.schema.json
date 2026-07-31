@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sdd-harness.dev/schemas/load-result.schema.json",
+  "title": "Harness Load Core result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "status",
+    "contract_version",
+    "repository",
+    "snapshot_digest",
+    "facts",
+    "governance_sources",
+    "candidates",
+    "calibrations",
+    "diagnostics",
+    "result_digest"
+  ],
+  "properties": {
+    "status": {"enum": ["ready", "blocked"]},
+    "contract_version": {"const": "4.0.0"},
+    "repository": {
+      "oneOf": [
+        {"type": "string", "minLength": 1},
+        {"type": "null"}
+      ]
+    },
+    "snapshot_digest": {
+      "oneOf": [
+        {"$ref": "#/$defs/digest"},
+        {"type": "null"}
+      ]
+    },
+    "facts": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/fact"}
+    },
+    "governance_sources": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/governanceSource"}
+    },
+    "candidates": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/candidate"}
+    },
+    "calibrations": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/calibration"}
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/diagnostic"}
+    },
+    "result_digest": {"$ref": "#/$defs/digest"}
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "fact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fact_id", "kind", "paths", "entries", "digest"],
+      "properties": {
+        "fact_id": {"type": "string", "minLength": 1},
+        "kind": {"enum": ["present", "absent"]},
+        "paths": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "entries": {"type": "object"},
+        "digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "governanceSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "priority", "version", "digest"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "priority": {"type": "integer", "minimum": 1},
+        "version": {"type": ["string", "null"]},
+        "digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rule_id", "domain", "directive", "scope", "sources"],
+      "properties": {
+        "rule_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "domain": {
+          "enum": ["specification", "implementation", "verification", "delivery"]
+        },
+        "directive": {"type": "string", "minLength": 1},
+        "scope": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/source"}
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_type", "reference", "digest"],
+      "properties": {
+        "source_type": {
+          "enum": ["repository_fact", "governance_source", "user_intent"]
+        },
+        "reference": {"type": "string", "minLength": 1},
+        "digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "calibration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "rule_id",
+        "previous_sources",
+        "current_sources"
+      ],
+      "properties": {
+        "code": {"const": "DERIVED_BASELINE_REFRESHED"},
+        "rule_id": {"type": "string", "minLength": 1},
+        "previous_sources": {"type": "array"},
+        "current_sources": {"type": "array"}
+      }
+    },
+    "diagnostic": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": {"type": "string", "minLength": 1},
+        "message": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

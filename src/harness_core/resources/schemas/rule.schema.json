@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sdd-harness.dev/schemas/governance-rule.schema.json",
+  "title": "Harness authoritative governance rule",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "rule_id",
+    "domain",
+    "directive",
+    "scope",
+    "sources",
+    "status",
+    "revision",
+    "history"
+  ],
+  "properties": {
+    "rule_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "domain": {
+      "enum": ["specification", "implementation", "verification", "delivery"]
+    },
+    "directive": {"type": "string", "minLength": 1},
+    "scope": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/source"}
+    },
+    "status": {"enum": ["enabled", "disabled"]},
+    "revision": {"type": "integer", "minimum": 1},
+    "history": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/history"}
+    }
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_type", "reference", "digest"],
+      "properties": {
+        "source_type": {
+          "enum": ["repository_fact", "governance_source", "user_intent"]
+        },
+        "reference": {"type": "string", "minLength": 1},
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    },
+    "history": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operation_id",
+        "operation_type",
+        "revision",
+        "status",
+        "domain",
+        "directive",
+        "scope",
+        "sources"
+      ],
+      "properties": {
+        "operation_id": {
+          "type": "string",
+          "pattern": "^op-[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "operation_type": {
+          "enum": ["add", "update", "disable", "enable", "delete"]
+        },
+        "revision": {"type": "integer", "minimum": 1},
+        "status": {"enum": ["enabled", "disabled"]},
+        "domain": {
+          "enum": ["specification", "implementation", "verification", "delivery"]
+        },
+        "directive": {"type": "string", "minLength": 1},
+        "scope": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/source"}
+        }
+      }
+    }
+  }
+}

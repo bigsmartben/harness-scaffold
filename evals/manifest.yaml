@@ -1,31 +1,58 @@
-schema_version: 3.0.1
-source_issue: https://github.com/bigsmartben/harness-scaffold/issues/40
+schema_version: 4.0.0
+source_issue: https://github.com/bigsmartben/harness-scaffold/issues/49
 ci_job: contracts
 scenarios:
-  - scenario_id: M-G01
-    audience: maintainer
-    test: tests/bdd/test_issue_40_scenarios.py::test_m_g01_fixed_model_is_exactly_sixteen_differentiated_cells
-  - scenario_id: M-G02
-    audience: maintainer
-    test: tests/bdd/test_issue_40_scenarios.py::test_m_g02_fixed_model_tampering_is_read_only_and_rejected
-  - scenario_id: M-G03
-    audience: maintainer
-    test: tests/bdd/test_issue_40_scenarios.py::test_m_g03_public_and_generated_surfaces_are_guidance_only
-  - scenario_id: M-G04
-    audience: maintainer
-    test: tests/bdd/test_issue_40_scenarios.py::test_m_g04_legacy_inputs_are_rejected_before_any_write
-  - scenario_id: C-G01
-    audience: consumer
-    test: tests/bdd/test_issue_40_scenarios.py::test_c_g01_rules_project_to_guidance_without_external_side_effects
-  - scenario_id: C-G02
-    audience: consumer
-    test: tests/bdd/test_issue_40_scenarios.py::test_c_g02_cardinality_order_and_digest_rules_are_deterministic
-  - scenario_id: C-G03
-    audience: consumer
-    test: tests/bdd/test_issue_40_scenarios.py::test_c_g03_invalid_rules_have_precise_diagnostics_and_zero_writes
-  - scenario_id: C-G04
-    audience: consumer
-    test: tests/bdd/test_issue_40_scenarios.py::test_c_g04_execution_and_authorization_fields_never_call_providers
-  - scenario_id: C-G05
-    audience: consumer
-    test: tests/bdd/test_issue_40_scenarios.py::test_c_g05_minimal_input_is_explicit_and_never_default_completed
+  - scenario_id: MODEL-224
+    owner_issue: 50
+    test: tests/unit/test_issue_50_model_semantics.py::test_all_sixteen_cell_directives_are_distinct_and_in_scope
+  - scenario_id: OPERATION-LIFECYCLE
+    owner_issue: 51
+    test: tests/unit/test_issue_51_lifecycle.py::test_disable_enable_and_delete_are_machine_distinct
+  - scenario_id: CANCEL-ZERO-RULE-WRITE
+    owner_issue: 51
+    test: tests/unit/test_issue_51_lifecycle.py::test_cancel_changes_only_operation_state_and_preserves_rules_bytewise
+  - scenario_id: NEW-REPO-LOAD
+    owner_issue: 52
+    test: tests/unit/test_issue_52_load_core.py::test_blank_repository_gets_four_absence_backed_domain_candidates
+  - scenario_id: OLD-REPO-CONFLICT
+    owner_issue: 52
+    test: tests/e2e/test_issue_49_reconstruction.py::test_old_repository_conflict_is_zero_write_e2e
+  - scenario_id: V4-STATE-RELOAD
+    owner_issue: 52
+    test: tests/unit/test_issue_52_load_core.py::test_current_v4_state_reloads_and_fact_baselines_are_refreshed
+  - scenario_id: LOAD-ADAPTER-EQUIVALENCE
+    owner_issue: 52
+    test: tests/unit/test_issue_52_load_core.py::test_app_and_cli_load_adapters_reach_the_same_core_result
+  - scenario_id: LOAD-RETIRED-BASELINE
+    owner_issue: 52
+    test: tests/unit/test_issue_52_load_core.py::test_current_v4_tombstone_suppresses_regeneration_of_retired_baseline
+  - scenario_id: SKILL-BOUNDARY
+    owner_issue: 53
+    test: tests/unit/test_issue_53_skill_adapter.py::test_vertical_work_is_stably_out_of_scope_and_writes_nothing
+  - scenario_id: ENFORCE-FOUR-DOMAINS
+    owner_issue: 54
+    test: tests/unit/test_issue_54_scaffold.py::test_each_domain_has_satisfied_blocked_and_not_applicable
+  - scenario_id: ENFORCE-RECOMPUTABLE
+    owner_issue: 54
+    test: tests/unit/test_issue_54_scaffold.py::test_obligations_and_evidence_decisions_are_exactly_recomputable
+  - scenario_id: ENFORCE-MALFORMED-EVIDENCE
+    owner_issue: 54
+    test: tests/unit/test_issue_54_scaffold.py::test_malformed_typed_evidence_fails_closed
+  - scenario_id: BOOTSTRAP-UPGRADE
+    owner_issue: 55
+    test: tests/integration/test_issue_55_bootstrap_cli.py::test_v301_consumer_is_imported_archived_and_not_a_second_ssot
+  - scenario_id: LEGACY-VERSION-PRESERVED
+    owner_issue: 55
+    test: tests/integration/test_issue_55_bootstrap_cli.py::test_recognizable_v2_governance_keeps_its_actual_archive_version
+  - scenario_id: CROSS-LAYER-E2E
+    owner_issue: 56
+    test: tests/e2e/test_issue_49_reconstruction.py::test_new_repository_load_rule_operation_and_enforce_e2e
+  - scenario_id: APP-TO-CLI-OPERATION
+    owner_issue: 56
+    test: tests/e2e/test_issue_49_reconstruction.py::test_app_operation_can_be_applied_by_cli
+  - scenario_id: CLI-TO-APP-CANCEL
+    owner_issue: 56
+    test: tests/e2e/test_issue_49_reconstruction.py::test_cli_pending_operation_can_be_cancelled_by_app_adapter
+  - scenario_id: APP-TO-CLI-CANCEL
+    owner_issue: 56
+    test: tests/e2e/test_issue_49_reconstruction.py::test_app_pending_operation_can_be_cancelled_by_cli

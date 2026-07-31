@@ -1,4 +1,4 @@
-"""The four-command Harness 3.0 local CLI."""
+"""Harness 4 consumer bootstrap and typed governance CLI."""
 
 from __future__ import annotations
 
@@ -8,21 +8,8 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from . import __version__
-from .contracts import validate_project_config
-from .initializer import CONFIG_RELATIVE_PATH, initialize_repository
-from .model import (
-    CONTRACT_VERSION,
-    CORE_VERSION,
-    DOMAINS,
-    PROJECTION_COMPILER_VERSION,
-    SCHEMA_VERSION,
-)
-from .projection import (
-    compile_model_lock,
-    default_model_lock_path,
-    project_model_lock,
-    validate_model_lock,
-)
+from .bootstrap import load_and_bootstrap
+from .scaffold import GovernanceRepository, compile_governance_projection
 
 
 def _print(value: dict[str, Any], *, compact: bool) -> None:
@@ -38,92 +25,13 @@ def _print(value: dict[str, Any], *, compact: bool) -> None:
     )
 
 
-def _paths(repository: Path) -> tuple[Path, Path]:
-    root = repository.resolve()
-    return root / CONFIG_RELATIVE_PATH, default_model_lock_path(root)
-
-
-def _init(args: argparse.Namespace) -> int:
-    result = initialize_repository(args.repository)
-    _print(result, compact=args.json)
-    return 0 if result["status"] == "initialized" else 2
-
-
-def _project(args: argparse.Namespace) -> int:
-    config_path, lock_path = _paths(args.repository)
-    result = project_model_lock(config_path, lock_path)
-    _print(result, compact=args.json)
-    return 0 if result["status"] in {"projected", "unchanged"} else 2
-
-
-def _validate(args: argparse.Namespace) -> int:
-    config_path, lock_path = _paths(args.repository)
-    config_issues = validate_project_config(config_path)
-    issues = (
-        config_issues
-        if config_issues
-        else validate_model_lock(config_path, lock_path)
-    )
-    result = {
-        "status": "valid" if not issues else "invalid",
-        "repository": str(args.repository.resolve()),
-        "diagnostics": [issue.as_dict() for issue in issues],
-    }
-    _print(result, compact=args.json)
-    return 0 if not issues else 2
-
-
-def _inspect(args: argparse.Namespace) -> int:
-    config_path, lock_path = _paths(args.repository)
-    config_issues = validate_project_config(config_path)
-    if config_issues:
-        result = {
-            "status": "invalid",
-            "repository": str(args.repository.resolve()),
-            "schema_version": SCHEMA_VERSION,
-            "core_version": CORE_VERSION,
-            "contract_version": CONTRACT_VERSION,
-            "compiler_version": PROJECTION_COMPILER_VERSION,
-            "rule_counts": {domain: 0 for domain in DOMAINS},
-            "source_digest": None,
-            "projection_digest": None,
-            "diagnostics": [
-                issue.as_dict() for issue in config_issues
-            ],
-        }
-        _print(result, compact=args.json)
-        return 2
-
-    expected = compile_model_lock(config_path)
-    lock_issues = validate_model_lock(config_path, lock_path)
-    counts = {domain: 0 for domain in DOMAINS}
-    for rule in expected["rules"]:
-        counts[rule["domain"]] += 1
-    result = {
-        "status": "valid" if not lock_issues else "invalid",
-        "repository": str(args.repository.resolve()),
-        "schema_version": SCHEMA_VERSION,
-        "core_version": CORE_VERSION,
-        "contract_version": CONTRACT_VERSION,
-        "compiler_version": PROJECTION_COMPILER_VERSION,
-        "rule_counts": counts,
-        "source_digest": expected["source_digest"],
-        "projection_digest": expected["projection_digest"],
-        "diagnostics": [
-            issue.as_dict() for issue in lock_issues
-        ],
-    }
-    _print(result, compact=args.json)
-    return 0 if not lock_issues else 2
-
-
 def _repository_argument(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "repository",
         nargs="?",
         type=Path,
         default=Path.cwd(),
-        help="repository directory (default: current directory)",
+        help="consumer repository directory (default: current directory)",
     )
 
 
@@ -131,10 +39,75 @@ def _json_argument(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--json", action="store_true", help="emit compact JSON")
 
 
+def _load(args: argparse.Namespace) -> int:
+    result = load_and_bootstrap(args.repository)
+    _print(result, compact=args.json)
+    return 0 if result["status"] == "loaded" else 2
+
+
+def _operate(args: argparse.Namespace) -> int:
+    try:
+        request = json.loads(args.request_json)
+    except json.JSONDecodeError as exc:
+        result = {
+            "status": "rejected",
+            "diagnostics": [
+                {
+                    "code": "OPERATION_JSON_INVALID",
+                    "message": str(exc),
+                }
+            ],
+        }
+        _print(result, compact=args.json)
+        return 2
+    repository = GovernanceRepository(args.repository)
+    registered = repository.register(request)
+    if registered["status"] not in {"pending", "applied"}:
+        _print(registered, compact=args.json)
+        return 2
+    operation_id = request.get("operation_id")
+    result = repository.apply(operation_id)
+    _print(result, compact=args.json)
+    return 0 if result["status"] == "applied" else 2
+
+
+def _cancel(args: argparse.Namespace) -> int:
+    repository = GovernanceRepository(args.repository)
+    result = repository.cancel(args.operation_id)
+    _print(result, compact=args.json)
+    return 0 if result["status"] == "cancelled" else 2
+
+
+def _inspect(args: argparse.Namespace) -> int:
+    repository = GovernanceRepository(args.repository)
+    state = repository.read()
+    projection = compile_governance_projection(state)
+    result = {
+        "status": "valid",
+        "repository": str(args.repository.resolve()),
+        "contract_version": __version__,
+        "state_revision": state["state_revision"],
+        "rule_counts": {
+            "enabled": len(projection["rules"]),
+            "disabled": len(projection["disabled_rules"]),
+            "deleted": len(state["deleted_rules"]),
+        },
+        "pending_operations": sorted(
+            operation_id
+            for operation_id, operation in state["operations"].items()
+            if operation["status"] == "pending"
+        ),
+        "projection_id": projection["projection_id"],
+        "diagnostics": [],
+    }
+    _print(result, compact=args.json)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="sdd-harness",
-        description="Harness 3.0 fixed specification governance scaffold",
+        prog="harness",
+        description="Harness 4 repository governance interface",
     )
     parser.add_argument(
         "--version",
@@ -143,33 +116,43 @@ def build_parser() -> argparse.ArgumentParser:
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    init_parser = subparsers.add_parser(
-        "init",
-        help="create the minimal v3 config, Skill, and model lock",
+    load_parser = subparsers.add_parser(
+        "load",
+        help="discover, calibrate, persist, and bootstrap repository governance",
     )
-    _repository_argument(init_parser)
-    _json_argument(init_parser)
-    init_parser.set_defaults(handler=_init)
+    _repository_argument(load_parser)
+    _json_argument(load_parser)
+    load_parser.set_defaults(handler=_load)
 
-    project_parser = subparsers.add_parser(
-        "project",
-        help="atomically rebuild the deterministic model lock",
+    operate_parser = subparsers.add_parser(
+        "operate",
+        help="register and atomically apply a typed governance OperationRequest",
     )
-    _repository_argument(project_parser)
-    _json_argument(project_parser)
-    project_parser.set_defaults(handler=_project)
+    _repository_argument(operate_parser)
+    operate_parser.add_argument(
+        "--request-json",
+        required=True,
+        help="canonical OperationRequest JSON",
+    )
+    _json_argument(operate_parser)
+    operate_parser.set_defaults(handler=_operate)
 
-    validate_parser = subparsers.add_parser(
-        "validate",
-        help="read-only validation of config and model lock",
+    cancel_parser = subparsers.add_parser(
+        "cancel",
+        help="cancel one authoritative pending operation",
     )
-    _repository_argument(validate_parser)
-    _json_argument(validate_parser)
-    validate_parser.set_defaults(handler=_validate)
+    _repository_argument(cancel_parser)
+    cancel_parser.add_argument(
+        "operation_id",
+        nargs="?",
+        help="pending operation_id; omit only when exactly one is pending",
+    )
+    _json_argument(cancel_parser)
+    cancel_parser.set_defaults(handler=_cancel)
 
     inspect_parser = subparsers.add_parser(
         "inspect",
-        help="read-only version, digest, rule count, and diagnostic summary",
+        help="inspect authoritative state and deterministic projection",
     )
     _repository_argument(inspect_parser)
     _json_argument(inspect_parser)
@@ -188,7 +171,6 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "diagnostics": [
                     {
                         "code": "CLI_INPUT_INVALID",
-                        "path": "",
                         "message": str(exc),
                     }
                 ],

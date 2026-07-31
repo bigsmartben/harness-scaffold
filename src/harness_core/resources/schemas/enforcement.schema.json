@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sdd-harness.dev/schemas/enforcement.schema.json",
+  "title": "Harness enforcement evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "evidence_id",
+    "enforcement_id",
+    "projection_id",
+    "rule_id",
+    "revision",
+    "evidence_type",
+    "producer",
+    "artifact_digest",
+    "postcondition"
+  ],
+  "properties": {
+    "evidence_id": {"type": "string", "minLength": 1},
+    "enforcement_id": {
+      "type": "string",
+      "pattern": "^enf-[a-f0-9]{24}$"
+    },
+    "projection_id": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "rule_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "revision": {"type": "integer", "minimum": 1},
+    "evidence_type": {
+      "enum": [
+        "acceptance_record",
+        "implementation_result",
+        "verification_result",
+        "delivery_result"
+      ]
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "identity"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "not": {
+            "enum": ["agent_summary", "memory", "transcript", "chat"]
+          }
+        },
+        "identity": {"type": "string", "minLength": 1}
+      }
+    },
+    "artifact_digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "postcondition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "observed"],
+      "properties": {
+        "status": {"enum": ["passed", "failed"]},
+        "observed": {}
+      }
+    }
+  }
+}

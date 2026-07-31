@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - v3.0.1
+      - v4.0.0
 
 permissions:
   contents: write
@@ -24,15 +24,15 @@ jobs:
       - run: uv run python scripts/smoke_distribution.py
       - name: Verify release version
         run: |
-          test "$GITHUB_REF_NAME" = "v3.0.1"
-          test "$(uv run sdd-harness --version)" = "sdd-harness 3.0.1"
+          test "$GITHUB_REF_NAME" = "v4.0.0"
+          test "$(uv run harness --version)" = "harness 4.0.0"
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "$GITHUB_REF_NAME" \
-            dist/sdd_harness-3.0.1-py3-none-any.whl \
-            dist/sdd_harness-3.0.1.tar.gz \
+            dist/sdd_harness-4.0.0-py3-none-any.whl \
+            dist/sdd_harness-4.0.0.tar.gz \
             --verify-tag \
-            --notes-file docs/release-notes-3.0.1.md \
-            --title "Harness 3.0.1"
+            --notes-file docs/release-notes-4.0.0.md \
+            --title "Harness 4.0.0"
