@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import errno
 import fnmatch
 import json
 import os
 import re
 import tempfile
+import threading
+import time
 from copy import deepcopy
 from contextlib import contextmanager
 from pathlib import Path
@@ -48,6 +51,72 @@ _FORBIDDEN_EVIDENCE_PRODUCERS = {
     "chat",
 }
 _SHA256_PATTERN = re.compile(r"^sha256:[a-f0-9]{64}$")
+_REPOSITORY_THREAD_LOCKS_GUARD = threading.Lock()
+_REPOSITORY_THREAD_LOCKS: dict[Path, Any] = {}
+_WINDOWS_LOCK_TIMEOUT_SECONDS = 30.0
+_WINDOWS_LOCK_RETRY_SECONDS = 0.01
+
+
+def _repository_thread_lock(lock_path: Path):
+    """Return one process-local reentrant lock for an authoritative state path."""
+
+    resolved = lock_path.resolve()
+    with _REPOSITORY_THREAD_LOCKS_GUARD:
+        return _REPOSITORY_THREAD_LOCKS.setdefault(
+            resolved, threading.RLock()
+        )
+
+
+@contextmanager
+def _interprocess_file_lock(stream):
+    """Hold a real platform file lock or fail instead of continuing unlocked."""
+
+    if os.name == "nt":
+        import msvcrt
+
+        stream.seek(0, os.SEEK_END)
+        if stream.tell() == 0:
+            stream.write(b"\0")
+            stream.flush()
+            os.fsync(stream.fileno())
+        stream.seek(0)
+        deadline = time.monotonic() + _WINDOWS_LOCK_TIMEOUT_SECONDS
+        while True:
+            try:
+                msvcrt.locking(stream.fileno(), msvcrt.LK_NBLCK, 1)
+                break
+            except OSError as error:
+                if error.errno not in {
+                    errno.EACCES,
+                    errno.EAGAIN,
+                    errno.EDEADLK,
+                }:
+                    raise
+                if time.monotonic() >= deadline:
+                    raise TimeoutError(
+                        "timed out acquiring the authoritative governance lock"
+                    ) from error
+                time.sleep(_WINDOWS_LOCK_RETRY_SECONDS)
+        try:
+            yield
+        finally:
+            stream.seek(0)
+            msvcrt.locking(stream.fileno(), msvcrt.LK_UNLCK, 1)
+        return
+
+    if os.name == "posix":
+        import fcntl
+
+        fcntl.flock(stream.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(stream.fileno(), fcntl.LOCK_UN)
+        return
+
+    raise RuntimeError(
+        f"authoritative governance locking is unsupported on os.name={os.name!r}"
+    )
 
 
 def _projection_payload(state: dict[str, Any]) -> dict[str, Any]:
@@ -450,17 +519,11 @@ class GovernanceRepository:
     @contextmanager
     def _locked(self):
         self.lock_path.parent.mkdir(parents=True, exist_ok=True)
-        with self.lock_path.open("a+", encoding="utf-8") as stream:
-            try:
-                import fcntl
-            except ImportError:  # pragma: no cover - Windows fallback
-                yield
-                return
-            fcntl.flock(stream.fileno(), fcntl.LOCK_EX)
-            try:
-                yield
-            finally:
-                fcntl.flock(stream.fileno(), fcntl.LOCK_UN)
+        thread_lock = _repository_thread_lock(self.lock_path)
+        with thread_lock:
+            with self.lock_path.open("a+b") as stream:
+                with _interprocess_file_lock(stream):
+                    yield
 
     def _read_unlocked(self) -> dict[str, Any]:
         if not self.path.is_file():
