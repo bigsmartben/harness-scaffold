@@ -9,6 +9,7 @@ import pytest
 from jsonschema import Draft202012Validator
 
 import harness_core
+import harness_core.scaffold as scaffold
 
 
 SOURCE = {
@@ -496,3 +497,46 @@ def test_repository_apply_cancel_race_has_one_authoritative_terminal_state(
             and result["diagnostics"][0]["code"] == "OPERATION_CANCELLED"
             for result in results
         )
+
+
+def test_repository_lock_releases_after_failed_atomic_write(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repository = harness_core.GovernanceRepository(tmp_path)
+    request = harness_core.build_operation_request(
+        "op-add-verification-after-failure",
+        "add",
+        "verification-after-failure",
+        base_revision=0,
+        payload=payload("verification"),
+    )
+    repository.register(request)
+    original_replace = scaffold.os.replace
+
+    def fail_replace(source: str | Path, target: str | Path) -> None:
+        raise OSError("simulated authoritative state write failure")
+
+    monkeypatch.setattr(scaffold.os, "replace", fail_replace)
+    with pytest.raises(
+        OSError, match="simulated authoritative state write failure"
+    ):
+        repository.apply("op-add-verification-after-failure")
+
+    assert repository.read()["operations"][
+        "op-add-verification-after-failure"
+    ]["status"] == "pending"
+    assert not list(
+        repository.path.parent.glob(f".{repository.path.name}.*.tmp")
+    )
+    monkeypatch.setattr(scaffold.os, "replace", original_replace)
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(
+            harness_core.GovernanceRepository(tmp_path).apply,
+            "op-add-verification-after-failure",
+        )
+        result = future.result(timeout=5)
+
+    assert result["status"] == "applied"
+    assert "verification-after-failure" in result["state"]["rules"]

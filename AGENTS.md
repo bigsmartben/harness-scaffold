@@ -7,6 +7,12 @@
 <!-- ai-coding-harness:start -->
 # Harness 4 Maintainer Repository
 
+- Treat [Epic #59](https://github.com/bigsmartben/harness-scaffold/issues/59) and its
+  child Issues as the authoritative maintainer plan and acceptance record for the
+  governance-effectiveness rebaseline; do not copy their editable status locally.
+- Optimize for human-machine collaboration effectiveness only under quality, safety,
+  system-boundary, data-contract, and traceability constraints; those hard constraints
+  always take precedence over fewer steps, faster completion, or lower verification cost.
 - This repository develops and distributes Harness; it is not a consumer initialization target.
 - Close the maintainer loop through this root `AGENTS.md`, the canonical sources, and repository tests; do not bootstrap this repository as its own Harness consumer or expect a generated consumer Skill at the repository root.
 - Reserve `harness load` and its generated `.harness/` and `.agents/skills/harness/` artifacts for external or temporary consumer repositories, where they form the consumer governance loop.
